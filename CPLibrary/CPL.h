@@ -130,6 +130,7 @@ namespace CPL {
     void BeginPostProcessing();
     void EndPostProcessing();
     void ApplyPostProcessing(const PostProcessingModes& mode);
+    void ApplyPostProcessingCustom(const Shader& shader);
 
     inline void EndDrawing() {
         glUseProgram(0);

@@ -191,6 +191,9 @@ namespace CPL {
     void ApplyPostProcessing(const PostProcessingModes& mode) {
 	screenQuad.Draw(mode);
     }
+    void ApplyPostProcessingCustom(const Shader& shader) {
+	screenQuad.DrawCustom(shader);
+    }
 
     void DrawTriangle(const glm::vec2 position, const glm::vec2 size, const Color& color) {
         const auto triangle = Triangle(position, size, color);

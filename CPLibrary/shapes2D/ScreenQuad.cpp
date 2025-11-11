@@ -66,4 +66,12 @@ namespace CPL {
         glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
     }
+    void ScreenQuad::DrawCustom(const Shader& shader) {
+        shader.Use();
+
+        glBindVertexArray(VAO);
+        glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    }
 }

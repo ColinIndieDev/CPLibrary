@@ -12,6 +12,7 @@ namespace CPL {
 	void BeginUseScreen();
 	void EndUseScreen();
 	void Draw(int mode);
+	void DrawCustom(const Shader& shader);
     private:
 	unsigned int VBO{}, VAO{}, RBO{}, framebuffer{}, textureColorBuffer{}; 
     };
