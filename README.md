@@ -37,6 +37,19 @@ Currently I worked on this just for 1-2 months
 As you can see, the functions and naming conventions are pretty similar \
 and inspired by the ones from Raylib
 
+## Structure
+
++ `CPLibrary/`
++ + `shaders/`
++ +  + `.frag (fragment shaders)`
++ +  +  `.vert (vertex shaders)`
++ +  +  `fonts`
++ + `shapes2D/`
++ + `timers/`
++ + `CPLibrary.h`  
++ + `CPL.cpp & .h`
++ + `more .cpp & .h files for other functionalities`
+
 ## Functionality
 CPL currently only supports 2D, but 3D is planned for the future. \
 Since CPL is written in C++ and open source, you may look up the code \
