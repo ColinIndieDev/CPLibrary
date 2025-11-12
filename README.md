@@ -43,12 +43,17 @@ and inspired by the ones from Raylib
 + + `shaders/`
 + +  + `.frag (fragment shaders)`
 + +  +  `.vert (vertex shaders)`
-+ +  +  `fonts`
 + + `shapes2D/`
 + + `timers/`
 + + `CPLibrary.h`  
 + + `CPL.cpp & .h`
 + + `more .cpp & .h files for other functionalities`
+
+All code for the shaders like fragment as well as vertex are all stored inside the
+`shader` folder. Inside `shapes2D`, classes of primitves (rectangle, circle etc.), textures & screen quad
+are contained. The other files for the functionalities are below. CPLibrary.h just includes all header files
+so that you only need to use to include CPLibrary.h to get all available functions. CPL.cpp & .h implements
+the functionality from the files to a function or contains its own you can call.
 
 ## Functionality
 CPL currently only supports 2D, but 3D is planned for the future. \
