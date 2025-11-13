@@ -257,12 +257,26 @@ Others:
 `bool CheckCollisionCircleRect(Circle one, Rectangle two);` \
 `bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);`
 
+### Drawing 2D textures
+`TextureFiltering:`
+`NEAREST`
+`LINEAR`
+
+`Texture2D(std::string imagePath, glm::vec2 size, TextureFiltering mode);`
+
+`void DrawTexture2D(Texture2D* texture, glm::vec2 position, Color color);`
+
+`void DrawTexture2DRotated(Texture2D* texture, glm::vec2 position, float angle);`
+
 ### Drawing text
-`void DrawText(glm::vec2 position, float scale, std::string text, Color color);` \
-`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);` \
+`void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
+
+`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);`
+
 `void ShowDetails(); `
 
-`glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);` \
+`glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);`
+
 `void Text::Init(std::string fontPath, std::string fontName, TextureFiltering filteringMode);`
 
 ### Drawing primitives
