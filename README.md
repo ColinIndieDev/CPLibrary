@@ -37,6 +37,28 @@ Currently I worked on this just for 1-2 months
 As you can see, the functions and naming conventions are pretty similar \
 and inspired by the ones from Raylib
 
+## Structure
++ `assets/`
++ + `fonts/`
++ `external/`
++ + `glad/`
++ `CPLibrary/`
++ + `shaders/`
++ +  + `.frag (fragment shaders)`
++ +  +  `.vert (vertex shaders)`
++ + `shapes2D/`
++ + `timers/`
++ + `CPLibrary.h`  
++ + `CPL.cpp & .h`
++ + `more .cpp & .h files for other functionalities`
+
+The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one. In `external` is the implementation from `glad` downloaded from its offical website.
+All code for the shaders like fragment as well as vertex are all stored inside the
+`shader` folder. Inside `shapes2D`, classes of primitves (rectangle, circle etc.), textures & screen quad
+are contained. The other files for the functionalities are below. `CPLibrary.h` just includes all header files
+so that you only need to use to include `CPLibrary.h` to get all available functions. `CPL.cpp` & `.h` implements
+the functionality from the files to a function or contains its own you can call.
+
 ## Functionality
 CPL currently only supports 2D, but 3D is planned for the future. \
 Since CPL is written in C++ and open source, you may look up the code \
@@ -186,39 +208,75 @@ Others:
 > Draw final point lights to the screen
 
 ### Drawing
-`DrawModes:` 
+`DrawModes:` \
 `SHAPE_2D` \
 `SHAPE_2D_LIGHT` \
 `TEXTURE_2D` \
 `TEXT`
+> enum for draw modes if you want to draw simple shapes, textures, text and if they should be affected by lighting
 
-`void ClearBackground(Color color);` \
-`void BeginDrawing(DrawModes mode, bool mode2D);` \
+`void ClearBackground(Color color);`
+> In the next frame, the previous frame will be cleared with the chosen color
+
+`void BeginDrawing(DrawModes mode, bool mode2D);`
+> Start drawing and choose a draw mode (which activates the corresponding shader)
+
 `void EndDrawing();`
+> End drawing (Unbind the current active shader)
 
 ### Input
-`bool IsKeyDown(int key);` \
-`bool IsKeyUp(int key);` \
-`bool IsKeyPressedOnce(int key);` \
-`bool IsKeyReleased(int key);`
+`bool IsKeyDown(int key);`
+> Return if corresponding key from the keyboard is held down
 
-`bool IsMouseDown(int button);` \
-`bool IsMousePressedOnce(int button);` \
-`bool IsMouseReleased(int button);` \
-`glm::vec2 GetMousePosition();` \
+`bool IsKeyUp(int key);`
+> Reurn if correspoinding key is up
+
+`bool IsKeyPressedOnce(int key);`
+> Return if key is pressed (once)
+
+`bool IsKeyReleased(int key);`
+> Return if key is released (once)
+
+`bool IsMouseDown(int button);`
+> Return if corresponding mouse button is held down
+
+`bool IsMousePressedOnce(int button);`
+> Return if corresponding mouse button is pressed (once)
+
+`bool IsMouseReleased(int button);`
+> Return if corresponding mouse button is released
+
+`glm::vec2 GetMousePosition();`
+> Return the position of the cursor on the screen / window
+
 `glm::vec2 GetMousePositionWorld();`
+> Return the position of the cursor in the 2D space (affected by camera position)
 
 ### Collisions
 `bool CheckCollisionRects(Rectangle one, Rectangle two);` \
 `bool CheckCollisionCircleRect(Circle one, Rectangle two);` \
 `bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);`
 
+### Drawing 2D textures
+`TextureFiltering:`
+`NEAREST`
+`LINEAR`
+
+`Texture2D(std::string imagePath, glm::vec2 size, TextureFiltering mode);`
+
+`void DrawTexture2D(Texture2D* texture, glm::vec2 position, Color color);`
+
+`void DrawTexture2DRotated(Texture2D* texture, glm::vec2 position, float angle);`
+
 ### Drawing text
-`void DrawText(glm::vec2 position, float scale, std::string text, Color color);` \
-`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);` \
+`void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
+
+`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);`
+
 `void ShowDetails(); `
 
-`glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);` \
+`glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);`
+
 `void Text::Init(std::string fontPath, std::string fontName, TextureFiltering filteringMode);`
 
 ### Drawing primitives
