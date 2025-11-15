@@ -96,11 +96,6 @@ namespace CPL {
     }
 
     void Text::DrawText(const Shader& shader, const std::string& text, glm::vec2 pos, const float scale, const Color& color) {
-        const glm::mat4 textProjection = glm::ortho(
-         0.0f, static_cast<float>(SCREEN_WIDTH),
-         0.0f, static_cast<float>(SCREEN_HEIGHT)
-        );
-        shader.SetMatrix4fv("projection", textProjection);
         shader.SetVector3f("textColor", {color.r, color.g, color.b});
         glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(VAO);
@@ -109,18 +104,18 @@ namespace CPL {
             const auto [TextureID, Size, Bearing, Advance] = Fonts[currentFont].at(c);
 
             const float xPos = pos.x + static_cast<float>(Bearing.x) * scale;
-            const float yPos = pos.y - static_cast<float>((Size.y - Bearing.y)) * scale;
+            const float yPos = pos.y + (float)(Fonts[currentFont]['H'].Bearing.y - Bearing.y) * scale;
             const float width = static_cast<float>(Size.x) * scale;
             const float height = static_cast<float>(Size.y) * scale;
 
             const float vertices[6][4] = {
-                { xPos, yPos + height, 0.0f, 0.0f},
-                { xPos, yPos, 0.0f, 1.0f},
-                { xPos + width, yPos, 1.0f, 1.0f},
+                { xPos, yPos + height, 0.0f, 1.0f},
+                { xPos, yPos, 0.0f, 0.0f},
+                { xPos + width, yPos, 1.0f, 0.0f},
 
-                { xPos, yPos + height, 0.0f, 0.0f},
-                { xPos + width, yPos, 1.0f, 1.0f},
-                { xPos + width, yPos + height, 1.0f, 0.0f}
+                { xPos, yPos + height, 0.0f, 1.0f},
+                { xPos + width, yPos, 1.0f, 0.0f},
+                { xPos + width, yPos + height, 1.0f, 1.0f}
             };
 
             glBindTexture(GL_TEXTURE_2D, TextureID);

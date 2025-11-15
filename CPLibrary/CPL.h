@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <queue>
 #include <iostream>
 #include <random>
 #include "Colors.h"
@@ -71,6 +72,7 @@ namespace CPL {
     inline std::unordered_map<int, bool> prevMouseButtons;
 
     inline GLFWwindow* window;
+    inline std::queue<unsigned int> charQueue;
 
     struct Audio;
     class AudioManager;
@@ -82,9 +84,16 @@ namespace CPL {
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const {
             auto view = glm::mat4(1.0f);
-            view = glm::translate(view, glm::vec3(-glm::vec2{position.x - static_cast<float>(SCREEN_WIDTH) / 2.0f, position.y - static_cast<float>(SCREEN_HEIGHT) / 2.0f}, 0.0f));
-            view  = glm::scale(view, glm::vec3(zoom, zoom, 1.0f));
+            view = glm::translate(view, glm::vec3(-position, 0.0f));
+
+            view = glm::translate(view, glm::vec3(position, 0.0f));
             view = glm::rotate(view, glm::radians(rotation), glm::vec3(0, 0, 1));
+            view = glm::translate(view, glm::vec3(-position, 0.0f));
+
+            view = glm::translate(view, glm::vec3(position, 0.0f));
+            view = glm::scale(view, glm::vec3(zoom, zoom, 1.0f));
+            view = glm::translate(view, glm::vec3(-position, 0.0f));
+
             return view;
         }
     };
@@ -136,9 +145,23 @@ namespace CPL {
         glUseProgram(0);
     }
 
-    // [[maybe_unused]] so CLion doesn't annoy me with redundant window
     inline void framebuffer_size_callback([[maybe_unused]] GLFWwindow* window, const int width, const int height) {
         glViewport(0, 0, width, height);
+    }
+
+    inline bool charInputEnabled = false;
+    inline void CharCallback(GLFWwindow* window, unsigned int codepoint) {
+	if (charInputEnabled) {
+            charQueue.push(codepoint);
+	} 
+	else if (!charQueue.empty()) {
+	    charQueue.pop();
+	}
+
+    }
+
+    inline void InitCharPressed(GLFWwindow* window) {
+        glfwSetCharCallback(window, CharCallback);
     }
 
     inline double lastTime = 0.0;
@@ -230,6 +253,18 @@ namespace CPL {
     inline bool IsKeyReleased(const int key) {
         return !keyStates[key] && prevKeyStates[key];
     }
+    inline unsigned int GetCharPressed() {
+	charInputEnabled = true;
+        if (charQueue.empty())
+            return 0;
+
+        unsigned int c = charQueue.front();
+        charQueue.pop();
+	
+	charInputEnabled = false;
+	while (!charQueue.empty()) charQueue.pop();
+        return c;
+    }
 
     inline bool IsMouseDown(const int button) {
         return mouseButtons[button];
@@ -245,11 +280,15 @@ namespace CPL {
         glfwGetCursorPos(window, &x, &y);
         return {x, y};
     }
-    inline glm::vec2 GetMousePositionWorld() {
-        const glm::vec2 screenCenter = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
-        glm::vec2 world;
-        world.x = (GetMousePosition().x - screenCenter.x) / camera.zoom + camera.position.x;
-        world.y = (GetMousePosition().y - screenCenter.y) / camera.zoom + camera.position.y;
-        return world;
+
+    inline glm::vec2 GetScreenToWorld2D(const glm::vec2& screenPos) {
+        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 inv = glm::inverse(projection * view);
+        float x = (2.0f * screenPos.x) / GetScreenWidth()  - 1.0f;
+        float y = 1.0f - (2.0f * screenPos.y) / GetScreenHeight();
+        glm::vec4 ndc = { x, y, 0.0f, 1.0f };
+        glm::vec4 world = inv * ndc;
+
+        return glm::vec2(world.x, world.y);
     }
 }

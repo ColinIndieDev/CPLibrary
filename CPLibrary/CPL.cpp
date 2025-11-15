@@ -115,6 +115,7 @@ namespace CPL {
         Text::Init("assets/fonts/default.ttf", "defaultFont", NEAREST);
         AudioManager::Init();
 	screenQuad.Init(width, height);
+	InitCharPressed(window);
 
         // ----- For the font & 2D textures ----- //
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
