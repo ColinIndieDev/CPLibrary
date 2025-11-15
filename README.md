@@ -100,6 +100,9 @@ Others:
 `float GetTime();`
 > Return current time in s
 
+`glm::vec2 GetScreenToWorld2D(glm::vec2 position)`
+> Convert the position to world coordinates
+
 ### Random
 > [!IMPORTANT]
 > 100% = 100.0
@@ -237,6 +240,9 @@ Others:
 `bool IsKeyReleased(int key);`
 > Return if key is released (once)
 
+`unsigned int GetCharPressed()`
+> Returns the current char pressed as a unsigned int
+
 `bool IsMouseDown(int button);`
 > Return if corresponding mouse button is held down
 
@@ -249,24 +255,36 @@ Others:
 `glm::vec2 GetMousePosition();`
 > Return the position of the cursor on the screen / window
 
-`glm::vec2 GetMousePositionWorld();`
-> Return the position of the cursor in the 2D space (affected by camera position)
-
 ### Collisions
-`bool CheckCollisionRects(Rectangle one, Rectangle two);` \
-`bool CheckCollisionCircleRect(Circle one, Rectangle two);` \
+`bool CheckCollisionRects(Rectangle one, Rectangle two);`
+> Return true if two rectangles collide
+
+`bool CheckCollisionCircleRect(Circle one, Rectangle two);`
+> Return true if a circle collides with a rectangle
+
 `bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);`
+> Return true if a 2d vector collides with a rectangle
+
+`bool CheckCollisionCircleCircle(const Circle& one, const Circle& two);`
+> Return true if two circles collide
+
+`bool CheckCollisionVec2Circle(const glm::vec2& one, const Circle& two);`
+> Return true if a 2d vector collides with a circle
 
 ### Drawing 2D textures
 `TextureFiltering:`
 `NEAREST`
 `LINEAR`
+> enum for filtering modes
 
 `Texture2D(std::string imagePath, glm::vec2 size, TextureFiltering mode);`
+> Load a texture from an image file with a given size in pixels and a filtering mode
 
 `void DrawTexture2D(Texture2D* texture, glm::vec2 position, Color color);`
+> Draw a texture on the screen with a position and color manipulation (no manipulation -> WHITE)
 
-`void DrawTexture2DRotated(Texture2D* texture, glm::vec2 position, float angle);`
+`void DrawTexture2DRotated(Texture2D* texture, glm::vec2 position, float angle, Color color);`
+> Draw a texture with rotation
 
 ### Drawing text
 `void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
