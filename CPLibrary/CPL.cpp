@@ -39,13 +39,13 @@ namespace CPL {
 
         BeginDrawing(TEXT, false);
         const std::string fpsText = "FPS: " + std::to_string(GetFPS());
-        DrawTextShadow({0, 25}, {2, 2}, 0.3, fpsText, WHITE, DARK_GRAY);
+        DrawTextShadow({0, GetScreenHeight() - 130}, {2, 2}, 0.3, fpsText, WHITE, DARK_GRAY);
         const std::string vendorText = "Vendor: " + vendorString;
-        DrawTextShadow({0, 60}, {2, 2}, 0.3, vendorText, WHITE, DARK_GRAY);
+        DrawTextShadow({0, GetScreenHeight() - 95}, {2, 2}, 0.3, vendorText, WHITE, DARK_GRAY);
         const std::string rendererText = "GPU: " + rendererString;
-        DrawTextShadow({0, 95}, {2, 2}, 0.3, rendererText, WHITE, DARK_GRAY);
+        DrawTextShadow({0, GetScreenHeight() - 60}, {2, 2}, 0.3, rendererText, WHITE, DARK_GRAY);
         const std::string versionText = "Version: " + versionString;
-        DrawTextShadow({0, 130}, {2, 2}, 0.3, versionText, WHITE, DARK_GRAY);
+        DrawTextShadow({0, GetScreenHeight() - 25}, {2, 2}, 0.3, versionText, WHITE, DARK_GRAY);
         EndDrawing();
     }
 
@@ -92,11 +92,11 @@ namespace CPL {
 
         SCREEN_WIDTH = width;
         SCREEN_HEIGHT = height;
-        projection = glm::ortho(
-            0.0f, static_cast<float>(width),
-            static_cast<float>(height), 0.0f,
-            -1.0f, 1.0f
-        );
+
+        projection = glm::ortho(0.0f, static_cast<float>(width), 
+			static_cast<float>(height), 0.0f,
+			-1.0f, 1.0f
+		      );
 
         window = glfwCreateWindow(width, height, title, nullptr, nullptr);
         if (window == nullptr) {
@@ -112,7 +112,11 @@ namespace CPL {
         }
 
         InitShaders();
-        Text::Init("assets/fonts/default.ttf", "defaultFont", NEAREST);
+        #ifdef __EMSCRIPTEN__
+            Text::Init("/assets/fonts/default.ttf", "defaultFont", NEAREST);
+        #else
+	    Text::Init("assets/fonts/default.ttf", "defaultFont", NEAREST);
+	#endif
         AudioManager::Init();
 	screenQuad.Init(width, height);
 	InitCharPressed(window);
@@ -144,11 +148,19 @@ namespace CPL {
     }
 
     void InitShaders() {
-        shapeShader = Shader("CPLibrary/shaders/shader.vert", "CPLibrary/shaders/shader.frag");
-        textShader = Shader("CPLibrary/shaders/text.vert", "CPLibrary/shaders/text.frag");
-        textureShader = Shader("CPLibrary/shaders/texture.vert", "CPLibrary/shaders/texture.frag");
-	lightShapeShader = Shader("CPLibrary/shaders/lightShader.vert", "CPLibrary/shaders/lightShader.frag");
-	screenShader = Shader("CPLibrary/shaders/screen.vert", "CPLibrary/shaders/screen.frag");
+	#ifdef __EMSCRIPTEN__
+            shapeShader = Shader("/assets/shaders/shader_web.vert", "/assets/shaders/shader_web.frag");
+            textShader = Shader("/assets/shaders/text_web.vert", "/assets/shaders/text_web.frag");
+            textureShader = Shader("/assets/shaders/texture_web.vert", "/assets/shaders/texture_web.frag");
+	    lightShapeShader = Shader("/assets/shaders/lightShader_web.vert", "/assets/shaders/lightShader_web.frag");
+    	    screenShader = Shader("/assets/shaders/screen_web.vert", "/assets/shaders/screen_web.frag");
+	#else
+	    shapeShader = Shader("assets/shaders/shader.vert", "assets/shaders/shader.frag");
+            textShader = Shader("assets/shaders/text.vert", "assets/shaders/text.frag");
+            textureShader = Shader("assets/shaders/texture.vert", "assets/shaders/texture.frag");
+    	    lightShapeShader = Shader("assets/shaders/lightShader.vert", "assets/shaders/lightShader.frag");
+	    screenShader = Shader("assets/shaders/screen.vert", "assets/shaders/screen.frag");
+        #endif
     }
 
     void BeginDrawing(const DrawModes& mode, const bool mode2D) {

@@ -48,7 +48,7 @@ namespace CPL {
             glTexImage2D(
                 GL_TEXTURE_2D,
                 0,
-                GL_RED,
+                GL_R8,
                 static_cast<GLsizei>(face->glyph->bitmap.width),
                 static_cast<GLsizei>(face->glyph->bitmap.rows),
                 0,
@@ -96,7 +96,7 @@ namespace CPL {
     }
 
     void Text::DrawText(const Shader& shader, const std::string& text, glm::vec2 pos, const float scale, const Color& color) {
-        shader.SetVector3f("textColor", {color.r, color.g, color.b});
+	shader.SetVector3f("textColor", {color.r, color.g, color.b});
         glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(VAO);
 
@@ -128,7 +128,7 @@ namespace CPL {
             pos.x += static_cast<float>(Advance >> 6) * scale;
         }
         glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);    
     }
 
     glm::vec2 Text::GetTextSize(const std::string& fontName, const std::string& text, const float scale) {

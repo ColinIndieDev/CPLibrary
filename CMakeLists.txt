@@ -4,14 +4,29 @@ project(Example)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# GLFW
 include(FetchContent)
-FetchContent_Declare(
-        glfw
-        GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG master
-)
-FetchContent_MakeAvailable(glfw)
+
+if (EMSCRIPTEN)
+    set(GLFW_BUILD_WSI_EMSCRIPTEN ON CACHE BOOL "" FORCE)
+    set(GLFW_USE_POSIX_TIME OFF CACHE BOOL "" FORCE)
+    set(GLFW_USE_EMSCRIPTEN ON CACHE BOOL "" FORCE)
+
+    set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_COCOA OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_WIN32 OFF CACHE BOOL "" FORCE)
+    set(GLFW_USE_OSMESA OFF CACHE BOOL "" FORCE)
+endif()
+
+# GLFW
+if(NOT EMSCRIPTEN)
+    FetchContent_Declare(
+            glfw
+            GIT_REPOSITORY https://github.com/glfw/glfw.git
+            GIT_TAG master
+    )
+    FetchContent_MakeAvailable(glfw)
+endif()
 
 # GLM
 FetchContent_Declare(
@@ -50,7 +65,8 @@ target_include_directories(miniaudio INTERFACE "${CMAKE_BINARY_DIR}/_deps/miniau
 # GLAD
 add_subdirectory(external/glad)
 
-add_executable(Example src/main.cpp
+# Remove WIN32 if is not for release
+add_executable(Example WIN32 src/main.cpp
 
         CPLibrary/Shader.cpp
         CPLibrary/Shader.h
@@ -82,8 +98,45 @@ add_executable(Example src/main.cpp
         CPLibrary/Audio.h
 )
 
+# Disable opening terminal (release)
+if (WIN32)
+	target_link_options(Example PRIVATE -Wl,/ENTRY:mainCRTStartup)
+endif()
+
 # Include directories
 target_include_directories(Example PRIVATE ${stb_SOURCE_DIR})
 
 # Link libraries
-target_link_libraries(Example PRIVATE glfw glad freetype miniaudio glm)
+target_link_libraries(Example PRIVATE glad freetype miniaudio glm)
+
+if (NOT EMSCRIPTEN)
+    target_link_libraries(Example PRIVATE glfw)
+endif()
+
+if(EMSCRIPTEN)
+    set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/assets")
+    target_link_options(Example PRIVATE
+        "--preload-file" "${ASSETS_DIR}@/assets"
+	"-sMIN_WEBGL_VERSION=2"
+	"-sMAX_WEBGL_VERSION=2"
+        "-sUSE_GLFW=3"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sFORCE_FILESYSTEM=1"
+    )
+
+    # Debugging
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_options(Example PRIVATE
+            "-sSAFE_HEAP=1"
+            "-gsource-map"
+            "-sASSERTIONS=2"
+            "-sSTACK_SIZE=1mb"
+            "-sDISABLE_EXCEPTION_CATCHING=0"
+            "-fexceptions"
+            "-sGL_DEBUG=1"
+            "-g"
+        )
+    endif()
+
+    set_target_properties(Example PROPERTIES SUFFIX ".html")
+endif()

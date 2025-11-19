@@ -12,7 +12,11 @@
 #include "KeyInputs.h"
 #include "Logging.h"
 
-#define PRIORITIZE_GPU_BY_VENDOR extern "C" { __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; }
+#ifndef __EMSCRIPTEN__
+    #define PRIORITIZE_GPU_BY_VENDOR extern "C" { __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; }
+#else
+    #define PRIORITIZE_GPU_BY_VENDOR
+#endif
 
 namespace CPL {
     enum DrawModes {

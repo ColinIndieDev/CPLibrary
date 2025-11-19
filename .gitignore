@@ -11,4 +11,5 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 build
+build_web
 .cache
