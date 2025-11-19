@@ -55,6 +55,10 @@ void MainLoop() {
 int main() {
     // Create 800x600 window with title
     InitWindow(800, 600, "Welcome to CPL");
+    // Set the window icon
+    #ifndef __EMSCRIPTEN
+        SetWindowIcon("assets/images/logo.png");
+    #endif
 
     // Add point lights to vector
     lights.push_back(PointLight({200, 200}, 450.0f, 2.0f, GREEN));
