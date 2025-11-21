@@ -40,12 +40,12 @@ and inspired by the ones from Raylib
 ## Structure
 + `assets/`
 + + `fonts/`
-+ `external/`
-+ + `glad/`
-+ `CPLibrary/`
 + + `shaders/`
 + +  + `.frag (fragment shaders)`
 + +  +  `.vert (vertex shaders)`
++ `external/`
++ + `glad/`
++ `CPLibrary/`
 + + `shapes2D/`
 + + `timers/`
 + + `CPLibrary.h`  
@@ -62,24 +62,42 @@ the functionality from the files to a function or contains its own you can call.
 ## Functionality
 CPL currently only supports 2D, but 3D is planned for the future. \
 Since CPL is written in C++ and open source, you may look up the code \
-and modify it potentially for personal purpose
+and modify it potentially for personal use. Besides of making games \ 
+for Desktop (Windows), the framework + the code can be converted \
+to Web with Emscripten.
 
 2D:
-- drawing primitives like rectangles, circles, triangles and more!
-- drawing 2D textures from every image format (.png, .jpg, ...) with stb
-- drawing texts with custom fonts with freetype
-- 2D camera
-- creating and drawing tilemaps
-- 2D lighting
-- post processing
+- Primitives (Lines, Rectangles, Circles etc.)
+- Textures
+- Text + Fonts
+- Camera
+- Tilemaps
+- Lighting
+- Post Processing
 
 Others:
-- random number generator or probabilities by percent
-- key and mouse inputs
-- audio for playing sounds & music
-- timer & cooldowns
+- Random number generator or by percent
+- Key and Mouse Inputs
+- Sounds & Music
+- Timer
 
 ## Documentation
+
+### Used libraries
+- GLAD
+> Provides OpenGL functions
+
+- GLFW
+> Window and Input
+
+- STB Image
+> Textures
+
+- Freetype
+> Text & Fonts
+
+- Miniaudio
+> Sounds and Music
 
 ### General stuff
 `PRIORITIZE_CPU_BY_VENDOR` 
@@ -89,7 +107,7 @@ Others:
 > Only works for Windows (OS)
 
 `void UpdateCPL();` 
-> Update framework's data (f.e. deltaTime, FPS, timer etc.)
+> Update framework (f.e. deltaTime, FPS, timer etc.)
 
 `int GetFPS();` 
 > Return current FPS
@@ -98,7 +116,7 @@ Others:
 > Return current delta time
 
 `float GetTime();`
-> Return current time in s
+> Return current time in seconds
 
 `glm::vec2 GetScreenToWorld2D(glm::vec2 position)`
 > Convert the position to world coordinates
@@ -115,15 +133,15 @@ Others:
 > Return random float between min & max
 
 `bool RandByPercentInt(int percent);` 
-> Returns true with a probability of 'percent'
+> Return true with a probability of 'percent'
 
 `bool RandByPercentFloat(float percent); `
-> Returns true with a probability of 'percent'
+> Return true with a probability of 'percent'
 
 ### Timer
 > [!IMPORTANT]
-> duration in s, i
-> f loop is true, then timer updates every frame even without being in the game loop
+> duration in s \
+> if loop is true, then timer updates every frame even without being in the game loop
 
 `void TimerManager::AddTimer(float duration, bool loop, std::function<void()> event);` 
 > Add an event which should be executed in 'duration'
@@ -132,7 +150,7 @@ Others:
 > Stop all current timers and events
 
 `void TimerManager::ClearTimers();`
-> Deleted all current timers and events
+> Delete all current timers and events
 
 ### Audio
 `Audio AudioManager::LoadAudio(std::string audioPath);` 
@@ -201,7 +219,7 @@ Others:
 
 ### 2D Lighting
 `class PointLight(glm::vec2 position, float radius, float intensity, Color color);`
-> Create a pointLight on a certain position with a
+> Create a point light on a certain position with a
 > radius, intensity of the light and the light color
 
 `SetAmbientLight(float ambientStrength);` 
@@ -225,14 +243,14 @@ Others:
 > Start drawing and choose a draw mode (which activates the corresponding shader)
 
 `void EndDrawing();`
-> End drawing (Unbind the current active shader)
+> End drawing (unbind the current active shader)
 
 ### Input
 `bool IsKeyDown(int key);`
 > Return if corresponding key from the keyboard is held down
 
 `bool IsKeyUp(int key);`
-> Reurn if correspoinding key is up
+> Return if correspoinding key is up
 
 `bool IsKeyPressedOnce(int key);`
 > Return if key is pressed (once)
@@ -253,7 +271,7 @@ Others:
 > Return if corresponding mouse button is released
 
 `glm::vec2 GetMousePosition();`
-> Return the position of the cursor on the screen / window
+> Returns the position of the cursor on the screen / window
 
 ### Collisions
 `bool CheckCollisionRects(Rectangle one, Rectangle two);`
@@ -272,8 +290,8 @@ Others:
 > Return true if a 2d vector collides with a circle
 
 ### Drawing 2D textures
-`TextureFiltering:`
-`NEAREST`
+`TextureFiltering:` \
+`NEAREST` \
 `LINEAR`
 > enum for filtering modes
 
@@ -288,17 +306,28 @@ Others:
 
 ### Drawing text
 `void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
+> Draw text on the screen
 
 `void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);`
+> Draw text with shadow
 
 `void ShowDetails(); `
+> Display all stats (f.e. GPU Info or FPS)
 
 `glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);`
+> Get text size (width & height)
 
 `void Text::Init(std::string fontPath, std::string fontName, TextureFiltering filteringMode);`
+> Add new fonts
+
+`void Text::Use(std::string fontName);`
+> Use selected font for text drawn after this call
 
 ### Drawing primitives
-!IMPORTANT! RGBA 0-255 & angle in degrees \
+> [!IMPORTANT]
+> RGBA values between 0 and 255 \
+> Angles in degrees
+
 `void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);` \
 `void DrawRectangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);` \
 `void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);` \
