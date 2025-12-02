@@ -13,5 +13,6 @@
 #include "../CPLibrary/shapes2D/ScreenQuad.h"
 #include "../CPLibrary/shapes2D/Texture2D.h"
 #include "../CPLibrary/shapes2D/Triangle.h"
+#include "../CPLibrary/shapes2D/Tilemap.h"
 #include "../CPLibrary/timers/TimerManager.h"
 #include <GLFW/glfw3.h>

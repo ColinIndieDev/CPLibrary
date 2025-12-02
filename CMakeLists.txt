@@ -65,43 +65,38 @@ target_include_directories(miniaudio INTERFACE "${CMAKE_BINARY_DIR}/_deps/miniau
 # GLAD
 add_subdirectory(external/glad)
 
-# Remove WIN32 if is not for release
-add_executable(Example WIN32 src/main.cpp
-
-        CPLibrary/Shader.cpp
-        CPLibrary/Shader.h
-        CPLibrary/shapes2D/Triangle.cpp
-        CPLibrary/shapes2D/Triangle.h
-        CPLibrary/CPL.h
-        CPLibrary/CPL.cpp
-        CPLibrary/shapes2D/Rectangle.cpp
-        CPLibrary/shapes2D/Rectangle.h
-        CPLibrary/shapes2D/Circle.cpp
-        CPLibrary/shapes2D/Circle.h
-        CPLibrary/Colors.h
-        CPLibrary/KeyInputs.h
-        CPLibrary/Text.cpp
-        CPLibrary/Text.h
-        CPLibrary/shapes2D/Line.cpp
-        CPLibrary/shapes2D/Line.h
-        CPLibrary/shapes2D/Texture2D.cpp
-        CPLibrary/shapes2D/Texture2D.h
+add_executable(Example src/main.cpp
+    CPLibrary/Shader.cpp
+    CPLibrary/Shader.h
+    CPLibrary/shapes2D/Triangle.cpp
+    CPLibrary/shapes2D/Triangle.h
+    CPLibrary/CPL.h
+    CPLibrary/CPL.cpp
+    CPLibrary/shapes2D/Rectangle.cpp
+    CPLibrary/shapes2D/Rectangle.h
+    CPLibrary/shapes2D/Circle.cpp
+    CPLibrary/shapes2D/Circle.h
+    CPLibrary/Colors.h
+    CPLibrary/KeyInputs.h
+    CPLibrary/Text.cpp
+    CPLibrary/Text.h
+    CPLibrary/shapes2D/Line.cpp
+    CPLibrary/shapes2D/Line.h
+    CPLibrary/shapes2D/Texture2D.cpp
+    CPLibrary/shapes2D/Texture2D.h
 	CPLibrary/shapes2D/ScreenQuad.cpp
 	CPLibrary/shapes2D/ScreenQuad.h
 	CPLibrary/shapes2D/PointLight.h
-        CPLibrary/timers/Timer.h
-        CPLibrary/timers/TimerManager.cpp
-        CPLibrary/timers/TimerManager.h
-        CPLibrary/CPLibrary.h
-        CPLibrary/Logging.h
-        CPLibrary/Audio.cpp
-        CPLibrary/Audio.h
+    CPLibrary/shapes2D/Tilemap.cpp
+    CPLibrary/shapes2D/Tilemap.h
+    CPLibrary/timers/Timer.h
+    CPLibrary/timers/TimerManager.cpp
+    CPLibrary/timers/TimerManager.h
+    CPLibrary/CPLibrary.h
+    CPLibrary/Logging.h
+    CPLibrary/Audio.cpp
+    CPLibrary/Audio.h
 )
-
-# Disable opening terminal (release)
-if (WIN32)
-	target_link_options(Example PRIVATE -Wl,/ENTRY:mainCRTStartup)
-endif()
 
 # Include directories
 target_include_directories(Example PRIVATE ${stb_SOURCE_DIR})
@@ -110,15 +105,27 @@ target_include_directories(Example PRIVATE ${stb_SOURCE_DIR})
 target_link_libraries(Example PRIVATE glad freetype miniaudio glm)
 
 if (NOT EMSCRIPTEN)
+    set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
+
     target_link_libraries(Example PRIVATE glfw)
+    
+    # Linux-specific: Link required system libraries
+    if (UNIX AND NOT APPLE)
+        target_link_libraries(Example PRIVATE
+            dl          # Dynamic loading
+            pthread     # Threading
+            m           # Math library
+        )
+    endif()    
 endif()
 
 if(EMSCRIPTEN)
     set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/assets")
     target_link_options(Example PRIVATE
         "--preload-file" "${ASSETS_DIR}@/assets"
-	"-sMIN_WEBGL_VERSION=2"
-	"-sMAX_WEBGL_VERSION=2"
+	    "-sMIN_WEBGL_VERSION=2"
+	    "-sMAX_WEBGL_VERSION=2"
         "-sUSE_GLFW=3"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sFORCE_FILESYSTEM=1"
@@ -137,6 +144,5 @@ if(EMSCRIPTEN)
             "-g"
         )
     endif()
-
     set_target_properties(Example PROPERTIES SUFFIX ".html")
 endif()
