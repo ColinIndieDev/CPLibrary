@@ -20,7 +20,7 @@ void MainLoop() {
     ClearBackground(BLACK);
 
     // Start drawing shapes affected by lighting
-    BeginDrawing(SHAPE_2D_LIGHT, false);
+    BeginDrawing(SHAPE_2D_LIGHT, false); 
 
     // Set ambient strength
     SetAmbientLight(0.0f);
