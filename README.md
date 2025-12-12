@@ -289,6 +289,32 @@ Others:
 `bool CheckCollisionVec2Circle(const glm::vec2& one, const Circle& two);`
 > Return true if a 2d vector collides with a circle
 
+### 2D Tilemap
+> [!IMPORTANT]
+> If using the provided functions for the tilemap you need to access them from a tilemap instance. For example:
+> Tilemap map;
+> map.BeginEditing();
+> ...
+> Also note that only textures (Texture2D) can be added to the tilemap
+
+`class Tilemap;`
+> Create a 2D tilemap
+
+`void BeginEditing();`
+> Enable editing for adding tiles (clears all tiles from before)
+
+`void AddTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);`
+> Add a texture to the tilemap
+
+`bool TileExist(glm::vec2 position, glm::vec2 size);`
+> Returns if a tile inside the map exists at the given position and size
+
+`void ChechCollidableTiles(float size);`
+> Used to tag the tiles "collidable" by checking if they can collide with other objects (without neighbours). When really implementing collision iterate through the tiles in the tilemap if it is tagged "collidable" and do whatever should happen in that process
+
+`void Draw(Shader shader);`
+> Draw the tilemap to the screen (select "textureShader" as the shader)
+
 ### Drawing 2D textures
 `TextureFiltering:` \
 `NEAREST` \
@@ -329,6 +355,34 @@ Others:
 > Angles in degrees
 
 `void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);` \
+> Draw a rectangle
+
 `void DrawRectangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);` \
-`void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);` \
+> Draw a rectangle with rotation
+
+`void DrawRectangleOutline(glm::vec2 position, glm::vec2 size, Color color);` \
+> Draw only the rectangle outline
+
 `void DrawRectangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+> Draw only the rectangle outline with rotation
+
+`void DrawTriangle(glm::vec2 position, glm::vec2 size, Color color);` \
+> Draw a triangle
+
+`void DrawTriangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);` \
+> Draw a triangle with rotation
+
+`void DrawTriangleOutline(glm::vec2 position, glm::vec2 size, Color color);` \
+> Draw only the triangle outline
+
+`void DrawTriangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+> Draw only the triangle outline with rotation
+
+`void DrawCircle(glm::vec2 position, float radius, Color color);`
+> Draw a circle
+
+`void DrawCircleOutline(glm::vec2 position, float radius, Color color);`
+> Draw only the circle outline
+
+`void DrawLine(glm::vec2 startPos, glm::vec2 endPos, Color color);`
+> Draw a line
