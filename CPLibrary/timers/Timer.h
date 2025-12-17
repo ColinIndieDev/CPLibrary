@@ -10,16 +10,16 @@ namespace CPL {
         bool loop = false;
         bool finished = false;
         bool paused = false;
-        std::function<void()> callback;
+        std::function<void(Timer*)> callback;
 
-        Timer(const float time, const bool repeat, std::function<void()> cb)
+        Timer(const float time, const bool repeat, std::function<void(Timer*)> cb)
             : duration(time), loop(repeat), callback(std::move(cb)) {}
 
         void Update(const float delta) {
             if (finished || paused) return;
             elapsed += delta;
             if (elapsed >= duration) {
-                callback();
+                callback(this);
                 if (loop) {
                     elapsed = 0.0f;
                 } else {
@@ -30,5 +30,6 @@ namespace CPL {
 
         void Pause() { paused = true; }
         void Resume() { paused = false; }
+        void Stop() { finished = true; }
     };
 }

@@ -28,6 +28,7 @@ enum DrawModes {
     TEXTURE_2D,
     TEXT,
     SHAPE_2D_LIGHT,
+    TEXTURE_2D_LIGHT,
 };
 enum TextureFiltering {
     NEAREST,
@@ -69,6 +70,7 @@ extern Shader shapeShader;
 extern Shader textShader;
 extern Shader textureShader;
 extern Shader lightShapeShader;
+extern Shader lightTextureShader;
 extern Shader screenShader;
 inline DrawModes currentDrawMode;
 
