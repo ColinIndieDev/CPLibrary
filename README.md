@@ -1,3 +1,5 @@
+![CPLlogo](assets/images/logo.png)
+
 # CPLibrary (CPL)
 ## About
 CPL (named by me) is my custom framework made from scratch. This framework is entirely written \
