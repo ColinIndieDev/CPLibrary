@@ -2,23 +2,24 @@
 ## About
 CPL (named by me) is my custom framework made from scratch. This framework is entirely written \
 in C++ and uses OpenGL & other low-level libraries like GLFW, GLAD, STBImage etc. \
-Currently I worked on this just for 1-2 months
+Currently I worked on this just for around 3 months
 ## Example code
 
-`#include "../CPLibrary/CPLibrary.h"`
+```
+#include "../CPLibrary/CPLibrary.h"
 
-`using namespace CPL;` \
-`PRIORITIZE_GPU_BY_VENDOR`
+using namespace CPL;
+PRIORITIZE_GPU_BY_VENDOR // optional
 
-`int main() {` \
-    `InitWindow(800, 600, "Welcome to CPL");`
+int main() {
+    InitWindow(800, 600, "Welcome to CPL");
 
     while (!WindowShouldClose()) {
         UpdateCPL();
 
         ClearBackground(BLACK);
         
-        BeginDrawing(SHAPE_2D, true);
+        BeginDrawing(SHAPE, true);
         DrawRectangle({0, 0}, {100, 100}, RED);
 
         BeginDrawing(TEXT, false);
@@ -32,7 +33,9 @@ Currently I worked on this just for 1-2 months
     CloseWindow();
 
     return 0;
-`}`
+}
+```
+An actual example code can be found inside the `src/` folder!
 
 As you can see, the functions and naming conventions are pretty similar \
 and inspired by the ones from Raylib
@@ -40,6 +43,7 @@ and inspired by the ones from Raylib
 ## Structure
 + `assets/`
 + + `fonts/`
++ + `images/`
 + + `shaders/`
 + +  + `.frag (fragment shaders)`
 + +  +  `.vert (vertex shaders)`
@@ -52,9 +56,9 @@ and inspired by the ones from Raylib
 + + `CPL.cpp & .h`
 + + `more .cpp & .h files for other functionalities`
 
-The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one. In `external` is the implementation from `glad` downloaded from its offical website.
+The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one. In `external/` is the implementation from `glad/` downloaded from its offical website.
 All code for the shaders like fragment as well as vertex are all stored inside the
-`shader` folder. Inside `shapes2D`, classes of primitves (rectangle, circle etc.), textures & screen quad
+`shader/` folder. Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
 are contained. The other files for the functionalities are below. `CPLibrary.h` just includes all header files
 so that you only need to use to include `CPLibrary.h` to get all available functions. `CPL.cpp` & `.h` implements
 the functionality from the files to a function or contains its own you can call.
@@ -63,7 +67,7 @@ the functionality from the files to a function or contains its own you can call.
 CPL currently only supports 2D, but 3D is planned for the future. \
 Since CPL is written in C++ and open source, you may look up the code \
 and modify it potentially for personal use. Besides of making games \ 
-for Desktop (Windows), the framework + the code can be converted \
+for Desktop (Windows & Linux), the framework + the code can be converted \
 to Web with Emscripten.
 
 2D:
@@ -101,7 +105,7 @@ Others:
 
 ### General stuff
 `PRIORITIZE_CPU_BY_VENDOR` 
-> Use deprecated GPU (NVIDIA or AMD) instead of integrated ones (Intel)
+> Use these GPUs (NVIDIA or AMD) instead of integrated ones (Intel)
 
 > [!IMPORTANT]
 > Only works for Windows (OS)
@@ -230,9 +234,10 @@ Others:
 
 ### Drawing
 `DrawModes:` \
-`SHAPE_2D` \
-`SHAPE_2D_LIGHT` \
-`TEXTURE_2D` \
+`SHAPE` \
+`SHAPE_LIGHT` \
+`TEXTURE` \
+`TEXTURE_LIGHT` \
 `TEXT`
 > enum for draw modes if you want to draw simple shapes, textures, text and if they should be affected by lighting
 
@@ -306,6 +311,9 @@ Others:
 `void AddTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);`
 > Add a texture to the tilemap
 
+`void DeleteTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);`
+> Delete a texture from the tilemap
+
 `bool TileExist(glm::vec2 position, glm::vec2 size);`
 > Returns if a tile inside the map exists at the given position and size
 
@@ -354,25 +362,25 @@ Others:
 > RGBA values between 0 and 255 \
 > Angles in degrees
 
-`void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);` \
+`void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);`
 > Draw a rectangle
 
-`void DrawRectangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);` \
+`void DrawRectangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);`
 > Draw a rectangle with rotation
 
-`void DrawRectangleOutline(glm::vec2 position, glm::vec2 size, Color color);` \
+`void DrawRectangleOutline(glm::vec2 position, glm::vec2 size, Color color);`
 > Draw only the rectangle outline
 
 `void DrawRectangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
 > Draw only the rectangle outline with rotation
 
-`void DrawTriangle(glm::vec2 position, glm::vec2 size, Color color);` \
+`void DrawTriangle(glm::vec2 position, glm::vec2 size, Color color);`
 > Draw a triangle
 
-`void DrawTriangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);` \
+`void DrawTriangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);`
 > Draw a triangle with rotation
 
-`void DrawTriangleOutline(glm::vec2 position, glm::vec2 size, Color color);` \
+`void DrawTriangleOutline(glm::vec2 position, glm::vec2 size, Color color);`
 > Draw only the triangle outline
 
 `void DrawTriangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
