@@ -24,11 +24,11 @@
 
 namespace CPL {
 enum DrawModes {
-    SHAPE_2D,
-    TEXTURE_2D,
+    SHAPE,
+    TEXTURE,
     TEXT,
-    SHAPE_2D_LIGHT,
-    TEXTURE_2D_LIGHT,
+    SHAPE_LIGHT,
+    TEXTURE_LIGHT,
 };
 enum TextureFiltering {
     NEAREST,
@@ -62,8 +62,8 @@ class ScreenQuad;
 struct Character;
 class Text;
 
-inline unsigned int SCREEN_WIDTH;
-inline unsigned int SCREEN_HEIGHT;
+inline unsigned int screenWidth;
+inline unsigned int screenHeight;
 inline glm::mat4 projection;
 
 extern Shader shapeShader;
@@ -118,6 +118,7 @@ bool CheckCollisionCircleRect(const Circle &one, const Rectangle &two);
 bool CheckCollisionVec2Rect(const glm::vec2 &one, const Rectangle &two);
 bool CheckCollisionCircleCircle(const Circle &one, const Circle &two);
 bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two);
+
 void InitShaders();
 
 void DrawTriangle(glm::vec2 position, glm::vec2 size, const Color &color);
@@ -216,8 +217,8 @@ void CloseWindow();
 
 inline int WindowShouldClose() { return glfwWindowShouldClose(window); }
 
-inline float GetScreenWidth() { return static_cast<float>(SCREEN_WIDTH); }
-inline float GetScreenHeight() { return static_cast<float>(SCREEN_HEIGHT); }
+inline float GetScreenWidth() { return static_cast<float>(screenWidth); }
+inline float GetScreenHeight() { return static_cast<float>(screenHeight); }
 
 inline int RandInt(const int min, const int max) {
     std::uniform_int_distribution dist(min, max);

@@ -87,15 +87,22 @@ namespace CPL {
     }
 
     void AudioManager::PlayMusicPitch(const Audio& audio, const float pitch) {
-        const auto sound = new ma_sound;
-        if (const ma_result result = ma_sound_init_from_file(&engine, audio.path.c_str(), MA_SOUND_FLAG_DECODE, nullptr, nullptr, sound);
-            result != MA_SUCCESS) {
-            Logging::Log(2, "Failed to initialize SFX!");
+        if (music) {
+            ma_sound_stop(music.get());
+            ma_sound_uninit(music.get());
+            music.reset();
+        }
+
+        music = std::make_unique<ma_sound>();
+        if (ma_sound_init_from_file(&engine, audio.path.c_str(), MA_SOUND_FLAG_DECODE, nullptr, nullptr, music.get()) != MA_SUCCESS) {
+            Logging::Log(2, "Failed to load music!");
+            music.reset();
             return;
-            }
-        ma_sound_set_pitch(sound, pitch);
-        ma_sound_set_looping(sound, MA_TRUE);
-        ma_sound_start(sound);
+        }
+        
+        ma_sound_set_pitch(music.get(), pitch);
+        ma_sound_set_looping(music.get(), MA_TRUE);
+        ma_sound_start(music.get());
     }
 
     void AudioManager::Close() {

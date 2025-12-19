@@ -29,9 +29,10 @@ namespace CPL {
         Tilemap();
         void BeginEditing();
         void AddTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);
+        void DeleteTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);
 	bool TileExist(glm::vec2 position, glm::vec2 size);
 	void CheckCollidableTiles(float size);
-        void Draw(const Shader& shader);
+        void Draw();
     private:
         unsigned int VAO{};
     };
