@@ -80,6 +80,7 @@ to Web with Emscripten.
 - Tilemaps
 - Lighting
 - Post Processing
+- Particle System
 
 Others:
 - Random number generator or by percent
@@ -228,10 +229,16 @@ Others:
 > Create a point light on a certain position with a
 > radius, intensity of the light and the light color
 
-`SetAmbientLight(float ambientStrength);` 
+`class GlobalLight(float intensity, Color color);`
+> Create a global light
+
+`void SetGlobalLight(GlobalLight light);`
+> Apply global light to the screen
+
+`void SetAmbientLight(float ambientStrength);` 
 > Set the ambient intensity
 
-`AddPointLights(std::vector<PointLight> pointLights);`
+`void AddPointLights(std::vector<PointLight> pointLights);`
 > Draw final point lights to the screen
 
 ### Drawing
@@ -324,6 +331,29 @@ Others:
 
 `void Draw(Shader shader);`
 > Draw the tilemap to the screen (select "textureShader" as the shader)
+
+### Particle System
+> [!IMPORTANT]
+> If using the provided functions for the particle system you need to access them from a particle system instance as well. For example:
+> ParticleSystem ps;
+> ps.Update();
+> ...
+> Also note that only textures (Texture2D) can be added
+
+`class ParticleSystem(glm::vec2 position);`
+> Create a particle system
+
+`glm::vec2 position;`
+> Set position of the particle system
+
+`void AddParticle(Texture* texture, Color color, float lifeTime, glm::vec2 direction, glm::vec2 offset);`
+> Add particle to particle system
+
+`void Update();`
+> Update particle system (f.e. for lifetime)
+
+`void Draw();`
+> Draw particles
 
 ### Drawing 2D textures
 `TextureFiltering:` \
