@@ -86,9 +86,12 @@ add_executable(Example src/main.cpp
     CPLibrary/shapes2D/Texture2D.h
 	CPLibrary/shapes2D/ScreenQuad.cpp
 	CPLibrary/shapes2D/ScreenQuad.h
+    CPLibrary/shapes2D/GlobalLight.h
 	CPLibrary/shapes2D/PointLight.h
     CPLibrary/shapes2D/Tilemap.cpp
     CPLibrary/shapes2D/Tilemap.h
+    CPLibrary/shapes2D/ParticleSystem.h 
+    CPLibrary/shapes2D/ParticleSystem.cpp
     CPLibrary/timers/Timer.h
     CPLibrary/timers/TimerManager.cpp
     CPLibrary/timers/TimerManager.h

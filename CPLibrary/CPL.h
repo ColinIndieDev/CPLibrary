@@ -51,12 +51,14 @@ struct Timer;
 class TimerManager;
 
 class Shader;
+class GlobalLight;
 class PointLight;
 class Triangle;
 class Rectangle;
 class Circle;
 class Line;
 class Texture2D;
+class ParticleSystem;
 class ScreenQuad;
 
 struct Character;
@@ -156,6 +158,7 @@ inline void ClearBackground(const Color &color) {
 
 void BeginDrawing(const DrawModes &mode, bool mode2D);
 void SetAmbientLight(float strength);
+void SetGlobalLight(const GlobalLight& light);
 void AddPointLights(const std::vector<PointLight> &lights);
 void BeginPostProcessing();
 void EndPostProcessing();

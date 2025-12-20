@@ -4,6 +4,7 @@
 #include "Text.h"
 #include "shapes2D/Circle.h"
 #include "shapes2D/Line.h"
+#include "shapes2D/GlobalLight.h"
 #include "shapes2D/PointLight.h"
 #include "shapes2D/Rectangle.h"
 #include "shapes2D/ScreenQuad.h"
@@ -227,6 +228,36 @@ void SetAmbientLight(const float strength) {
         shader = lightTextureShader;
     shader.Use();
 }
+void SetGlobalLight(const GlobalLight &light) {
+    lightShapeShader.Use();
+    lightShapeShader.SetFloat("globalLight.intensity",
+                              light.intensity);
+    lightShapeShader.SetColor("globalLight.color",
+                              light.color);
+
+    lightTextureShader.Use();
+    lightTextureShader.SetFloat("globalLight.intensity",
+                                light.intensity);
+    lightTextureShader.SetColor("globalLight.color",
+                                light.color);
+
+    Shader shader{};
+    if (currentDrawMode == SHAPE)
+        shader = shapeShader;
+    else if (currentDrawMode == TEXT) {
+        shader = textShader;
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        Text::Use("defaultFont");
+    } else if (currentDrawMode == TEXTURE)
+        shader = textureShader;
+    else if (currentDrawMode == SHAPE_LIGHT)
+        shader = lightShapeShader;
+    else if (currentDrawMode == TEXTURE_LIGHT)
+        shader = lightTextureShader;
+    shader.Use();
+}
+
 void AddPointLights(const std::vector<PointLight> &lights) {
     lightShapeShader.Use();
     lightShapeShader.SetInt("numPointLights", lights.size());
@@ -245,7 +276,7 @@ void AddPointLights(const std::vector<PointLight> &lights) {
 
     lightTextureShader.Use();
     lightTextureShader.SetInt("numPointLights", lights.size());
-    for (int i = 0; i < lights.size(); i++) { 
+    for (int i = 0; i < lights.size(); i++) {
         lightTextureShader.SetVector2f("pointLights[" + std::to_string(i) +
                                            "].position",
                                        lights[i].position);
@@ -257,7 +288,7 @@ void AddPointLights(const std::vector<PointLight> &lights) {
         lightTextureShader.SetColor(
             "pointLights[" + std::to_string(i) + "].color", lights[i].color);
     }
-    
+
     Shader shader{};
     if (currentDrawMode == SHAPE)
         shader = shapeShader;
@@ -287,83 +318,74 @@ void ApplyPostProcessingCustom(const Shader &shader) {
 void DrawTriangle(const glm::vec2 position, const glm::vec2 size,
                   const Color &color) {
     const auto triangle = Triangle(position, size, color);
-    triangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                    : shapeShader,
-                  true);
+    triangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, true);
 }
 void DrawTriangleRotated(const glm::vec2 position, const glm::vec2 size,
                          const float angle, const Color &color) {
     const auto triangle = Triangle(position, size, color);
     triangle.rotationAngle = angle;
-    triangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                    : shapeShader,
-                  true);
+    triangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, true);
 }
 void DrawTriangleOutline(const glm::vec2 position, const glm::vec2 size,
                          const Color &color) {
     const auto triangle = Triangle(position, size, color);
-    triangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                    : shapeShader,
-                  false);
+    triangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, false);
 }
 void DrawTriangleRotOut(const glm::vec2 position, const glm::vec2 size,
                         const float angle, const Color &color) {
     const auto triangle = Triangle(position, size, color);
     triangle.rotationAngle = angle;
-    triangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                    : shapeShader,
-                  false);
+    triangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, false);
 }
 
 void DrawRectangle(const glm::vec2 position, const glm::vec2 size,
                    const Color &color) {
     const auto rectangle = Rectangle(position, size, color);
-    rectangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                     : shapeShader,
-                   true);
+    rectangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, true);
 }
 void DrawRectangleRotated(const glm::vec2 position, const glm::vec2 size,
                           const float angle, const Color &color) {
     const auto rectangle = Rectangle(position, size, color);
     rectangle.rotationAngle = angle;
-    rectangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                     : shapeShader,
-                   true);
+    rectangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, true);
 }
 void DrawRectangleOutline(const glm::vec2 position, const glm::vec2 size,
                           const Color &color) {
     const auto rectangle = Rectangle(position, size, color);
-    rectangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                     : shapeShader,
-                   false);
+    rectangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, false);
 }
 void DrawRectangleRotOut(const glm::vec2 position, const glm::vec2 size,
                          const float angle, const Color &color) {
     const auto rectangle = Rectangle(position, size, color);
     rectangle.rotationAngle = angle;
-    rectangle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                     : shapeShader,
-                   false);
+    rectangle.Draw(
+        currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader, false);
 }
 
 void DrawCircle(const glm::vec2 position, const float radius,
                 const Color &color) {
     const auto circle = Circle(position, radius, color);
     circle.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                  : shapeShader);
+                                               : shapeShader);
 }
 void DrawCircleOutline(const glm::vec2 position, const float radius,
                        const Color &color) {
     const auto circle = Circle(position, radius, color);
     circle.DrawOutline(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                         : shapeShader);
+                                                      : shapeShader);
 }
 
 void DrawLine(const glm::vec2 startPos, const glm::vec2 endPos,
               const Color &color) {
     const auto line = Line(startPos, endPos, color);
-    line.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader
-                                                : shapeShader);
+    line.Draw(currentDrawMode == SHAPE_LIGHT ? lightShapeShader : shapeShader);
 }
 
 void DrawTexture2D(Texture2D *texture, const glm::vec2 position,
@@ -371,7 +393,7 @@ void DrawTexture2D(Texture2D *texture, const glm::vec2 position,
     texture->position = position;
     texture->color = color;
     texture->Draw(currentDrawMode == TEXTURE_LIGHT ? lightTextureShader
-                                                      : textureShader);
+                                                   : textureShader);
 }
 void DrawTexture2DRotated(Texture2D *texture, const glm::vec2 position,
                           const float angle, const Color &color) {
@@ -379,14 +401,14 @@ void DrawTexture2DRotated(Texture2D *texture, const glm::vec2 position,
     texture->color = color;
     texture->rotationAngle = angle;
     texture->Draw(currentDrawMode == TEXTURE_LIGHT ? lightTextureShader
-                                                      : textureShader);
+                                                   : textureShader);
 }
 void DrawTex2DCpy(Texture2D texture, const glm::vec2 position,
                   const Color &color) {
     texture.position = position;
     texture.color = color;
     texture.Draw(currentDrawMode == TEXTURE_LIGHT ? lightTextureShader
-                                                     : textureShader);
+                                                  : textureShader);
 }
 
 void DrawText(const glm::vec2 position, const float scale,

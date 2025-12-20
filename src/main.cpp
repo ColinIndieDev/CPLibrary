@@ -12,9 +12,13 @@ std::vector<PointLight> lights;
 // Texture2D
 std::unique_ptr<Texture2D> logoTex;
 std::unique_ptr<Texture2D> blockTex;
+std::unique_ptr<Texture2D> smokeTex;
 
 // Tilemap
 std::unique_ptr<Tilemap> tm;
+
+// Particle system
+ParticleSystem ps(glm::vec2(0));
 
 void MainLoop() {
     // Update framework (fps, delta time, input etc.)
@@ -29,8 +33,8 @@ void MainLoop() {
     // Start drawing shapes affected by lighting
     BeginDrawing(SHAPE_LIGHT, false);
 
-    lights[0].position = GetMousePosition();
-    // Add point lights to scene (you can do it once if the lights never change!)
+    // Add point lights to scene (you can do it once if the lights never
+    // change!)
     AddPointLights(lights);
 
     // Draw shapes
@@ -44,6 +48,15 @@ void MainLoop() {
 
     // Draw tilemap
     tm->Draw();
+
+    // Set transparency of particle depending on its lifetime
+    for (auto &p : ps.particles) {
+        p.color.a = (1 - p.curLifeTime / p.lifeTime) * 255;
+    }
+
+    // Update & draw particles
+    ps.Update();
+    ps.Draw();
 
     // Draw texture
     DrawTexture2D(logoTex.get(), {GetScreenWidth() / 2, GetScreenHeight() / 2},
@@ -80,11 +93,19 @@ int main() {
     lights.push_back(PointLight({500, 300}, 550.0f, 1.0f, RED));
     lights.push_back(PointLight({300, 400}, 350.0f, 2.0f, BLUE));
 
+    // Init global light
+    GlobalLight globalLight = GlobalLight(0.3f, PURPLE);
+
+    // Apply global light
+    SetGlobalLight(globalLight);
+
     // Init texture
     logoTex = std::make_unique<Texture2D>(
         Texture2D("assets/images/logo.png", {200, 200}, LINEAR));
     blockTex = std::make_unique<Texture2D>(
         Texture2D("assets/images/stone.jpg", {100, 100}, NEAREST));
+    smokeTex = std::make_unique<Texture2D>(
+        Texture2D("assets/images/smoke.png", {300, 300}, LINEAR));
 
     // Edit tilemap
     tm = std::make_unique<Tilemap>(Tilemap());
@@ -101,6 +122,18 @@ int main() {
 
     // Set ambient light
     SetAmbientLight(0);
+
+    // Set position of particle system
+    ps.position = {GetScreenWidth() / 2, GetScreenHeight() / 2};
+
+    // Set timer to spawn particles every 0.1 seconds
+    Timer *particleSpawnTimer =
+        TimerManager::AddTimer(0.2f, true, [](Timer *t) {
+            glm::vec2 direction = {cos(RandFloat(0, 2 * 3.14)) * 50,
+                                   sin(RandFloat(0, 2 * 3.14)) * 50};
+            ps.AddParticle(smokeTex.get(), WHITE, RandFloat(0, 10), direction,
+                           {0, 0});
+        });
 
 // Set Emscripten main loop if compiling to web else default
 #ifdef __EMSCRIPTEN__
