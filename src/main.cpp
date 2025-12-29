@@ -1,149 +1,211 @@
 #include "../CPLibrary/CPLibrary.h"
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#endif
+#include <string>
 
 using namespace CPL;
 PRIORITIZE_GPU_BY_VENDOR
 
-// Vector of 2D point lights
-std::vector<PointLight> lights;
+std::unique_ptr<ShadowMap> g_ShadowMap;
+std::unique_ptr<Texture2D> g_GroundTex;
+std::unique_ptr<Texture2D> g_LogoTex;
+std::unique_ptr<CubeMap> g_CubeMap;
+std::vector<glm::vec3> g_BlockPos;
 
-// Texture2D
-std::unique_ptr<Texture2D> logoTex;
-std::unique_ptr<Texture2D> blockTex;
-std::unique_ptr<Texture2D> smokeTex;
+void UpdateCam() {
+    // Update frustum for frustum culling
+    float aspect = GetScreenWidth() / GetScreenHeight();
+    Camera3D &cam = GetCam3D();
+    cam.UpdateFrustum(aspect);
 
-// Tilemap
-std::unique_ptr<Tilemap> tm;
+    // Camera movement
+    float speed = 1.0f * GetDeltaTime();
+    if (IsKeyDown(KEY_LEFT_SHIFT))
+        speed *= 6;
 
-// Particle system
-ParticleSystem ps(glm::vec2(0));
+    if (IsKeyDown(KEY_W))
+        cam.position += speed * cam.front;
+    if (IsKeyDown(KEY_S))
+        cam.position -= speed * cam.front;
+    if (IsKeyDown(KEY_A))
+        cam.position -= glm::normalize(glm::cross(cam.front, cam.up)) * speed;
+    if (IsKeyDown(KEY_D))
+        cam.position += glm::normalize(glm::cross(cam.front, cam.up)) * speed;
 
+    // Destroy window with ESC
+    if (IsKeyPressedOnce(KEY_ESCAPE))
+        DestroyWindow();
+}
 void MainLoop() {
-    // Update framework (fps, delta time, input etc.)
+    // Update framework
     UpdateCPL();
 
-    // Start post processing (everything after is affected by PP)
-    BeginPostProcessing();
+    // Bools to configure if drawing spheres or cube textures
+    bool drawCubes = true;
+    bool drawSpheres = false;
 
-    // Clear background with selected color
-    ClearBackground(BLACK);
+    UpdateCam();
 
-    // Start drawing shapes affected by lighting
-    BeginDrawing(SHAPE_LIGHT, false);
+    // Shadow map configurations
+    glm::vec3 lightPos(sin(GetTime()) * 5.0f, 5.0f, cos(GetTime()) * 5.0f);
+    glm::mat4 lightProjection =
+        glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 25.0f);
+    glm::mat4 lightView =
+        glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-    // Add point lights to scene (you can do it once if the lights never
-    // change!)
-    AddPointLights(lights);
+    Shader &depthShader = Engine::GetDepthShader();
+    depthShader.Use();
+    depthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
 
-    // Draw shapes
-    DrawRectangle({0, 0}, {800, 600}, WHITE);
-    DrawCircle(GetMousePosition(), 100.0f, RED);
-    DrawTriangle({100, 100}, {200, 100}, LIME_GREEN);
-    DrawLine({800, 0}, {0, 600}, PURPLE);
+    g_ShadowMap->BeginDepthPass(lightSpaceMatrix);
 
-    // Start drawing textures affected by lighting
-    BeginDrawing(TEXTURE_LIGHT, false);
+    CubeTex ground({0.0f, -0.1f, 0.0f}, {10.0f, 0.2f, 10.0f}, WHITE);
+    ground.DrawDepth(depthShader, g_GroundTex.get());
 
-    // Draw tilemap
-    tm->Draw();
-
-    // Set transparency of particle depending on its lifetime
-    for (auto &p : ps.particles) {
-        p.color.a = (1 - p.curLifeTime / p.lifeTime) * 255;
+    if (drawCubes) {
+        for (auto &p : g_BlockPos) {
+            CubeTex cube(p, glm::vec3(0.2f), WHITE);
+            cube.DrawDepth(depthShader, g_GroundTex.get());
+        }
+    }
+    if (drawSpheres) {
+        for (auto &p : g_BlockPos) {
+            Sphere sphere(p, 0.1f, WHITE);
+            sphere.DrawDepth(depthShader);
+        }
     }
 
-    // Update & draw particles
-    ps.Update();
-    ps.Draw();
+    g_ShadowMap->EndDepthPass();
 
-    // Draw texture
-    DrawTexture2D(logoTex.get(), {GetScreenWidth() / 2, GetScreenHeight() / 2},
-                  WHITE);
+    // Start rendering scene here
+    ClearBackground(SKY_BLUE);
 
-    // Start drawing text
-    BeginDrawing(TEXT, false);
+    // Draw cubemap (skybox)
+    DrawCubeMap(g_CubeMap.get());
 
+    // Enable face culling for cubes
+    EnableFaceCulling(true);
+
+    // Draw cubes with textures affected by light
+    BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+
+    // Set shininess
+    SetShininess3D(32);
+
+    // Add directional light
+    DirectionalLight dirLight(
+        glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)), // direction
+        glm::vec3(0.3f),                                // ambient
+        glm::vec3(1.0f),                                // diffuse
+        glm::vec3(1.0f)                                 // specular
+    );
+    SetDirLight3D(dirLight);
+
+    // Activate shadows
+    Shader &shader = GetShader(DrawModes::CUBE_TEX_LIGHT);
+    shader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
+    shader.SetInt("shadowMap", 1);
+
+    g_ShadowMap->BindForReading(1);
+
+    // Draw ground
+    DrawCubeTex(g_GroundTex.get(), {0.0f, -0.1f, 0.0f}, {10.0f, 0.2f, 10.0f},
+                WHITE);
+
+    // Draw cubes (if they are visible for the camera frustum)
+    int drawnCubes = 0;
+    if (drawCubes) {
+        for (auto &p : g_BlockPos) {
+            if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
+                DrawCubeTex(g_GroundTex.get(), p, glm::vec3(0.2f), WHITE);
+                drawnCubes++;
+            }
+        }
+    }
+
+    // Draw 3D shapes with single colors
+    BeginDraw(DrawModes::SHAPE_3D);
+
+    // Draw sphere simulating the light source where to create shadows from
+    DrawSphere(lightPos, 0.8f, YELLOW);
+
+    // Draw 3D shapes with single colors affected by light
+    BeginDraw(DrawModes::SHAPE_3D_LIGHT);
+
+    // Draw spheres (if they are visible for the camera frustum
+    int drawnSpheres = 0;
+    if (drawSpheres) {
+        for (auto &p : g_BlockPos) {
+            if (GetCam3D().frustum.IsSphereVisible(p, 0.1f)) {
+                DrawSphere(p, 0.1f, WHITE);
+                drawnSpheres++;
+            }
+        }
+    }
+
+    // Disable face culling (before making 2D stuff)
+    EnableFaceCulling(false);
+
+    // Draw 2D textures for UI
+    BeginDraw(DrawModes::TEX, false);
+    // Draw CPL logo
+    DrawTex2D(g_LogoTex.get(), {0, 0}, WHITE);
+
+    // Draw text
+    BeginDraw(DrawModes::TEXT, false);
+    const float fontSize = 1.0f;
+    const std::string cubeText = "Drawn cubes: " + std::to_string(drawnCubes) +
+                                 " / " + std::to_string(g_BlockPos.size());
+    const std::string sphereText =
+        "Drawn spheres: " + std::to_string(drawnSpheres) + " / " +
+        std::to_string(g_BlockPos.size());
+    const float textWidth =
+        Text::GetTextSize(GetDefaultFont(), sphereText, fontSize).x;
+    DrawTextShadow({GetScreenWidth() / 2 - textWidth / 2, 10}, {5, 5}, fontSize,
+                   drawCubes ? cubeText : sphereText, WHITE, DARK_GRAY);
+    // Display details
     ShowDetails();
 
-    // End PP (everything after is not affected)
-    EndPostProcessing();
-    // Apply effects (nothing, blur, inversed colors etc.)
-    ApplyPostProcessing(PP_DEFAULT);
-
     // End drawing
-    EndDrawing();
+    EndDraw();
 
     // Swap buffers
-    glfwSwapBuffers(window);
+    glfwSwapBuffers(GetWindow());
     glfwPollEvents();
 }
 
 int main() {
-    // Create 800x600 window with title
-    InitWindow(800, 600, "Welcome to CPL");
-// Set the window icon
-#ifndef __EMSCRIPTEN
-    SetWindowIcon("assets/images/logo.png");
-#endif
+    // Create 1200x800 window with title
+    InitWindow(1200, 800, "Welcome to CPL 3D");
+    // Lock and hide mouse
+    LockMouse(true);
+    // Disable VSync
+    EnableVSync(false);
 
-    // Add point lights to vector
-    lights.push_back(PointLight({200, 200}, 450.0f, 2.0f, GREEN));
-    lights.push_back(PointLight({500, 300}, 550.0f, 1.0f, RED));
-    lights.push_back(PointLight({300, 400}, 350.0f, 2.0f, BLUE));
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    // Init global light
-    GlobalLight globalLight = GlobalLight(0.3f, PURPLE);
+    // Set camera position
+    GetCam3D().position = glm::vec3(0, 0.4f, 0);
 
-    // Apply global light
-    SetGlobalLight(globalLight);
+    // Create shadow map with 4096x4096 resolution
+    g_ShadowMap = std::make_unique<ShadowMap>(4096);
+    // Load textures
+    g_GroundTex = std::make_unique<Texture2D>(
+        "assets/images/stone.jpg", glm::vec2(100), TextureFiltering::NEAREST);
+    g_LogoTex = std::make_unique<Texture2D>(
+        "assets/images/logo.png", glm::vec2(200), TextureFiltering::LINEAR);
+    // Create cubemap
+    g_CubeMap = std::make_unique<CubeMap>("assets/images/sky.png");
 
-    // Init texture
-    logoTex = std::make_unique<Texture2D>(
-        Texture2D("assets/images/logo.png", {200, 200}, LINEAR));
-    blockTex = std::make_unique<Texture2D>(
-        Texture2D("assets/images/stone.jpg", {100, 100}, NEAREST));
-    smokeTex = std::make_unique<Texture2D>(
-        Texture2D("assets/images/smoke.png", {300, 300}, LINEAR));
-
-    // Edit tilemap
-    tm = std::make_unique<Tilemap>(Tilemap());
-    tm->BeginEditing();
-
-    for (int y = 3; y < 6; y++) {
-        for (int x = 0; x < 8; x++) {
-            tm->AddTile({x * 100, y * 100}, {100, 100}, blockTex.get());
-        }
+    // Init random block positions
+    for (int i = 0; i < 50; i++) {
+        g_BlockPos.emplace_back(glm::vec3(
+            RandFloat(-5, 5), RandFloat(0.1f, 0.1f), RandFloat(-5, 5)));
     }
 
-    // Delete upper corner tile
-    tm->DeleteTile({0, 300}, {100, 100}, blockTex.get());
-
-    // Set ambient light
-    SetAmbientLight(0);
-
-    // Set position of particle system
-    ps.position = {GetScreenWidth() / 2, GetScreenHeight() / 2};
-
-    // Set timer to spawn particles every 0.1 seconds
-    Timer *particleSpawnTimer =
-        TimerManager::AddTimer(0.2f, true, [](Timer *t) {
-            glm::vec2 direction = {cos(RandFloat(0, 2 * 3.14)) * 50,
-                                   sin(RandFloat(0, 2 * 3.14)) * 50};
-            ps.AddParticle(smokeTex.get(), WHITE, RandFloat(0, 10), direction,
-                           {0, 0});
-        });
-
-// Set Emscripten main loop if compiling to web else default
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(MainLoop, 0, true);
-#else
+    // Loop
     while (!WindowShouldClose()) {
         MainLoop();
     }
-#endif
-
     // Close window
     CloseWindow();
 }

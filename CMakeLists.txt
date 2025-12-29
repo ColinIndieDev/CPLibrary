@@ -70,8 +70,10 @@ add_executable(Example src/main.cpp
     CPLibrary/Shader.h
     CPLibrary/shapes2D/Triangle.cpp
     CPLibrary/shapes2D/Triangle.h
-    CPLibrary/CPL.h
+    CPLibrary/Engine.cpp
+    CPLibrary/Engine.h
     CPLibrary/CPL.cpp
+    CPLibrary/CPL.h
     CPLibrary/shapes2D/Rectangle.cpp
     CPLibrary/shapes2D/Rectangle.h
     CPLibrary/shapes2D/Circle.cpp
@@ -92,6 +94,19 @@ add_executable(Example src/main.cpp
     CPLibrary/shapes2D/Tilemap.h
     CPLibrary/shapes2D/ParticleSystem.h 
     CPLibrary/shapes2D/ParticleSystem.cpp
+    CPLibrary/shapes3D/Cube.cpp
+    CPLibrary/shapes3D/Cube.h
+    CPLibrary/shapes3D/Sphere.cpp
+    CPLibrary/shapes3D/Sphere.h
+    CPLibrary/shapes3D/CubeTex.cpp
+    CPLibrary/shapes3D/CubeTex.h
+    CPLibrary/shapes3D/ShadowMap.cpp
+    CPLibrary/shapes3D/ShadowMap.h
+    CPLibrary/shapes3D/PointLight3D.h
+    CPLibrary/shapes3D/DirectionalLight.h
+    CPLibrary/shapes3D/Frustum.h
+    CPLibrary/shapes3D/CubeMap.cpp
+    CPLibrary/shapes3D/CubeMap.h
     CPLibrary/timers/Timer.h
     CPLibrary/timers/TimerManager.cpp
     CPLibrary/timers/TimerManager.h
