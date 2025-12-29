@@ -445,7 +445,7 @@ and if 2D or 3D
 `class ShadowMap(unsigned int resolution);`
 > Create a shadow map with a given shadow resolution
 
-`void BeginDepthPass(mat4 matrix);`
+`void BeginDepthPass(glm::mat4 matrix);`
 > After this call, every object drawn will have its own shadow inside the map stored + you need to pass the light space matrix
 
 `void EndDepthPass();`
@@ -455,10 +455,10 @@ and if 2D or 3D
 > Use shadow map to draw shadows into the scene (value has not to be given as a parameter)
 
 ### Drawing text
-`void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
+`void DrawText(glm::vec2 pos, float scale, std::string text, Color color);`
 > Draw text on the screen
 
-`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);`
+`void DrawTextShadow(glm::vec2 pos, glm::vec2 shadowOff, float scale, std::string text, Color color, Color shadowColor);`
 > Draw text with shadow
 
 `void ShowDetails(); `
