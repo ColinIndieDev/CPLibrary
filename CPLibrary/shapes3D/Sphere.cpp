@@ -35,12 +35,12 @@ Sphere::Sphere(const glm::vec3 pos, const float radius, const Color &color)
             int second = first + sectors + 1;
 
             m_Indices.push_back(first);
-            m_Indices.push_back(second);
             m_Indices.push_back(first + 1);
+            m_Indices.push_back(second);
 
-            m_Indices.push_back(second);
-            m_Indices.push_back(second + 1);
             m_Indices.push_back(first + 1);
+            m_Indices.push_back(second + 1);
+            m_Indices.push_back(second);
         }
     }
 
@@ -98,7 +98,7 @@ void Sphere::Draw(const Shader &shader) const {
     glBindVertexArray(0);
 }
 void Sphere::DrawDepth(const Shader &shader) const {
-    glm::mat4 model = glm::mat4(1.0f);
+    auto model = glm::mat4(1.0f);
     model = glm::translate(model, pos);
 
     shader.Use();

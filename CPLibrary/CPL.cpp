@@ -130,6 +130,10 @@ void DrawCubeTex(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
                  const Color &color) {
     Engine::DrawCubeTex(tex, pos, size, color);
 }
+void DrawCubeTexAtlas(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
+                      const Color &color) {
+    Engine::DrawCubeTexAtlas(tex, pos, size, color);
+}
 void DrawCubeMap(CubeMap *map) { Engine::DrawCubeMap(map); }
 
 void ClearBackground(const Color &color) { Engine::ClearBackground(color); }

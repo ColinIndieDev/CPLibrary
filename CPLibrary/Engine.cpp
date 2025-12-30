@@ -617,6 +617,15 @@ void Engine::DrawCubeTex(CPL::Texture2D *tex, const glm::vec3 pos,
                  tex);
 }
 
+void Engine::DrawCubeTexAtlas(CPL::Texture2D *tex, const glm::vec3 pos,
+                              const glm::vec3 size, const CPL::Color &color) {
+    const auto cubeTex = CPL::CubeTex(pos, size, color);
+    cubeTex.DrawAtlas(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
+                          ? s_LightCubeTexShader
+                          : s_CubeTexShader,
+                      tex);
+}
+
 void Engine::DrawCubeMap(CPL::CubeMap *map) {
     glDepthMask(GL_FALSE);
     map->Draw(s_CubeMapShader);

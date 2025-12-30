@@ -100,4 +100,15 @@ void Cube::Draw(const Shader &shader) const {
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
 }
+void Cube::DrawDepth(const Shader &shader) const {
+    auto model = glm::mat4(1.0f);
+    model = glm::translate(model, position);
+
+    shader.Use();
+    shader.SetMatrix4fv("model", model);
+
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
 } // namespace CPL

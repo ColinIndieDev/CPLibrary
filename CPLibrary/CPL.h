@@ -112,6 +112,8 @@ void DrawCube(const glm::vec3 pos, const glm::vec3 size, const Color &color);
 void DrawSphere(const glm::vec3 pos, const float radius, const Color &color);
 void DrawCubeTex(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
                  const Color &color);
+void DrawCubeTexAtlas(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
+                      const Color &color);
 void DrawCubeMap(CubeMap *map);
 
 void ClearBackground(const Color &color);

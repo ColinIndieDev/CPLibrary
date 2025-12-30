@@ -27,9 +27,11 @@ class CubeTex {
         : position(other.position), size(other.size),
           textureSize(other.textureSize), channels(other.channels),
           color(other.color), texture(other.texture), VBO(other.VBO),
-          VAO(other.VAO) {
+          VAO(other.VAO), VBOAtlas(other.VBOAtlas), VAOAtlas(other.VAOAtlas) {
         other.VBO = 0;
         other.VAO = 0;
+        other.VBOAtlas = 0;
+        other.VAOAtlas = 0;
         other.texture = 0;
     }
 
@@ -41,6 +43,12 @@ class CubeTex {
             if (VBO != 0 && glIsBuffer(VBO)) {
                 glDeleteBuffers(1, &VBO);
             }
+            if (VAOAtlas != 0 && glIsVertexArray(VAOAtlas)) {
+                glDeleteVertexArrays(1, &VAOAtlas);
+            }
+            if (VBOAtlas != 0 && glIsBuffer(VBOAtlas)) {
+                glDeleteBuffers(1, &VBOAtlas);
+            }
 
             position = other.position;
             size = other.size;
@@ -51,15 +59,24 @@ class CubeTex {
 
             VBO = other.VBO;
             VAO = other.VAO;
+            VBOAtlas = other.VBOAtlas;
+            VAOAtlas = other.VAOAtlas;
             other.VBO = 0;
             other.VAO = 0;
+            other.VBOAtlas = 0;
+            other.VAOAtlas = 0;
         }
         return *this;
     }
 
-    void Draw(const Shader &shader, const Texture2D* texture) const;
-    void DrawDepth(const Shader &shader, const Texture2D* texture) const;
+    void Draw(const Shader &shader, const Texture2D *texture) const;
+    void DrawDepth(const Shader &shader, const Texture2D *texture) const;
+    void DrawAtlas(const Shader &shader, const Texture2D *atlasTexture) const;
+    void DrawDepthAtlas(const Shader &shader,
+                        const Texture2D *atlasTexture) const;
+
   private:
-    unsigned int VBO{}, VAO{};
+    void InitAtlas();
+    unsigned int VBO{}, VAO{}, VBOAtlas{}, VAOAtlas{};
 };
 } // namespace CPL

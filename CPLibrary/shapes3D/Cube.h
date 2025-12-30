@@ -48,6 +48,7 @@ class Cube {
     }
 
     void Draw(const Shader &shader) const;
+    void DrawDepth(const Shader &shader) const;
 
   private:
     unsigned int VBO{}, VAO{};

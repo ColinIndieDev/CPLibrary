@@ -5,10 +5,19 @@ using namespace CPL;
 PRIORITIZE_GPU_BY_VENDOR
 
 std::unique_ptr<ShadowMap> g_ShadowMap;
-std::unique_ptr<Texture2D> g_GroundTex;
+
+std::unique_ptr<Texture2D> g_StoneTex;
+std::unique_ptr<Texture2D> g_GrassTex;
+std::unique_ptr<Texture2D> g_DirtTex;
+std::unique_ptr<Texture2D> g_OakLogTex;
+std::unique_ptr<Texture2D> g_OakLeaveTex;
+
 std::unique_ptr<Texture2D> g_LogoTex;
+
 std::unique_ptr<CubeMap> g_CubeMap;
+
 std::vector<glm::vec3> g_BlockPos;
+std::vector<glm::vec3> g_TreePos;
 
 void UpdateCam() {
     // Update frustum for frustum culling
@@ -38,10 +47,6 @@ void MainLoop() {
     // Update framework
     UpdateCPL();
 
-    // Bools to configure if drawing spheres or cube textures
-    bool drawCubes = true;
-    bool drawSpheres = false;
-
     UpdateCam();
 
     // Shadow map configurations
@@ -58,19 +63,41 @@ void MainLoop() {
 
     g_ShadowMap->BeginDepthPass(lightSpaceMatrix);
 
-    CubeTex ground({0.0f, -0.1f, 0.0f}, {10.0f, 0.2f, 10.0f}, WHITE);
-    ground.DrawDepth(depthShader, g_GroundTex.get());
+    // Shadows
+    for (auto &p : g_BlockPos) {
+        if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
+            if (p.y == 9 * 0.2f) {
+                Cube cube(p, glm::vec3(0.2f), WHITE);
+                //cube.DrawDepth(depthShader);
+            } else if (p.y >= 6 * 0.2f) {
 
-    if (drawCubes) {
-        for (auto &p : g_BlockPos) {
-            CubeTex cube(p, glm::vec3(0.2f), WHITE);
-            cube.DrawDepth(depthShader, g_GroundTex.get());
+            } else {
+            }
         }
     }
-    if (drawSpheres) {
-        for (auto &p : g_BlockPos) {
-            Sphere sphere(p, 0.1f, WHITE);
-            sphere.DrawDepth(depthShader);
+
+    for (auto &p : g_TreePos) {
+        for (int y = 1; y < 5; y++) {
+            glm::vec3 stemPos(p.x, p.y + y * 0.2f, p.z);
+            if (GetCam3D().frustum.IsCubeVisible(stemPos, glm::vec3(0.1f))) {
+                Cube cube(stemPos, glm::vec3(0.2f), WHITE);
+                cube.DrawDepth(depthShader);
+            }
+        }
+        for (int x = -1; x < 2; x++) {
+            for (int y = 3; y < 6; y++) {
+                for (int z = -1; z < 2; z++) {
+                    if (x == 0 && y < 5 && z == 0)
+                        continue;
+                    glm::vec3 leavePos(p.x + x * 0.2f, p.y + y * 0.2f,
+                                       p.z + z * 0.2f);
+                    if (GetCam3D().frustum.IsCubeVisible(leavePos,
+                                                         glm::vec3(0.1f))) {
+                        CubeTex cube(leavePos, glm::vec3(0.2f), WHITE);
+                        cube.DrawDepth(depthShader, g_OakLeaveTex.get());
+                    }
+                }
+            }
         }
     }
 
@@ -107,37 +134,40 @@ void MainLoop() {
 
     g_ShadowMap->BindForReading(1);
 
-    // Draw ground
-    DrawCubeTex(g_GroundTex.get(), {0.0f, -0.1f, 0.0f}, {10.0f, 0.2f, 10.0f},
-                WHITE);
-
     // Draw cubes (if they are visible for the camera frustum)
-    int drawnCubes = 0;
-    if (drawCubes) {
-        for (auto &p : g_BlockPos) {
-            if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
-                DrawCubeTex(g_GroundTex.get(), p, glm::vec3(0.2f), WHITE);
-                drawnCubes++;
+    for (auto &p : g_BlockPos) {
+        if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
+            if (p.y == 9 * 0.2f) {
+                DrawCubeTexAtlas(g_GrassTex.get(), p, glm::vec3(0.2f), WHITE);
+            } else if (p.y >= 6 * 0.2f) {
+                DrawCubeTex(g_DirtTex.get(), p, glm::vec3(0.2f), WHITE);
+            } else {
+                DrawCubeTexAtlas(g_StoneTex.get(), p, glm::vec3(0.2f), WHITE);
             }
         }
     }
 
-    // Draw 3D shapes with single colors
-    BeginDraw(DrawModes::SHAPE_3D);
-
-    // Draw sphere simulating the light source where to create shadows from
-    DrawSphere(lightPos, 0.8f, YELLOW);
-
-    // Draw 3D shapes with single colors affected by light
-    BeginDraw(DrawModes::SHAPE_3D_LIGHT);
-
-    // Draw spheres (if they are visible for the camera frustum
-    int drawnSpheres = 0;
-    if (drawSpheres) {
-        for (auto &p : g_BlockPos) {
-            if (GetCam3D().frustum.IsSphereVisible(p, 0.1f)) {
-                DrawSphere(p, 0.1f, WHITE);
-                drawnSpheres++;
+    for (auto &p : g_TreePos) {
+        for (int y = 1; y < 5; y++) {
+            glm::vec3 stemPos(p.x, p.y + y * 0.2f, p.z);
+            if (GetCam3D().frustum.IsCubeVisible(stemPos, glm::vec3(0.1f))) {
+                DrawCubeTexAtlas(g_OakLogTex.get(), stemPos, glm::vec3(0.2f),
+                                 WHITE);
+            }
+        }
+        for (int x = -1; x < 2; x++) {
+            for (int y = 3; y < 6; y++) {
+                for (int z = -1; z < 2; z++) {
+                    if (x == 0 && y < 5 && z == 0)
+                        continue;
+                    glm::vec3 leavePos(p.x + x * 0.2f, p.y + y * 0.2f,
+                                       p.z + z * 0.2f);
+                    if (GetCam3D().frustum.IsCubeVisible(leavePos,
+                                                         glm::vec3(0.1f))) {
+                        DrawCubeTexAtlas(g_OakLeaveTex.get(), leavePos,
+                                         glm::vec3(0.2f), WHITE);
+                    }
+                }
             }
         }
     }
@@ -152,16 +182,7 @@ void MainLoop() {
 
     // Draw text
     BeginDraw(DrawModes::TEXT, false);
-    const float fontSize = 1.0f;
-    const std::string cubeText = "Drawn cubes: " + std::to_string(drawnCubes) +
-                                 " / " + std::to_string(g_BlockPos.size());
-    const std::string sphereText =
-        "Drawn spheres: " + std::to_string(drawnSpheres) + " / " +
-        std::to_string(g_BlockPos.size());
-    const float textWidth =
-        Text::GetTextSize(GetDefaultFont(), sphereText, fontSize).x;
-    DrawTextShadow({GetScreenWidth() / 2 - textWidth / 2, 10}, {5, 5}, fontSize,
-                   drawCubes ? cubeText : sphereText, WHITE, DARK_GRAY);
+
     // Display details
     ShowDetails();
 
@@ -181,25 +202,47 @@ int main() {
     // Disable VSync
     EnableVSync(false);
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // Set camera position
-    GetCam3D().position = glm::vec3(0, 0.4f, 0);
+    GetCam3D().position = glm::vec3(0, 11 * 0.2f, 0);
 
     // Create shadow map with 4096x4096 resolution
     g_ShadowMap = std::make_unique<ShadowMap>(4096);
     // Load textures
-    g_GroundTex = std::make_unique<Texture2D>(
-        "assets/images/stone.jpg", glm::vec2(100), TextureFiltering::NEAREST);
+    g_StoneTex = std::make_unique<Texture2D>("assets/images/stone.png",
+                                             glm::vec2(48, 32),
+                                             TextureFiltering::NEAREST);
+    g_GrassTex = std::make_unique<Texture2D>("assets/images/grass_block.png",
+                                             glm::vec2(48, 32),
+                                             TextureFiltering::NEAREST);
+    g_DirtTex = std::make_unique<Texture2D>(
+        "assets/images/dirt.png", glm::vec2(16), TextureFiltering::NEAREST);
+    g_OakLogTex = std::make_unique<Texture2D>("assets/images/oak_log.png",
+                                              glm::vec2(48, 32),
+                                              TextureFiltering::NEAREST);
+    g_OakLeaveTex = std::make_unique<Texture2D>("assets/images/oak_leave.png",
+                                                glm::vec2(48, 32),
+                                                TextureFiltering::NEAREST);
     g_LogoTex = std::make_unique<Texture2D>(
         "assets/images/logo.png", glm::vec2(200), TextureFiltering::LINEAR);
     // Create cubemap
     g_CubeMap = std::make_unique<CubeMap>("assets/images/sky.png");
 
     // Init random block positions
-    for (int i = 0; i < 50; i++) {
-        g_BlockPos.emplace_back(glm::vec3(
-            RandFloat(-5, 5), RandFloat(0.1f, 0.1f), RandFloat(-5, 5)));
+    for (int x = -10; x < 10; x++) {
+        for (int y = -10; y < 10; y++) {
+            for (int z = -10; z < 10; z++) {
+                g_BlockPos.emplace_back(
+                    glm::vec3(x * 0.2f, y * 0.2f, z * 0.2f));
+            }
+        }
+    }
+
+    for (int i = 0; i < RandInt(5, 15); i++) {
+        g_TreePos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 10 * 0.2f),
+                                         9 * 0.2f,
+                                         RandInt(-10 * 0.2f, 10 * 0.2f)));
     }
 
     // Loop

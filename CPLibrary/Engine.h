@@ -179,6 +179,8 @@ class Engine {
                            const CPL::Color &color);
     static void DrawCubeTex(CPL::Texture2D *tex, glm::vec3 pos, glm::vec3 size,
                             const CPL::Color &color);
+    static void DrawCubeTexAtlas(CPL::Texture2D *tex, glm::vec3 pos,
+                                 glm::vec3 size, const CPL::Color &color);
     static void DrawCubeMap(CPL::CubeMap *map);
 
     static void ResetShader();
