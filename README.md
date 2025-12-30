@@ -21,15 +21,15 @@ int main() {
 
         ClearBackground(BLACK);
         
-        BeginDrawing(SHAPE, true);
-        DrawRectangle({0, 0}, {100, 100}, RED);
+        BeginDraw(DrawModes::SHAPE_2D, true);
+        DrawRect({0, 0}, {100, 100}, RED);
 
-        BeginDrawing(TEXT, false);
+        BeginDraw(DrawModes::TEXT, false);
         DrawText({GetScreenWidth() / 2, GetScreenHeight() / 2}, 
             1.0f, "Hello OpenGL", WHITE);
 
-        EndDrawing();
-        glfwSwapBuffers(window);
+        EndDraw();
+        glfwSwapBuffers(GetWindow());
         glfwPollEvents();
     }
     CloseWindow();
@@ -37,7 +37,7 @@ int main() {
     return 0;
 }
 ```
-An actual example code can be found inside the `src/` folder!
+An actual example code for 3D can be found inside the `src/` folder and for 2D inside `example2D/`!
 
 As you can see, the functions and naming conventions are pretty similar \
 and inspired by the ones from Raylib
@@ -53,22 +53,22 @@ and inspired by the ones from Raylib
 + + `glad/`
 + `CPLibrary/`
 + + `shapes2D/`
++ + `shapes3D/`
 + + `timers/`
-+ + `CPLibrary.h`  
++ + `CPLibrary.h`
++ + `Engine.cpp & .h`  
 + + `CPL.cpp & .h`
 + + `more .cpp & .h files for other functionalities`
 
-The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one. In `external/` is the implementation from `glad/` downloaded from its offical website.
+The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one and the shader code. In `external/` is the implementation from `glad/` downloaded from its offical website.
 All code for the shaders like fragment as well as vertex are all stored inside the
-`shader/` folder. Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
-are contained. The other files for the functionalities are below. `CPLibrary.h` just includes all header files
-so that you only need to use to include `CPLibrary.h` to get all available functions. `CPL.cpp` & `.h` implements
-the functionality from the files to a function or contains its own you can call.
+`shader/` folder (in assets as mentioned before). Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
+are contained and in `shapes3D/` the 3D related stuff needed. `Engine.h` & `.cpp` have all implementations of the functions that are available for the framework which can be used by wrappers basically in `CPL.h` and `.cpp`. The others should be self explaining I guess by their names.
 
 ## Functionality
-CPL currently only supports 2D, but 3D is planned for the future. \
+CPL currently supports 2D, but 3D as well which isn't fully completed yet. \
 Since CPL is written in C++ and open source, you may look up the code \
-and modify it potentially for personal use. Besides of making games \ 
+and modify it potentially for personal use. Besides of making games
 for Desktop (Windows & Linux), the framework + the code can be converted \
 to Web with Emscripten.
 
@@ -76,17 +76,27 @@ to Web with Emscripten.
 - Primitives (Lines, Rectangles, Circles etc.)
 - Textures
 - Text + Fonts
-- Camera
 - Tilemaps
-- Lighting
 - Post Processing
 - Particle System
 
+3D:
+- 3D shapes (Cubes & Spheres)
+- Cube Textures
+- Cubemaps
+- Shadows (Shadow Map)
+
+Both:
+- Camera
+- Lighting
+  
 Others:
-- Random number generator or by percent
+- Random number generator wrapper
 - Key and Mouse Inputs
 - Sounds & Music
 - Timer
+
+It is recommended to take a look at the example projects / demonstrations which will show core functionalities and how to use them correctly. Alternatively you may look up the functions inside the documentation but note that it may contains minor mistakes or is outdated. I will keep my best to refresh and update it regularily!
 
 ## Documentation
 
@@ -125,7 +135,25 @@ Others:
 `float GetTime();`
 > Return current time in seconds
 
-`glm::vec2 GetScreenToWorld2D(glm::vec2 position)`
+`void SetTimeScale(float scale);`
+> Set time scale
+
+`void EnableVSync(bool enabled);`
+> Toggle VSync
+
+`void EnableFaceCulling(bool enabled);`
+> Toggle face culling (important for 3D)
+
+`void LockMouse(bool enabled);`
+> Toggle locked and hidden mouse cursor
+
+`Shader& GetShader(DrawModes mode);`
+> Get shader by draw mode
+
+`DrawModes& GetCurMode();`
+> Get current active draw mode
+
+`glm::vec2 GetScreenToWorld2D(glm::vec2 position);`
 > Convert the position to world coordinates
 
 ### Random
@@ -139,10 +167,10 @@ Others:
 `float RandFloat(float min, float max);` 
 > Return random float between min & max
 
-`bool RandByPercentInt(int percent);` 
+`bool RandPercentInt(int percent);` 
 > Return true with a probability of 'percent'
 
-`bool RandByPercentFloat(float percent); `
+`bool RandPercentFloat(float percent); `
 > Return true with a probability of 'percent'
 
 ### Timer
@@ -192,21 +220,31 @@ Others:
 > Set the window icon with a image
 > (stb image supports multiple formats as well say .png, .jpg and more)
 
+`void DestroyWindow();`
+> Destroys the window while being inside the game loop
+
 `void CloseWindow();`
 > Closes the window
 
+`GLFWwindow* GetWindow();`
+> Gives the current window (for f.e. swap buffers in loop)
+
 ### 2D Camera
-`Camera2D camera;`
-> Camera which you can access and manipulate its position
+`Camera2D& GetCam2D();`
+> 2D Camera which you can access and manipulate its position
+
+### 3D Camera
+`Camera3D& GetCam3D();`
+> 3D Camera
 
 ### Post Processing
 `PostProcessingModes:` \
-`PP_DEFAULT` \
-`PP_INVERSE` \
-`PP_GRAYSCALE` \
-`PP_BLUR` \
-`PP_SHARP` \
-`PP_EDGE_DETECTION`
+`DEFAULT` \
+`INVERSE` \
+`GRAYSCALE` \
+`BLUR` \
+`SHARP` \
+`EDGE_DETECTION`
 > enum for multiple implemented post processing modes
 > like blur and inverse colors
 
@@ -232,31 +270,54 @@ Others:
 `class GlobalLight(float intensity, Color color);`
 > Create a global light
 
-`void SetGlobalLight(GlobalLight light);`
+`void SetGlobalLight2D(GlobalLight light);`
 > Apply global light to the screen
 
 `void SetAmbientLight(float ambientStrength);` 
 > Set the ambient intensity
 
-`void AddPointLights(std::vector<PointLight> pointLights);`
+`void AddPointLights2D(std::vector<PointLight> pointLights);`
 > Draw final point lights to the screen
+
+### 3D Lighting
+`class PointLight3D(glm::vec3 position, float intensity, float
+constant, float linear, float quadratic, Color color);`
+> Create a 3D point light
+
+`class DirectionalLight(glm::vec3 direction, glm::vec3 ambient,
+glm::vec3 diffuse, glm::vec3 specular);`
+> Create a directional light
+
+`void SetShininess3D(float shininess);`
+> Set global shininess of all objects
+
+`void SetDirLight3D(DirectionalLight light);`
+> Set current directional light
+
+`void AddPointLights3D(std::vector<PointLight3D> lights);`
+> Draw final 3D point lights to the screen
 
 ### Drawing
 `DrawModes:` \
-`SHAPE` \
-`SHAPE_LIGHT` \
-`TEXTURE` \
-`TEXTURE_LIGHT` \
-`TEXT`
+`SHAPE_2D` \
+`SHAPE_2D_LIGHT` \
+`TEX` \
+`TEX_LIGHT` \
+`TEXT` \
+`SHAPE_3D` \
+`SHAPE_3D_LIGHT` \
+`CUBE_TEX` \
+`CUBE_TEX_LIGHT` 
 > enum for draw modes if you want to draw simple shapes, textures, text and if they should be affected by lighting
+and if 2D or 3D
 
 `void ClearBackground(Color color);`
 > In the next frame, the previous frame will be cleared with the chosen color
 
-`void BeginDrawing(DrawModes mode, bool mode2D);`
-> Start drawing and choose a draw mode (which activates the corresponding shader)
+`void BeginDraw(DrawModes mode, bool mode2D);`
+> Start drawing and choose a draw mode (which activates the corresponding shader), mode2D does not need to be given especially when in 3D
 
-`void EndDrawing();`
+`void EndDraw();`
 > End drawing (unbind the current active shader)
 
 ### Input
@@ -297,7 +358,7 @@ Others:
 `bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);`
 > Return true if a 2d vector collides with a rectangle
 
-`bool CheckCollisionCircleCircle(const Circle& one, const Circle& two);`
+`bool CheckCollisionCircles(const Circle& one, const Circle& two);`
 > Return true if two circles collide
 
 `bool CheckCollisionVec2Circle(const glm::vec2& one, const Circle& two);`
@@ -326,7 +387,7 @@ Others:
 `bool TileExist(glm::vec2 position, glm::vec2 size);`
 > Returns if a tile inside the map exists at the given position and size
 
-`void ChechCollidableTiles(float size);`
+`void CheckCollidableTiles(float size);`
 > Used to tag the tiles "collidable" by checking if they can collide with other objects (without neighbours). When really implementing collision iterate through the tiles in the tilemap if it is tagged "collidable" and do whatever should happen in that process
 
 `void Draw(Shader shader);`
@@ -364,21 +425,47 @@ Others:
 `Texture2D(std::string imagePath, glm::vec2 size, TextureFiltering mode);`
 > Load a texture from an image file with a given size in pixels and a filtering mode
 
-`void DrawTexture2D(Texture2D* texture, glm::vec2 position, Color color);`
+`void DrawTex2D(Texture2D* tex, glm::vec2 pos, Color color);`
 > Draw a texture on the screen with a position and color manipulation (no manipulation -> WHITE)
 
-`void DrawTexture2DRotated(Texture2D* texture, glm::vec2 position, float angle, Color color);`
+`void DrawTex2DRot(Texture2D* tex, glm::vec2 pos, float angle, Color color);`
 > Draw a texture with rotation
 
+### Drawing 3D textures (Cube)
+`void DrawCubeTex(Texture2D* tex, glm::vec3 pos, glm::vec3 size, Color color);`
+> Draw a cube made out of a texture 2D each side
+
+### 3D Shadows (Shadow Map)
+> [!IMPORTANT]
+> If using the provided functions for the shadow map you need to access them from a shadow map instance too. For example:
+> ShadowMap sm(4096);
+> sm.beginDepthPass(lightSpaceMatrix);
+> ...
+
+`class ShadowMap(unsigned int resolution);`
+> Create a shadow map with a given shadow resolution
+
+`void BeginDepthPass(glm::mat4 matrix);`
+> After this call, every object drawn will have its own shadow inside the map stored + you need to pass the light space matrix
+
+`void EndDepthPass();`
+> Everything after will not have its shadow stored
+
+`void BindForReading(int value);`
+> Use shadow map to draw shadows into the scene (value has not to be given as a parameter)
+
 ### Drawing text
-`void DrawText(glm::vec2 position, float scale, std::string text, Color color);`
+`void DrawText(glm::vec2 pos, float scale, std::string text, Color color);`
 > Draw text on the screen
 
-`void DrawTextShadow(glm::vec2 position, glm::vec2 shadowOffset, float scale, std::string text, Color color, Color shadowColor);`
+`void DrawTextShadow(glm::vec2 pos, glm::vec2 shadowOff, float scale, std::string text, Color color, Color shadowColor);`
 > Draw text with shadow
 
 `void ShowDetails(); `
 > Display all stats (f.e. GPU Info or FPS)
+
+`std::string GetDefaultFont();`
+> Returns name of the default font
 
 `glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);`
 > Get text size (width & height)
@@ -389,39 +476,53 @@ Others:
 `void Text::Use(std::string fontName);`
 > Use selected font for text drawn after this call
 
+### Cube Map
+`class CubeMap(std::string filePath);`
+> Create a cube map from a cubemap image (f.e. skybox)
+
+`void DrawCubeMap(CubeMap* map);`
+> Draw cubemap onto the screen
+
+### Drawing simple 3D shapes
+`void DrawCube(glm::vec3 pos, glm::vec3 size, Color color);`
+> Draw cube / quad
+
+`void DrawSphere(glm::vec3 pos, float radius, Color color);`
+> Draw sphere
+
 ### Drawing primitives
 > [!IMPORTANT]
 > RGBA values between 0 and 255 \
 > Angles in degrees
 
-`void DrawRectangle(glm::vec2 position, glm::vec2 size, Color color);`
+`void DrawRect(glm::vec2 pos, glm::vec2 size, Color color);`
 > Draw a rectangle
 
-`void DrawRectangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+`void DrawRectRot(glm::vec2 pos, glm::vec2 size, float angle, Color color);`
 > Draw a rectangle with rotation
 
-`void DrawRectangleOutline(glm::vec2 position, glm::vec2 size, Color color);`
+`void DrawRectOut(glm::vec2 pos, glm::vec2 size, Color color);`
 > Draw only the rectangle outline
 
-`void DrawRectangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+`void DrawRectRotOut(glm::vec2 pos, glm::vec2 size, float angle, Color color);`
 > Draw only the rectangle outline with rotation
 
-`void DrawTriangle(glm::vec2 position, glm::vec2 size, Color color);`
+`void DrawTriangle(glm::vec2 pos, glm::vec2 size, Color color);`
 > Draw a triangle
 
-`void DrawTriangleRotated(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+`void DrawTriangleRot(glm::vec2 pos, glm::vec2 size, float angle, Color color);`
 > Draw a triangle with rotation
 
-`void DrawTriangleOutline(glm::vec2 position, glm::vec2 size, Color color);`
+`void DrawTriangleOut(glm::vec2 pos, glm::vec2 size, Color color);`
 > Draw only the triangle outline
 
-`void DrawTriangleRotOut(glm::vec2 position, glm::vec2 size, float angle, Color color);`
+`void DrawTriangleRotOut(glm::vec2 pos, glm::vec2 size, float angle, Color color);`
 > Draw only the triangle outline with rotation
 
-`void DrawCircle(glm::vec2 position, float radius, Color color);`
+`void DrawCircle(glm::vec2 pos, float radius, Color color);`
 > Draw a circle
 
-`void DrawCircleOutline(glm::vec2 position, float radius, Color color);`
+`void DrawCircleOut(glm::vec2 pos, float radius, Color color);`
 > Draw only the circle outline
 
 `void DrawLine(glm::vec2 startPos, glm::vec2 endPos, Color color);`
