@@ -19,6 +19,8 @@ std::unique_ptr<CubeMap> g_CubeMap;
 std::vector<glm::vec3> g_BlockPos;
 std::vector<glm::vec3> g_TreePos;
 
+float wavingLeavesOff;
+
 void UpdateCam() {
     // Update frustum for frustum culling
     float aspect = GetScreenWidth() / GetScreenHeight();
@@ -49,8 +51,10 @@ void MainLoop() {
 
     UpdateCam();
 
+    wavingLeavesOff = sin(GetTime());
+
     // Shadow map configurations
-    glm::vec3 lightPos(sin(GetTime()) * 5.0f, 5.0f, cos(GetTime()) * 5.0f);
+    glm::vec3 lightPos(sin(GetTime() * 0.01f) * 5.0f, 5.0f, cos(GetTime() * 0.01f) * 5.0f);
     glm::mat4 lightProjection =
         glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 25.0f);
     glm::mat4 lightView =
@@ -64,38 +68,21 @@ void MainLoop() {
     g_ShadowMap->BeginDepthPass(lightSpaceMatrix);
 
     // Shadows
-    for (auto &p : g_BlockPos) {
-        if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
-            if (p.y == 9 * 0.2f) {
-                Cube cube(p, glm::vec3(0.2f), WHITE);
-                //cube.DrawDepth(depthShader);
-            } else if (p.y >= 6 * 0.2f) {
-
-            } else {
-            }
-        }
-    }
-
     for (auto &p : g_TreePos) {
         for (int y = 1; y < 5; y++) {
             glm::vec3 stemPos(p.x, p.y + y * 0.2f, p.z);
-            if (GetCam3D().frustum.IsCubeVisible(stemPos, glm::vec3(0.1f))) {
-                Cube cube(stemPos, glm::vec3(0.2f), WHITE);
-                cube.DrawDepth(depthShader);
-            }
+            Cube cube(stemPos, glm::vec3(0.2f), WHITE);
+            cube.DrawDepth(depthShader);
         }
         for (int x = -1; x < 2; x++) {
             for (int y = 3; y < 6; y++) {
                 for (int z = -1; z < 2; z++) {
                     if (x == 0 && y < 5 && z == 0)
                         continue;
-                    glm::vec3 leavePos(p.x + x * 0.2f, p.y + y * 0.2f,
+                    glm::vec3 leavePos(p.x + x * 0.2f + wavingLeavesOff * 0.01f, p.y + y * 0.2f,
                                        p.z + z * 0.2f);
-                    if (GetCam3D().frustum.IsCubeVisible(leavePos,
-                                                         glm::vec3(0.1f))) {
-                        CubeTex cube(leavePos, glm::vec3(0.2f), WHITE);
-                        cube.DrawDepth(depthShader, g_OakLeaveTex.get());
-                    }
+                    CubeTex cube(leavePos, glm::vec3(0.2f), WHITE);
+                    cube.DrawDepthAtlas(depthShader, g_OakLeaveTex.get());
                 }
             }
         }
@@ -160,7 +147,7 @@ void MainLoop() {
                 for (int z = -1; z < 2; z++) {
                     if (x == 0 && y < 5 && z == 0)
                         continue;
-                    glm::vec3 leavePos(p.x + x * 0.2f, p.y + y * 0.2f,
+                    glm::vec3 leavePos(p.x + x * 0.2f + wavingLeavesOff * 0.01f, p.y + y * 0.2f,
                                        p.z + z * 0.2f);
                     if (GetCam3D().frustum.IsCubeVisible(leavePos,
                                                          glm::vec3(0.1f))) {
@@ -240,9 +227,9 @@ int main() {
     }
 
     for (int i = 0; i < RandInt(5, 15); i++) {
-        g_TreePos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 10 * 0.2f),
+        g_TreePos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 9 * 0.2f),
                                          9 * 0.2f,
-                                         RandInt(-10 * 0.2f, 10 * 0.2f)));
+                                         RandInt(-10 * 0.2f, 9 * 0.2f)));
     }
 
     // Loop

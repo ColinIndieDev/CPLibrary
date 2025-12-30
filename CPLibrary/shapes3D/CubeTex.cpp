@@ -195,10 +195,14 @@ void CubeTex::DrawDepth(const Shader &shader, const Texture2D *texture) const {
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
-
+    shader.SetInt("ourTexture", 0);
+    
     glBindVertexArray(VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture->texture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 void CubeTex::DrawAtlas(const Shader &shader,
                         const Texture2D *atlasTexture) const {
@@ -228,9 +232,13 @@ void CubeTex::DrawDepthAtlas(const Shader &shader,
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
+    shader.SetInt("ourTexture", 0);
 
     glBindVertexArray(VAOAtlas);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, atlasTexture->texture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 } // namespace CPL
