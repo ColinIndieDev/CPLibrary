@@ -58,6 +58,7 @@ class ParticleSystem;
 class Cube;
 class Sphere;
 class CubeTex;
+class PlaneTex;
 class PointLight3D;
 class DirectionalLight;
 class CubeMap;
@@ -181,6 +182,11 @@ class Engine {
                             const CPL::Color &color);
     static void DrawCubeTexAtlas(CPL::Texture2D *tex, glm::vec3 pos,
                                  glm::vec3 size, const CPL::Color &color);
+    static void DrawPlaneTex(CPL::Texture2D *tex, glm::vec3 pos, glm::vec2 size,
+                             const CPL::Color &color);
+    static void DrawPlaneTexRot(CPL::Texture2D *tex, glm::vec3 pos,
+                                glm::vec3 rot, glm::vec2 size,
+                                const CPL::Color &color);
     static void DrawCubeMap(CPL::CubeMap *map);
 
     static void ResetShader();

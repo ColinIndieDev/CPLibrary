@@ -4,7 +4,7 @@ out vec4 FragColor;
 in vec2 TexCoord;
 in vec3 Normal;  
 in vec3 FragPos;
-in vec4 FragPosLightSpace;  // ✅ NEU vom Vertex Shader
+in vec4 FragPosLightSpace;
 
 struct PointLight {
     vec3 position;
@@ -29,9 +29,8 @@ uniform DirectionalLight dirLight;
 uniform vec3 viewPos;
 uniform vec4 inputColor;
 uniform sampler2D ourTexture;
-uniform sampler2D shadowMap;  // ✅ NEU für Shadow Map
+uniform sampler2D shadowMap;  
 
-// ✅ NEU: Shadow Calculation Funktion
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     // Perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -112,11 +111,9 @@ void main() {
     for(int i = 0; i < numPointLights; i++)
         lighting += CalcPointLight(pointLights[i], normal, FragPos, viewDir);
     
-    // ✅ NEU: Calculate shadow
     vec3 lightDir = normalize(-dirLight.direction);
     float shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
     
-    // ✅ NEU: Apply shadow (nur auf diffuse/specular, nicht auf ambient!)
     vec3 ambient = dirLight.ambient;
     vec3 diffuseSpecular = lighting - ambient;
     lighting = ambient + (1.0 - shadow) * diffuseSpecular;

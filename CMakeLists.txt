@@ -100,6 +100,8 @@ add_executable(Example src/main.cpp
     CPLibrary/shapes3D/Sphere.h
     CPLibrary/shapes3D/CubeTex.cpp
     CPLibrary/shapes3D/CubeTex.h
+    CPLibrary/shapes3D/PlaneTex.cpp
+    CPLibrary/shapes3D/PlaneTex.h
     CPLibrary/shapes3D/ShadowMap.cpp
     CPLibrary/shapes3D/ShadowMap.h
     CPLibrary/shapes3D/PointLight3D.h

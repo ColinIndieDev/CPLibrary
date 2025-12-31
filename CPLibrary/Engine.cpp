@@ -15,6 +15,7 @@
 #include "shapes3D/CubeMap.h"
 #include "shapes3D/CubeTex.h"
 #include "shapes3D/DirectionalLight.h"
+#include "shapes3D/PlaneTex.h"
 #include "shapes3D/PointLight3D.h"
 #include "shapes3D/Sphere.h"
 #include "stb_image.h"
@@ -624,6 +625,25 @@ void Engine::DrawCubeTexAtlas(CPL::Texture2D *tex, const glm::vec3 pos,
                           ? s_LightCubeTexShader
                           : s_CubeTexShader,
                       tex);
+}
+
+void Engine::DrawPlaneTex(CPL::Texture2D *tex, const glm::vec3 pos,
+                          const glm::vec2 size, const CPL::Color &color) {
+    const auto planeTex = CPL::PlaneTex(pos, glm::vec3(0), size, color);
+    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
+                      ? s_LightCubeTexShader
+                      : s_CubeTexShader,
+                  tex);
+}
+
+void Engine::DrawPlaneTexRot(CPL::Texture2D *tex, const glm::vec3 pos,
+                             const glm::vec3 rot, const glm::vec2 size,
+                             const CPL::Color &color) {
+    const auto planeTex = CPL::PlaneTex(pos, rot, size, color);
+    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
+                      ? s_LightCubeTexShader
+                      : s_CubeTexShader,
+                  tex);
 }
 
 void Engine::DrawCubeMap(CPL::CubeMap *map) {

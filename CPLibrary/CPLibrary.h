@@ -20,6 +20,7 @@
 #include "../CPLibrary/shapes3D/Cube.h"
 #include "../CPLibrary/shapes3D/Sphere.h"
 #include "../CPLibrary/shapes3D/CubeTex.h"
+#include "../CPLibrary/shapes3D/PlaneTex.h"
 #include "../CPLibrary/shapes3D/CubeMap.h"
 #include "../CPLibrary/shapes3D/ShadowMap.h"
 #include "../CPLibrary/shapes3D/DirectionalLight.h"

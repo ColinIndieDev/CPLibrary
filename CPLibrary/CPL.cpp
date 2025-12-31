@@ -134,6 +134,14 @@ void DrawCubeTexAtlas(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
                       const Color &color) {
     Engine::DrawCubeTexAtlas(tex, pos, size, color);
 }
+void DrawPlaneTex(Texture2D *tex, const glm::vec3 pos, const glm::vec2 size,
+                  const Color &color) {
+    Engine::DrawPlaneTex(tex, pos, size, color);
+}
+void DrawPlaneTexRot(Texture2D *tex, const glm::vec3 pos, const glm::vec3 rot,
+                     const glm::vec2 size, const Color &color) {
+    Engine::DrawPlaneTexRot(tex, pos, rot, size, color);
+}
 void DrawCubeMap(CubeMap *map) { Engine::DrawCubeMap(map); }
 
 void ClearBackground(const Color &color) { Engine::ClearBackground(color); }

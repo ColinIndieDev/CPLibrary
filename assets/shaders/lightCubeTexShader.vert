@@ -6,19 +6,18 @@ layout (location = 2) in vec2 aTexCoord;
 out vec2 TexCoord;
 out vec3 FragPos;
 out vec3 Normal;
-out vec4 FragPosLightSpace;  // ✅ NEU für Shadows
+out vec4 FragPosLightSpace;
 
 uniform mat4 projection;
 uniform vec3 offset;
 uniform mat4 transform;
-uniform mat4 lightSpaceMatrix;  // ✅ NEU für Shadows
+uniform mat4 lightSpaceMatrix;
 
 void main() {
     vec3 worldPos = aPos + offset;
     FragPos = vec3(transform * vec4(worldPos, 1.0));
     Normal = mat3(transpose(inverse(transform))) * aNormal;
     
-    // ✅ NEU: Berechne Position im Light Space
     FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
     
     gl_Position = projection * vec4(FragPos, 1.0);

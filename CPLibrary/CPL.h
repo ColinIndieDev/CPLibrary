@@ -38,6 +38,7 @@ class ParticleSystem;
 class Cube;
 class Sphere;
 class CubeTex;
+class PlaneTex;
 class PointLight3D;
 class DirectionalLight;
 class CubeMap;
@@ -114,6 +115,10 @@ void DrawCubeTex(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
                  const Color &color);
 void DrawCubeTexAtlas(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
                       const Color &color);
+void DrawPlaneTex(Texture2D *tex, const glm::vec3 pos, const glm::vec2 size,
+                  const Color &color);
+void DrawPlaneTexRot(Texture2D *tex, const glm::vec3 pos, const glm::vec3 rot,
+                     const glm::vec2 size, const Color &color);
 void DrawCubeMap(CubeMap *map);
 
 void ClearBackground(const Color &color);

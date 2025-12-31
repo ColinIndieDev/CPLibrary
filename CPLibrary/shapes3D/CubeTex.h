@@ -12,10 +12,7 @@ class CubeTex {
   public:
     glm::vec3 position;
     glm::vec3 size;
-    glm::vec3 textureSize;
-    int channels{};
     Color color;
-    unsigned int texture{};
 
     explicit CubeTex(glm::vec3 pos, glm::vec3 size, Color color);
     ~CubeTex();
@@ -25,14 +22,12 @@ class CubeTex {
 
     CubeTex(CubeTex &&other) noexcept
         : position(other.position), size(other.size),
-          textureSize(other.textureSize), channels(other.channels),
-          color(other.color), texture(other.texture), VBO(other.VBO),
+          color(other.color), VBO(other.VBO),
           VAO(other.VAO), VBOAtlas(other.VBOAtlas), VAOAtlas(other.VAOAtlas) {
         other.VBO = 0;
         other.VAO = 0;
         other.VBOAtlas = 0;
         other.VAOAtlas = 0;
-        other.texture = 0;
     }
 
     CubeTex &operator=(CubeTex &&other) noexcept {
@@ -52,10 +47,7 @@ class CubeTex {
 
             position = other.position;
             size = other.size;
-            textureSize = other.textureSize;
             color = other.color;
-            channels = other.channels;
-            texture = other.texture;
 
             VBO = other.VBO;
             VAO = other.VAO;
