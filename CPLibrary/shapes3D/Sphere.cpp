@@ -3,25 +3,24 @@
 #include <algorithm>
 
 namespace CPL {
-Sphere::Sphere(const glm::vec3 pos, const float radius, const Color &color)
+Sphere::Sphere(const glm::vec3 &pos, const float radius, const Color &color)
     : pos(pos), radius(radius), color(color) {
-    const float PI = 3.14159265359f;
-    const int res = 250.0f * radius;
+    const int res = static_cast<int>(250.0f * radius);
     const int stacks = std::clamp(res, 8, 64);
     const int sectors = stacks * 2;
 
     for (int i = 0; i <= stacks; ++i) {
-        float v = (float)i / stacks;
-        float theta = v * PI;
+        float v = static_cast<float>(i) / static_cast<float>(stacks);
+        float theta = v * static_cast<float>(std::numbers::pi);
 
         for (int j = 0; j <= sectors; ++j) {
-            float u = (float)j / sectors;
-            float phi = u * 2.0f * PI;
+            float u = static_cast<float>(j) / static_cast<float>(sectors);
+            float phi = u * 2.0f * static_cast<float>(std::numbers::pi);
 
             glm::vec3 pos;
-            pos.x = radius * sin(theta) * cos(phi);
-            pos.y = radius * cos(theta);
-            pos.z = radius * sin(theta) * sin(phi);
+            pos.x = radius * std::sin(theta) * std::cos(phi);
+            pos.y = radius * std::cos(theta);
+            pos.z = radius * std::sin(theta) * std::sin(phi);
 
             glm::vec3 normal = glm::normalize(pos);
 
@@ -31,7 +30,7 @@ Sphere::Sphere(const glm::vec3 pos, const float radius, const Color &color)
 
     for (int i = 0; i < stacks; ++i) {
         for (int j = 0; j < sectors; ++j) {
-            int first = i * (sectors + 1) + j;
+            int first = (i * (sectors + 1)) + j;
             int second = first + sectors + 1;
 
             m_Indices.push_back(first);
@@ -50,23 +49,25 @@ Sphere::Sphere(const glm::vec3 pos, const float radius, const Color &color)
     glBindVertexArray(m_VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-    glBufferData(GL_ARRAY_BUFFER, m_Vertices.size() * sizeof(Vertex),
+    glBufferData(GL_ARRAY_BUFFER,
+                 static_cast<int>(m_Vertices.size() * sizeof(Vertex)),
                  m_Vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 m_Indices.size() * sizeof(unsigned int), m_Indices.data(),
-                 GL_STATIC_DRAW);
+                 static_cast<int>(m_Indices.size() * sizeof(uint32_t)),
+                 m_Indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
 
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          (void *)offsetof(Vertex, normal));
+                          reinterpret_cast<void *>(offsetof(Vertex, normal)));
     glEnableVertexAttribArray(1);
 
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          (void *)offsetof(Vertex, uv));
+                          reinterpret_cast<void *>(offsetof(Vertex, uv)));
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
@@ -94,7 +95,8 @@ void Sphere::Draw(const Shader &shader) const {
     shader.SetVector3f("offset", glm::vec3(pos));
     shader.SetColor("inputColor", color);
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, static_cast<int>(m_Indices.size()),
+                   GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 }
 void Sphere::DrawDepth(const Shader &shader) const {
@@ -103,9 +105,9 @@ void Sphere::DrawDepth(const Shader &shader) const {
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
-    
+
     glBindVertexArray(m_VAO);
-    glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, static_cast<int>(m_Indices.size()), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 }
 } // namespace CPL

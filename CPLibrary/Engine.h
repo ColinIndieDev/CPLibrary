@@ -14,7 +14,7 @@
 #include <GLFW/glfw3.h>
 
 namespace CPL {
-enum class DrawModes {
+enum class DrawModes : uint8_t {
     SHAPE_2D,
     TEX,
     TEXT,
@@ -25,11 +25,11 @@ enum class DrawModes {
     SHAPE_3D_LIGHT,
     CUBE_TEX_LIGHT,
 };
-enum class TextureFiltering {
+enum class TextureFiltering : uint8_t {
     NEAREST,
     LINEAR,
 };
-enum class PostProcessingModes {
+enum class PostProcessingModes : uint8_t {
     DEFAULT,
     INVERSE,
     GRAYSCALE,
@@ -102,10 +102,10 @@ struct Camera3D {
 
     Frustum frustum;
 
-    glm::mat4 GetViewMatrix() const {
+    [[nodiscard]] glm::mat4 GetViewMatrix() const {
         return glm::lookAt(position, position + front, up);
     }
-    glm::mat4 GetProjectionMatrix(const float aspect) const {
+    [[nodiscard]] glm::mat4 GetProjectionMatrix(const float aspect) const {
         return glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
     }
 
@@ -141,53 +141,55 @@ class Engine {
     static CPL::DrawModes &GetCurMode();
     static CPL::Shader &GetShader(const CPL::DrawModes &mode);
 
-    static void DrawTriangle(glm::vec2 pos, glm::vec2 size,
+    static void DrawTriangle(const glm::vec2 &pos, const glm::vec2 &size,
                              const CPL::Color &color);
-    static void DrawTriangleRot(glm::vec2 pos, glm::vec2 size, float angle,
+    static void DrawTriangleRot(const glm::vec2 &pos, const glm::vec2 &size,
+                                float angle, const CPL::Color &color);
+    static void DrawTriangleOut(const glm::vec2 &pos, const glm::vec2 &size,
                                 const CPL::Color &color);
-    static void DrawTriangleOut(glm::vec2 pos, glm::vec2 size,
-                                const CPL::Color &color);
-    static void DrawTriangleRotOut(glm::vec2 pos, glm::vec2 size, float angle,
-                                   const CPL::Color &color);
-    static void DrawRect(glm::vec2 pos, glm::vec2 size,
+    static void DrawTriangleRotOut(const glm::vec2 &pos, const glm::vec2 &size,
+                                   float angle, const CPL::Color &color);
+    static void DrawRect(const glm::vec2 &pos, const glm::vec2 &size,
                          const CPL::Color &color);
-    static void DrawRectRot(glm::vec2 pos, glm::vec2 size, float angle,
+    static void DrawRectRot(const glm::vec2 &pos, const glm::vec2 &size,
+                            float angle, const CPL::Color &color);
+    static void DrawRectOut(const glm::vec2 &pos, const glm::vec2 &size,
                             const CPL::Color &color);
-    static void DrawRectOut(glm::vec2 pos, glm::vec2 size,
-                            const CPL::Color &color);
-    static void DrawRectRotOut(glm::vec2 pos, glm::vec2 size, float angle,
-                               const CPL::Color &color);
-    static void DrawCircle(glm::vec2 pos, float radius,
+    static void DrawRectRotOut(const glm::vec2 &pos, const glm::vec2 &size,
+                               float angle, const CPL::Color &color);
+    static void DrawCircle(const glm::vec2 &pos, float radius,
                            const CPL::Color &color);
-    static void DrawCircleOut(glm::vec2 pos, float radius,
+    static void DrawCircleOut(const glm::vec2 &pos, float radius,
                               const CPL::Color &color);
-    static void DrawLine(glm::vec2 startPos, glm::vec2 endPos,
+    static void DrawLine(const glm::vec2 &startPos, const glm::vec2 &endPos,
                          const CPL::Color &color);
-    static void DrawTex2D(CPL::Texture2D *tex, glm::vec2 pos,
+    static void DrawTex2D(CPL::Texture2D *tex, const glm::vec2 &pos,
                           const CPL::Color &color);
-    static void DrawTex2DRot(CPL::Texture2D *tex, glm::vec2 pos, float angle,
-                             const CPL::Color &color);
+    static void DrawTex2DRot(CPL::Texture2D *tex, const glm::vec2 &pos,
+                             float angle, const CPL::Color &color);
 
-    static void DrawText(glm::vec2 pos, float scale, const std::string &text,
-                         const CPL::Color &color);
-    static void DrawTextShadow(glm::vec2 pos, glm::vec2 shadowOff, float scale,
-                               const std::string &text, const CPL::Color &color,
+    static void DrawText(const glm::vec2 &pos, float scale,
+                         const std::string &text, const CPL::Color &color);
+    static void DrawTextShadow(const glm::vec2 &pos, const glm::vec2 &shadowOff,
+                               float scale, const std::string &text,
+                               const CPL::Color &color,
                                const CPL::Color &shadowColor);
 
-    static void DrawCube(glm::vec3 pos, glm::vec3 size,
+    static void DrawCube(const glm::vec3 &pos, const glm::vec3 &size,
                          const CPL::Color &color);
-    static void DrawSphere(glm::vec3 pos, float radius,
+    static void DrawSphere(const glm::vec3 &pos, float radius,
                            const CPL::Color &color);
-    static void DrawCubeTex(CPL::Texture2D *tex, glm::vec3 pos, glm::vec3 size,
-                            const CPL::Color &color);
-    static void DrawCubeTexAtlas(CPL::Texture2D *tex, glm::vec3 pos,
-                                 glm::vec3 size, const CPL::Color &color);
-    static void DrawPlaneTex(CPL::Texture2D *tex, glm::vec3 pos, glm::vec2 size,
-                             const CPL::Color &color);
-    static void DrawPlaneTexRot(CPL::Texture2D *tex, glm::vec3 pos,
-                                glm::vec3 rot, glm::vec2 size,
+    static void DrawCubeTex(const CPL::Texture2D *tex, const glm::vec3 &pos,
+                            const glm::vec3 &size, const CPL::Color &color);
+    static void DrawCubeTexAtlas(const CPL::Texture2D *tex, const glm::vec3 &pos,
+                                 const glm::vec3 &size,
+                                 const CPL::Color &color);
+    static void DrawPlaneTex(const CPL::Texture2D *tex, const glm::vec3 &pos,
+                             const glm::vec2 &size, const CPL::Color &color);
+    static void DrawPlaneTexRot(const CPL::Texture2D *tex, const glm::vec3 &pos,
+                                const glm::vec3 &rot, const glm::vec2 &size,
                                 const CPL::Color &color);
-    static void DrawCubeMap(CPL::CubeMap *map);
+    static void DrawCubeMap(const CPL::CubeMap *map);
 
     static void ResetShader();
 
@@ -197,7 +199,7 @@ class Engine {
     static void SetGlobalLight2D(const CPL::GlobalLight &light);
     static void AddPointLights2D(const std::vector<CPL::PointLight> &lights);
     static void AddPointLights(float lights);
-    static void SetShininess3D(const float shininess);
+    static void SetShininess3D(float shininess);
     static void AddPointLights3D(const std::vector<CPL::PointLight3D> &lights);
     static void SetDirLight3D(const CPL::DirectionalLight &light);
     static void BeginPostProcessing();
@@ -206,10 +208,10 @@ class Engine {
     static void ApplyPostProcessingCustom(const CPL::Shader &shader);
     static void EndDraw();
 
-    static void FramebufferSizeCallback(GLFWwindow *window, const int width,
-                                        const int height);
-    static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
-    static void CharCallback(GLFWwindow *window, unsigned int codepoint);
+    static void FramebufferSizeCallback(GLFWwindow *window, int width,
+                                        int height);
+    static void MouseCallback(GLFWwindow *window, double xPosIn, double yPosIn);
+    static void CharCallback(GLFWwindow *window, uint32_t codepoint);
     static void InitCharPressed(GLFWwindow *window);
 
     static void CalcFPS();
@@ -217,7 +219,7 @@ class Engine {
     static void CalcDeltaTime();
     static float GetDeltaTime();
     static float GetTime();
-    static void SetTimeScale(const float scale);
+    static void SetTimeScale(float scale);
 
     static void ShowDetails();
 
@@ -226,27 +228,27 @@ class Engine {
     static void DestroyWindow();
     static void CloseWindow();
 
-    static void EnableVSync(const bool enabled);
-    static void EnableFaceCulling(const bool enabled);
-    static void LockMouse(const bool enabled);
+    static void EnableVSync(bool enabled);
+    static void EnableFaceCulling(bool enabled);
+    static void LockMouse(bool enabled);
     static int WindowShouldClose();
     static float GetScreenWidth();
     static float GetScreenHeight();
 
-    static int RandInt(const int min, const int max);
-    static float RandFloat(const float min, const float max);
-    static bool RandPercentInt(const int percent);
-    static bool RandPercentFloat(const float percent);
+    static int RandInt(int min, int max);
+    static float RandFloat(float min, float max);
+    static bool RandPercentInt(int percent);
+    static bool RandPercentFloat(float percent);
 
     static void UpdateInput();
-    static bool IsKeyDown(const int key);
-    static bool IsKeyUp(const int key);
-    static bool IsKeyPressedOnce(const int key);
-    static bool IsKeyReleased(const int key);
+    static bool IsKeyDown(int key);
+    static bool IsKeyUp(int key);
+    static bool IsKeyPressedOnce(int key);
+    static bool IsKeyReleased(int key);
     static unsigned int GetCharPressed();
-    static bool IsMouseDown(const int button);
-    static bool IsMousePressedOnce(const int button);
-    static bool IsMouseReleased(const int button);
+    static bool IsMouseDown(int button);
+    static bool IsMousePressedOnce(int button);
+    static bool IsMouseReleased(int button);
 
     static glm::vec2 GetMousePos();
     static glm::vec2 GetScreenToWorld2D(const glm::vec2 &screenPos);
@@ -260,8 +262,8 @@ class Engine {
     static CPL::Shader &GetDepthShader();
 
   private:
-    static unsigned int s_ScreenWidth;
-    static unsigned int s_ScreenHeight;
+    static uint32_t s_ScreenWidth;
+    static uint32_t s_ScreenHeight;
     static glm::mat4 s_Projection2D;
     static glm::mat4 s_Projection3D;
 
@@ -289,7 +291,7 @@ class Engine {
     static std::unordered_map<int, bool> s_PrevMouseButtons;
 
     static GLFWwindow *s_Window;
-    static std::queue<unsigned int> s_CharQueue;
+    static std::queue<uint32_t> s_CharQueue;
 
     static CPL::Camera2D s_Camera2D;
     static CPL::Camera3D s_Camera3D;

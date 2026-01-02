@@ -13,15 +13,15 @@ void ParticleSystem::Update() {
 
 void ParticleSystem::Draw() {
     for (auto &p : particles) {
-        DrawTex2D(p.particleTex, p.position, p.color);
+        DrawTex2D(p.particleTex, p.pos, p.color);
     }
 }
 
-void ParticleSystem::AddParticle(Texture2D *texture, const Color &color,
+void ParticleSystem::AddParticle(Texture2D *const tex, const Color &color,
                                  const float lifeTime,
-                                 const glm::vec2 &direction,
+                                 const glm::vec2 &dir,
                                  const glm::vec2 &offset) {
     particles.emplace_back(
-        Particle(position + offset, texture, color, lifeTime, direction));
+        pos + offset, tex, color, lifeTime, dir);
 }
 } // namespace CPL

@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Audio.h"
 #include "GLFW/glfw3.h"
+#include "Logging.h"
 #include "Shader.h"
 #include "Text.h"
 #include "shapes2D/Circle.h"
@@ -100,17 +101,17 @@ void Engine::ShowDetails() {
 
 bool Engine::CheckCollisionRects(const CPL::Rectangle &one,
                                  const CPL::Rectangle &two) {
-    const bool collisionX = one.position.x + one.size.x >= two.position.x &&
-                            two.position.x + two.size.x >= one.position.x;
-    const bool collisionY = one.position.y + one.size.y >= two.position.y &&
-                            two.position.y + two.size.y >= one.position.y;
+    const bool collisionX = one.pos.x + one.size.x >= two.pos.x &&
+                            two.pos.x + two.size.x >= one.pos.x;
+    const bool collisionY = one.pos.y + one.size.y >= two.pos.y &&
+                            two.pos.y + two.size.y >= one.pos.y;
 
     return collisionX && collisionY;
 }
 bool Engine::CheckCollisionCircleRect(const CPL::Circle &one,
                                       const CPL::Rectangle &two) {
-    const glm::vec2 circleCenter = one.position;
-    const glm::vec2 rectCenter = two.position + two.size * 0.5f;
+    const glm::vec2 circleCenter = one.pos;
+    const glm::vec2 rectCenter = two.pos + two.size * 0.5f;
     const glm::vec2 halfExtents = two.size * 0.5f;
     const glm::vec2 difference = circleCenter - rectCenter;
     const glm::vec2 clamped = glm::clamp(difference, -halfExtents, halfExtents);
@@ -121,20 +122,20 @@ bool Engine::CheckCollisionCircleRect(const CPL::Circle &one,
 }
 bool Engine::CheckCollisionVec2Rect(const glm::vec2 &one,
                                     const CPL::Rectangle &two) {
-    return two.position.x < one.x && one.x < two.position.x + two.size.x &&
-           two.position.y < one.y && one.y < two.position.y + two.size.y;
+    return two.pos.x < one.x && one.x < two.pos.x + two.size.x &&
+           two.pos.y < one.y && one.y < two.pos.y + two.size.y;
 }
 bool Engine::CheckCollisionCircles(const CPL::Circle &one,
                                    const CPL::Circle &two) {
-    const glm::vec2 dist = one.position - two.position;
-    const float distanceSquared = dist.x * dist.x + dist.y * dist.y;
+    const glm::vec2 dist = one.pos - two.pos;
+    const float distanceSquared = (dist.x * dist.x) + (dist.y * dist.y);
     const float radiusSum = one.radius + two.radius;
     return distanceSquared <= radiusSum * radiusSum;
 }
 bool Engine::CheckCollisionVec2Circle(const glm::vec2 &one,
                                       const CPL::Circle &two) {
-    const glm::vec2 dist = one - two.position;
-    const float distanceSquared = dist.x * dist.x + dist.y * dist.y;
+    const glm::vec2 dist = one - two.pos;
+    const float distanceSquared = (dist.x * dist.x) + (dist.y * dist.y);
     return distanceSquared <= two.radius * two.radius;
 }
 
@@ -156,15 +157,18 @@ void Engine::InitWindow(const int width, const int height, const char *title) {
 
     s_Window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (s_Window == nullptr) {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        Logging::Log(Logging::MessageStates::WARNING,
+                     "Failed to create GLFW window");
         glfwTerminate();
         exit(-1);
     }
     glfwMakeContextCurrent(s_Window);
     glfwSetFramebufferSizeCallback(s_Window, FramebufferSizeCallback);
 
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+    if (!static_cast<bool>(gladLoadGLLoader(
+            reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))) {
+        Logging::Log(Logging::MessageStates::ERROR,
+                     "Failed to initialize GLAD");
         exit(-1);
     }
 
@@ -185,26 +189,29 @@ void Engine::InitWindow(const int width, const int height, const char *title) {
 }
 
 void Engine::SetWindowIcon(const std::string &filePath) {
-    int width, height, channels;
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    ;
     stbi_load(filePath.c_str(), &width, &height, &channels, 0);
     int requiredComponents = 0;
     if (channels == 3)
         requiredComponents = 3;
     else if (channels == 4)
         requiredComponents = 4;
-    GLFWimage images[1];
+    std::array<GLFWimage, 1> images{};
     images[0].pixels =
         stbi_load(filePath.c_str(), &images[0].width, &images[0].height,
                   nullptr, requiredComponents);
-    if (images[0].pixels) {
-        glfwSetWindowIcon(s_Window, 1, images);
+    if (static_cast<bool>(images[0].pixels)) {
+        glfwSetWindowIcon(s_Window, 1, images.data());
         stbi_image_free(images[0].pixels);
     } else {
-        Logging::Log(2, "Failed to load icon");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to load icon");
     }
 }
 
-void Engine::DestroyWindow() { glfwSetWindowShouldClose(s_Window, true); }
+void Engine::DestroyWindow() { glfwSetWindowShouldClose(s_Window, 1); }
 
 void Engine::CloseWindow() {
     glfwTerminate();
@@ -266,70 +273,94 @@ void Engine::InitShaders() {
 }
 
 void Engine::BeginDraw(const CPL::DrawModes &mode, const bool mode2D) {
-    CPL::Shader shader{};
+    CPL::Shader *shader = nullptr;
     s_CurrentDrawMode = mode;
-    if (mode == CPL::DrawModes::SHAPE_2D)
-        shader = s_Shape2DShader;
-    else if (mode == CPL::DrawModes::TEXT) {
-        shader = s_TextShader;
+
+    switch (mode) {
+    case CPL::DrawModes::SHAPE_2D:
+        shader = &s_Shape2DShader;
+        break;
+    case CPL::DrawModes::TEXT:
+        shader = &s_TextShader;
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         CPL::Text::Use("defaultFont");
-    } else if (mode == CPL::DrawModes::TEX)
-        shader = s_TextureShader;
-    else if (mode == CPL::DrawModes::SHAPE_2D_LIGHT)
-        shader = s_LightShape2DShader;
-    else if (mode == CPL::DrawModes::TEX_LIGHT)
-        shader = s_LightTextureShader;
-    else if (mode == CPL::DrawModes::SHAPE_3D)
-        shader = s_Shape3DShader;
-    else if (mode == CPL::DrawModes::CUBE_TEX)
-        shader = s_CubeTexShader;
-    else if (mode == CPL::DrawModes::SHAPE_3D_LIGHT)
-        shader = s_LightShape3DShader;
-    else if (mode == CPL::DrawModes::CUBE_TEX_LIGHT)
-        shader = s_LightCubeTexShader;
+        break;
+    case CPL::DrawModes::TEX:
+        shader = &s_TextureShader;
+        break;
+    case CPL::DrawModes::SHAPE_2D_LIGHT:
+        shader = &s_LightShape3DShader;
+        break;
+    case CPL::DrawModes::TEX_LIGHT:
+        shader = &s_LightTextureShader;
+        break;
+    case CPL::DrawModes::SHAPE_3D:
+        shader = &s_Shape3DShader;
+        break;
+    case CPL::DrawModes::CUBE_TEX:
+        shader = &s_CubeTexShader;
+        break;
+    case CPL::DrawModes::SHAPE_3D_LIGHT:
+        shader = &s_LightShape3DShader;
+        break;
+    case CPL::DrawModes::CUBE_TEX_LIGHT:
+        shader = &s_LightCubeTexShader;
+        break;
+    }
+    shader->Use();
 
-    shader.Use();
     if (mode == CPL::DrawModes::SHAPE_3D ||
         mode == CPL::DrawModes::SHAPE_3D_LIGHT ||
         mode == CPL::DrawModes::CUBE_TEX ||
         mode == CPL::DrawModes::CUBE_TEX_LIGHT) {
-        shader.SetMatrix4fv("projection",
-                            s_Projection3D * s_Camera3D.GetViewMatrix());
+        shader->SetMatrix4fv("projection",
+                             s_Projection3D * s_Camera3D.GetViewMatrix());
         glEnable(GL_DEPTH_TEST);
     } else {
         const glm::mat4 view = s_Camera2D.GetViewMatrix();
         const glm::mat4 viewProjection = s_Projection2D * view;
-        shader.SetMatrix4fv("projection",
-                            mode2D ? viewProjection : s_Projection2D);
+        shader->SetMatrix4fv("projection",
+                             mode2D ? viewProjection : s_Projection2D);
         glDisable(GL_DEPTH_TEST);
     }
 }
 void Engine::ResetShader() {
-    CPL::Shader shader{};
-    if (s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D)
-        shader = s_Shape2DShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::TEXT) {
-        shader = s_TextShader;
+    CPL::Shader *shader = nullptr;
+
+    switch (s_CurrentDrawMode) {
+    case CPL::DrawModes::SHAPE_2D:
+        shader = &s_Shape2DShader;
+        break;
+    case CPL::DrawModes::TEXT:
+        shader = &s_TextShader;
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         CPL::Text::Use("defaultFont");
-    } else if (s_CurrentDrawMode == CPL::DrawModes::TEX)
-        shader = s_TextureShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT)
-        shader = s_LightShape3DShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::TEX_LIGHT)
-        shader = s_LightTextureShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D)
-        shader = s_Shape3DShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX)
-        shader = s_CubeTexShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT)
-        shader = s_LightShape3DShader;
-    else if (s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT)
-        shader = s_LightCubeTexShader;
-    shader.Use();
+        break;
+    case CPL::DrawModes::TEX:
+        shader = &s_TextureShader;
+        break;
+    case CPL::DrawModes::SHAPE_2D_LIGHT:
+        shader = &s_LightShape3DShader;
+        break;
+    case CPL::DrawModes::TEX_LIGHT:
+        shader = &s_LightTextureShader;
+        break;
+    case CPL::DrawModes::SHAPE_3D:
+        shader = &s_Shape3DShader;
+        break;
+    case CPL::DrawModes::CUBE_TEX:
+        shader = &s_CubeTexShader;
+        break;
+    case CPL::DrawModes::SHAPE_3D_LIGHT:
+        shader = &s_LightShape3DShader;
+        break;
+    case CPL::DrawModes::CUBE_TEX_LIGHT:
+        shader = &s_LightCubeTexShader;
+        break;
+    }
+    shader->Use();
 }
 void Engine::SetAmbientLight2D(const float strength) {
     s_LightShape2DShader.Use();
@@ -354,11 +385,11 @@ void Engine::SetGlobalLight2D(const CPL::GlobalLight &light) {
 
 void Engine::AddPointLights2D(const std::vector<CPL::PointLight> &lights) {
     s_LightShape2DShader.Use();
-    s_LightShape2DShader.SetInt("numPointLights", lights.size());
+    s_LightShape2DShader.SetInt("numPointLights",
+                                static_cast<int>(lights.size()));
     for (int i = 0; i < lights.size(); i++) {
-        s_LightShape2DShader.SetVector2f("pointLights[" + std::to_string(i) +
-                                             "].position",
-                                         lights[i].position);
+        s_LightShape2DShader.SetVector2f(
+            "pointLights[" + std::to_string(i) + "].position", lights[i].pos);
         s_LightShape2DShader.SetFloat(
             "pointLights[" + std::to_string(i) + "].radius", lights[i].radius);
         s_LightShape2DShader.SetFloat("pointLights[" + std::to_string(i) +
@@ -369,11 +400,11 @@ void Engine::AddPointLights2D(const std::vector<CPL::PointLight> &lights) {
     }
 
     s_LightTextureShader.Use();
-    s_LightTextureShader.SetInt("numPointLights", lights.size());
+    s_LightTextureShader.SetInt("numPointLights",
+                                static_cast<int>(lights.size()));
     for (int i = 0; i < lights.size(); i++) {
-        s_LightTextureShader.SetVector2f("pointLights[" + std::to_string(i) +
-                                             "].position",
-                                         lights[i].position);
+        s_LightTextureShader.SetVector2f(
+            "pointLights[" + std::to_string(i) + "].position", lights[i].pos);
         s_LightTextureShader.SetFloat(
             "pointLights[" + std::to_string(i) + "].radius", lights[i].radius);
         s_LightTextureShader.SetFloat("pointLights[" + std::to_string(i) +
@@ -396,11 +427,11 @@ void Engine::SetShininess3D(const float shininess) {
 }
 void Engine::AddPointLights3D(const std::vector<CPL::PointLight3D> &lights) {
     s_LightShape3DShader.Use();
-    s_LightShape3DShader.SetInt("numPointLights", lights.size());
+    s_LightShape3DShader.SetInt("numPointLights",
+                                static_cast<int>(lights.size()));
     for (int i = 0; i < lights.size(); i++) {
-        s_LightShape3DShader.SetVector3f("pointLights[" + std::to_string(i) +
-                                             "].position",
-                                         lights[i].position);
+        s_LightShape3DShader.SetVector3f(
+            "pointLights[" + std::to_string(i) + "].position", lights[i].pos);
         s_LightShape3DShader.SetFloat("pointLights[" + std::to_string(i) +
                                           "].intensity",
                                       lights[i].intensity);
@@ -417,11 +448,11 @@ void Engine::AddPointLights3D(const std::vector<CPL::PointLight3D> &lights) {
     }
 
     s_LightCubeTexShader.Use();
-    s_LightCubeTexShader.SetInt("numPointLights", lights.size());
+    s_LightCubeTexShader.SetInt("numPointLights",
+                                static_cast<int>(lights.size()));
     for (int i = 0; i < lights.size(); i++) {
-        s_LightCubeTexShader.SetVector3f("pointLights[" + std::to_string(i) +
-                                             "].position",
-                                         lights[i].position);
+        s_LightCubeTexShader.SetVector3f(
+            "pointLights[" + std::to_string(i) + "].position", lights[i].pos);
         s_LightCubeTexShader.SetFloat("pointLights[" + std::to_string(i) +
                                           "].intensity",
                                       lights[i].intensity);
@@ -460,7 +491,7 @@ void Engine::SetDirLight3D(const CPL::DirectionalLight &light) {
 }
 
 void Engine::BeginPostProcessing() { s_ScreenQuad.BeginUseScreen(); }
-void Engine::EndPostProcessing() { s_ScreenQuad.EndUseScreen(); }
+void Engine::EndPostProcessing() { CPL::ScreenQuad::EndUseScreen(); }
 void Engine::ApplyPostProcessing(const CPL::PostProcessingModes &mode) {
     s_ScreenQuad.Draw(static_cast<int>(mode));
 }
@@ -468,7 +499,7 @@ void Engine::ApplyPostProcessingCustom(const CPL::Shader &shader) {
     s_ScreenQuad.DrawCustom(shader);
 }
 
-void Engine::DrawTriangle(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawTriangle(const glm::vec2 &pos, const glm::vec2 &size,
                           const CPL::Color &color) {
     const auto triangle = CPL::Triangle(pos, size, color);
     triangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -476,16 +507,16 @@ void Engine::DrawTriangle(const glm::vec2 pos, const glm::vec2 size,
                       : s_Shape2DShader,
                   true);
 }
-void Engine::DrawTriangleRot(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawTriangleRot(const glm::vec2 &pos, const glm::vec2 &size,
                              const float angle, const CPL::Color &color) {
     const auto triangle = CPL::Triangle(pos, size, color);
-    triangle.rotationAngle = angle;
+    triangle.rotAngle = angle;
     triangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
                       ? s_LightShape2DShader
                       : s_Shape2DShader,
                   true);
 }
-void Engine::DrawTriangleOut(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawTriangleOut(const glm::vec2 &pos, const glm::vec2 &size,
                              const CPL::Color &color) {
     const auto triangle = CPL::Triangle(pos, size, color);
     triangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -493,17 +524,17 @@ void Engine::DrawTriangleOut(const glm::vec2 pos, const glm::vec2 size,
                       : s_Shape2DShader,
                   false);
 }
-void Engine::DrawTriangleRotOut(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawTriangleRotOut(const glm::vec2 &pos, const glm::vec2 &size,
                                 const float angle, const CPL::Color &color) {
     const auto triangle = CPL::Triangle(pos, size, color);
-    triangle.rotationAngle = angle;
+    triangle.rotAngle = angle;
     triangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
                       ? s_LightShape2DShader
                       : s_Shape2DShader,
                   false);
 }
 
-void Engine::DrawRect(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawRect(const glm::vec2 &pos, const glm::vec2 &size,
                       const CPL::Color &color) {
     const auto rectangle = CPL::Rectangle(pos, size, color);
     rectangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -511,16 +542,16 @@ void Engine::DrawRect(const glm::vec2 pos, const glm::vec2 size,
                        : s_Shape2DShader,
                    true);
 }
-void Engine::DrawRectRot(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawRectRot(const glm::vec2 &pos, const glm::vec2 &size,
                          const float angle, const CPL::Color &color) {
     const auto rectangle = CPL::Rectangle(pos, size, color);
-    rectangle.rotationAngle = angle;
+    rectangle.rotAngle = angle;
     rectangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
                        ? s_LightShape2DShader
                        : s_Shape2DShader,
                    true);
 }
-void Engine::DrawRectOut(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawRectOut(const glm::vec2 &pos, const glm::vec2 &size,
                          const CPL::Color &color) {
     const auto rectangle = CPL::Rectangle(pos, size, color);
     rectangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -528,24 +559,24 @@ void Engine::DrawRectOut(const glm::vec2 pos, const glm::vec2 size,
                        : s_Shape2DShader,
                    false);
 }
-void Engine::DrawRectRotOut(const glm::vec2 pos, const glm::vec2 size,
+void Engine::DrawRectRotOut(const glm::vec2 &pos, const glm::vec2 &size,
                             const float angle, const CPL::Color &color) {
     const auto rectangle = CPL::Rectangle(pos, size, color);
-    rectangle.rotationAngle = angle;
+    rectangle.rotAngle = angle;
     rectangle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
                        ? s_LightShape2DShader
                        : s_Shape2DShader,
                    false);
 }
 
-void Engine::DrawCircle(const glm::vec2 pos, const float radius,
+void Engine::DrawCircle(const glm::vec2 &pos, const float radius,
                         const CPL::Color &color) {
     const auto circle = CPL::Circle(pos, radius, color);
     circle.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
                     ? s_LightShape2DShader
                     : s_Shape2DShader);
 }
-void Engine::DrawCircleOut(const glm::vec2 pos, const float radius,
+void Engine::DrawCircleOut(const glm::vec2 &pos, const float radius,
                            const CPL::Color &color) {
     const auto circle = CPL::Circle(pos, radius, color);
     circle.DrawOutline(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -553,7 +584,7 @@ void Engine::DrawCircleOut(const glm::vec2 pos, const float radius,
                            : s_Shape2DShader);
 }
 
-void Engine::DrawLine(const glm::vec2 startPos, const glm::vec2 endPos,
+void Engine::DrawLine(const glm::vec2 &startPos, const glm::vec2 &endPos,
                       const CPL::Color &color) {
     const auto line = CPL::Line(startPos, endPos, color);
     line.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_2D_LIGHT
@@ -561,29 +592,29 @@ void Engine::DrawLine(const glm::vec2 startPos, const glm::vec2 endPos,
                   : s_Shape2DShader);
 }
 
-void Engine::DrawTex2D(CPL::Texture2D *tex, const glm::vec2 pos,
+void Engine::DrawTex2D(CPL::Texture2D *const tex, const glm::vec2 &pos,
                        const CPL::Color &color) {
-    tex->position = pos;
+    tex->pos = pos;
     tex->color = color;
     tex->Draw(s_CurrentDrawMode == CPL::DrawModes::TEX_LIGHT
                   ? s_LightTextureShader
                   : s_TextureShader);
 }
-void Engine::DrawTex2DRot(CPL::Texture2D *tex, const glm::vec2 pos,
+void Engine::DrawTex2DRot(CPL::Texture2D *const tex, const glm::vec2 &pos,
                           const float angle, const CPL::Color &color) {
-    tex->position = pos;
+    tex->pos = pos;
     tex->color = color;
-    tex->rotationAngle = angle;
+    tex->rotAngle = angle;
     tex->Draw(s_CurrentDrawMode == CPL::DrawModes::TEX_LIGHT
                   ? s_LightTextureShader
                   : s_TextureShader);
 }
 
-void Engine::DrawText(const glm::vec2 pos, const float scale,
+void Engine::DrawText(const glm::vec2 &pos, const float scale,
                       const std::string &text, const CPL::Color &color) {
     CPL::Text::DrawText(s_TextShader, text, pos, scale, color);
 }
-void Engine::DrawTextShadow(const glm::vec2 pos, const glm::vec2 shadowOff,
+void Engine::DrawTextShadow(const glm::vec2 &pos, const glm::vec2 &shadowOff,
                             const float scale, const std::string &text,
                             const CPL::Color &color,
                             const CPL::Color &shadowColor) {
@@ -593,7 +624,7 @@ void Engine::DrawTextShadow(const glm::vec2 pos, const glm::vec2 shadowOff,
     CPL::Text::DrawText(s_TextShader, text, pos, scale, color);
 }
 
-void Engine::DrawCube(const glm::vec3 pos, const glm::vec3 size,
+void Engine::DrawCube(const glm::vec3 &pos, const glm::vec3 &size,
                       const CPL::Color &color) {
     const auto cube = CPL::Cube(pos, size, color);
     cube.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
@@ -601,7 +632,7 @@ void Engine::DrawCube(const glm::vec3 pos, const glm::vec3 size,
                   : s_Shape3DShader);
 }
 
-void Engine::DrawSphere(const glm::vec3 pos, const float radius,
+void Engine::DrawSphere(const glm::vec3 &pos, const float radius,
                         const CPL::Color &color) {
     const auto sphere = CPL::Sphere(pos, radius, color);
     sphere.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
@@ -609,8 +640,8 @@ void Engine::DrawSphere(const glm::vec3 pos, const float radius,
                     : s_Shape3DShader);
 }
 
-void Engine::DrawCubeTex(CPL::Texture2D *tex, const glm::vec3 pos,
-                         const glm::vec3 size, const CPL::Color &color) {
+void Engine::DrawCubeTex(const CPL::Texture2D *const tex, const glm::vec3 &pos,
+                         const glm::vec3 &size, const CPL::Color &color) {
     const auto cubeTex = CPL::CubeTex(pos, size, color);
     cubeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
                      ? s_LightCubeTexShader
@@ -618,8 +649,9 @@ void Engine::DrawCubeTex(CPL::Texture2D *tex, const glm::vec3 pos,
                  tex);
 }
 
-void Engine::DrawCubeTexAtlas(CPL::Texture2D *tex, const glm::vec3 pos,
-                              const glm::vec3 size, const CPL::Color &color) {
+void Engine::DrawCubeTexAtlas(const CPL::Texture2D *const tex,
+                              const glm::vec3 &pos, const glm::vec3 &size,
+                              const CPL::Color &color) {
     const auto cubeTex = CPL::CubeTex(pos, size, color);
     cubeTex.DrawAtlas(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
                           ? s_LightCubeTexShader
@@ -627,8 +659,8 @@ void Engine::DrawCubeTexAtlas(CPL::Texture2D *tex, const glm::vec3 pos,
                       tex);
 }
 
-void Engine::DrawPlaneTex(CPL::Texture2D *tex, const glm::vec3 pos,
-                          const glm::vec2 size, const CPL::Color &color) {
+void Engine::DrawPlaneTex(const CPL::Texture2D *const tex, const glm::vec3 &pos,
+                          const glm::vec2 &size, const CPL::Color &color) {
     const auto planeTex = CPL::PlaneTex(pos, glm::vec3(0), size, color);
     planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
                       ? s_LightCubeTexShader
@@ -636,9 +668,9 @@ void Engine::DrawPlaneTex(CPL::Texture2D *tex, const glm::vec3 pos,
                   tex);
 }
 
-void Engine::DrawPlaneTexRot(CPL::Texture2D *tex, const glm::vec3 pos,
-                             const glm::vec3 rot, const glm::vec2 size,
-                             const CPL::Color &color) {
+void Engine::DrawPlaneTexRot(const CPL::Texture2D *const tex,
+                             const glm::vec3 &pos, const glm::vec3 &rot,
+                             const glm::vec2 &size, const CPL::Color &color) {
     const auto planeTex = CPL::PlaneTex(pos, rot, size, color);
     planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
                       ? s_LightCubeTexShader
@@ -646,7 +678,7 @@ void Engine::DrawPlaneTexRot(CPL::Texture2D *tex, const glm::vec3 pos,
                   tex);
 }
 
-void Engine::DrawCubeMap(CPL::CubeMap *map) {
+void Engine::DrawCubeMap(const CPL::CubeMap *const map) {
     glDepthMask(GL_FALSE);
     map->Draw(s_CubeMapShader);
     glDepthMask(GL_TRUE);
@@ -664,9 +696,10 @@ void Engine::FramebufferSizeCallback(GLFWwindow *window, const int width,
     glViewport(0, 0, width, height);
 }
 
-void Engine::MouseCallback(GLFWwindow *window, double xPosIn, double yPosIn) {
-    float xPos = static_cast<float>(xPosIn);
-    float yPos = static_cast<float>(yPosIn);
+void Engine::MouseCallback(GLFWwindow *window, const double xPosIn,
+                           const double yPosIn) {
+    auto xPos = static_cast<float>(xPosIn);
+    auto yPos = static_cast<float>(yPosIn);
 
     if (s_Camera3D.firstMouse) {
         s_Camera3D.lastX = xPos;
@@ -685,21 +718,19 @@ void Engine::MouseCallback(GLFWwindow *window, double xPosIn, double yPosIn) {
     s_Camera3D.yaw += xOff;
     s_Camera3D.pitch += yOff;
 
-    if (s_Camera3D.pitch > 89.0f)
-        s_Camera3D.pitch = 89.0f;
-    if (s_Camera3D.pitch < -89.0f)
-        s_Camera3D.pitch = -89.0f;
+    s_Camera3D.pitch = std::min(s_Camera3D.pitch, 89.0f);
+    s_Camera3D.pitch = std::max(s_Camera3D.pitch, -89.0f);
 
     glm::vec3 front;
-    front.x =
-        cos(glm::radians(s_Camera3D.yaw)) * cos(glm::radians(s_Camera3D.pitch));
-    front.y = sin(glm::radians(s_Camera3D.pitch));
-    front.z =
-        sin(glm::radians(s_Camera3D.yaw)) * cos(glm::radians(s_Camera3D.pitch));
+    front.x = static_cast<float>(cos(glm::radians(s_Camera3D.yaw)) *
+                                 cos(glm::radians(s_Camera3D.pitch)));
+    front.y = static_cast<float>(sin(glm::radians(s_Camera3D.pitch)));
+    front.z = static_cast<float>(sin(glm::radians(s_Camera3D.yaw)) *
+                                 cos(glm::radians(s_Camera3D.pitch)));
     s_Camera3D.front = glm::normalize(front);
 }
 
-void Engine::CharCallback(GLFWwindow *window, unsigned int codepoint) {
+void Engine::CharCallback(GLFWwindow *window, const uint32_t codepoint) {
     if (s_CharInputEnabled) {
         s_CharQueue.push(codepoint);
     } else if (!s_CharQueue.empty()) {
@@ -731,7 +762,9 @@ void Engine::CalcDeltaTime() {
 float Engine::GetDeltaTime() { return s_DeltaTime; }
 float Engine::GetTime() { return static_cast<float>(glfwGetTime()); }
 void Engine::SetTimeScale(const float scale) { s_TimeScale = scale; }
-void Engine::EnableVSync(const bool enabled) { glfwSwapInterval(enabled); }
+void Engine::EnableVSync(const bool enabled) {
+    glfwSwapInterval(static_cast<int>(enabled));
+}
 void Engine::EnableFaceCulling(const bool enabled) {
     if (enabled) {
         glEnable(GL_CULL_FACE);
@@ -808,7 +841,8 @@ bool Engine::IsMouseReleased(const int button) {
     return !s_MouseButtons[button] && s_PrevMouseButtons[button];
 }
 glm::vec2 Engine::GetMousePos() {
-    double x, y;
+    double x = 0;
+    double y = 0;
     glfwGetCursorPos(s_Window, &x, &y);
     return {x, y};
 }
@@ -816,12 +850,12 @@ glm::vec2 Engine::GetMousePos() {
 glm::vec2 Engine::GetScreenToWorld2D(const glm::vec2 &screenPos) {
     glm::mat4 view = s_Camera2D.GetViewMatrix();
     glm::mat4 inv = glm::inverse(s_Projection2D * view);
-    float x = (2.0f * screenPos.x) / GetScreenWidth() - 1.0f;
-    float y = 1.0f - (2.0f * screenPos.y) / GetScreenHeight();
+    float x = ((2.0f * screenPos.x) / GetScreenWidth()) - 1.0f;
+    float y = 1.0f - ((2.0f * screenPos.y) / GetScreenHeight());
     glm::vec4 ndc = {x, y, 0.0f, 1.0f};
     glm::vec4 world = inv * ndc;
 
-    return glm::vec2(world.x, world.y);
+    return {world.x, world.y};
 }
 
 CPL::Camera2D &Engine::GetCam2D() { return s_Camera2D; }
@@ -831,25 +865,35 @@ CPL::Camera3D &Engine::GetCam3D() { return s_Camera3D; }
 GLFWwindow *Engine::GetWindow() { return s_Window; }
 
 CPL::Shader &Engine::GetShader(const CPL::DrawModes &mode) {
-    if (mode == CPL::DrawModes::SHAPE_2D)
+    switch (mode) {
+    case CPL::DrawModes::SHAPE_2D:
         return s_Shape2DShader;
-    if (mode == CPL::DrawModes::TEXT)
+        break;
+    case CPL::DrawModes::TEXT:
         return s_TextShader;
-    if (mode == CPL::DrawModes::TEX)
+        break;
+    case CPL::DrawModes::TEX:
         return s_TextureShader;
-    if (mode == CPL::DrawModes::SHAPE_2D_LIGHT)
+        break;
+    case CPL::DrawModes::SHAPE_2D_LIGHT:
         return s_LightShape2DShader;
-    if (mode == CPL::DrawModes::TEX_LIGHT)
+        break;
+    case CPL::DrawModes::TEX_LIGHT:
         return s_LightTextureShader;
-    if (mode == CPL::DrawModes::SHAPE_3D)
+        break;
+    case CPL::DrawModes::SHAPE_3D:
         return s_Shape3DShader;
-    if (mode == CPL::DrawModes::CUBE_TEX)
+        break;
+    case CPL::DrawModes::CUBE_TEX:
         return s_CubeTexShader;
-    if (mode == CPL::DrawModes::SHAPE_3D_LIGHT)
+        break;
+    case CPL::DrawModes::SHAPE_3D_LIGHT:
         return s_LightShape3DShader;
-    if (mode == CPL::DrawModes::CUBE_TEX_LIGHT)
+        break;
+    case CPL::DrawModes::CUBE_TEX_LIGHT:
         return s_LightCubeTexShader;
-
+        break;
+    }
     return s_Shape2DShader;
 }
 CPL::DrawModes &Engine::GetCurMode() { return s_CurrentDrawMode; }

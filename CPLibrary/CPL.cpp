@@ -61,88 +61,88 @@ void ApplyPostProcessing(const PostProcessingModes &mode) {
 void ApplyPostProcessingCustom(const Shader &shader) {
     Engine::ApplyPostProcessingCustom(shader);
 }
-void DrawTriangle(const glm::vec2 position, const glm::vec2 size,
+void DrawTriangle(const glm::vec2 &position, const glm::vec2 &size,
                   const Color &color) {
     Engine::DrawTriangle(position, size, color);
 }
-void DrawTriangleRot(const glm::vec2 pos, const glm::vec2 size,
+void DrawTriangleRot(const glm::vec2 &pos, const glm::vec2 &size,
                      const float angle, const Color &color) {
     Engine::DrawTriangleRot(pos, size, angle, color);
 }
-void DrawTriangleOut(const glm::vec2 pos, const glm::vec2 size,
+void DrawTriangleOut(const glm::vec2 &pos, const glm::vec2 &size,
                      const Color &color) {
     Engine::DrawTriangleOut(pos, size, color);
 }
-void DrawTriangleRotOut(const glm::vec2 pos, const glm::vec2 size,
+void DrawTriangleRotOut(const glm::vec2 &pos, const glm::vec2 &size,
                         const float angle, const Color &color) {
     Engine::DrawTriangleRotOut(pos, size, angle, color);
 }
-void DrawRect(const glm::vec2 pos, const glm::vec2 size, const Color &color) {
+void DrawRect(const glm::vec2 &pos, const glm::vec2 &size, const Color &color) {
     Engine::DrawRect(pos, size, color);
 }
-void DrawRectRot(const glm::vec2 pos, const glm::vec2 size, const float angle,
+void DrawRectRot(const glm::vec2 &pos, const glm::vec2 &size, const float angle,
                  const Color &color) {
     Engine::DrawRectRot(pos, size, angle, color);
 }
-void DrawRectOut(const glm::vec2 pos, const glm::vec2 size,
+void DrawRectOut(const glm::vec2 &pos, const glm::vec2 &size,
                  const Color &color) {
     Engine::DrawRectOut(pos, size, color);
 }
-void DrawRectangleRotOut(const glm::vec2 pos, const glm::vec2 size,
+void DrawRectangleRotOut(const glm::vec2 &pos, const glm::vec2 &size,
                          const float angle, const Color &color) {
     Engine::DrawRectRotOut(pos, size, angle, color);
 }
-void DrawCircle(const glm::vec2 pos, const float radius, const Color &color) {
+void DrawCircle(const glm::vec2 &pos, const float radius, const Color &color) {
     Engine::DrawCircle(pos, radius, color);
 }
-void DrawCircleOut(const glm::vec2 pos, const float radius,
+void DrawCircleOut(const glm::vec2 &pos, const float radius,
                    const Color &color) {
     Engine::DrawCircleOut(pos, radius, color);
 }
-void DrawLine(const glm::vec2 startPos, const glm::vec2 endPos,
+void DrawLine(const glm::vec2 &startPos, const glm::vec2 &endPos,
               const Color &color) {
     Engine::DrawLine(startPos, endPos, color);
 }
-void DrawTex2D(Texture2D *tex, const glm::vec2 pos, const Color &color) {
+void DrawTex2D(Texture2D *const tex, const glm::vec2 &pos, const Color &color) {
     Engine::DrawTex2D(tex, pos, color);
 }
-void DrawTex2DRot(Texture2D *tex, const glm::vec2 pos, const float angle,
+void DrawTex2DRot(Texture2D *const tex, const glm::vec2 &pos, const float angle,
                   const Color &color) {
     Engine::DrawTex2DRot(tex, pos, angle, color);
 }
-void DrawText(const glm::vec2 pos, const float scale, const std::string &text,
+void DrawText(const glm::vec2 &pos, const float scale, const std::string &text,
               const Color &color) {
     Engine::DrawText(pos, scale, text, color);
 }
-void DrawTextShadow(const glm::vec2 pos, const glm::vec2 shadowOff,
+void DrawTextShadow(const glm::vec2 &pos, const glm::vec2 &shadowOff,
                     const float scale, const std::string &text,
                     const Color &color, const Color &shadowColor) {
     Engine::DrawTextShadow(pos, shadowOff, scale, text, color, shadowColor);
 }
 std::string GetDefaultFont() { return "defaultFont"; }
-void DrawCube(const glm::vec3 pos, const glm::vec3 size, const Color &color) {
+void DrawCube(const glm::vec3 &pos, const glm::vec3 &size, const Color &color) {
     Engine::DrawCube(pos, size, color);
 }
-void DrawSphere(const glm::vec3 pos, const float radius, const Color &color) {
+void DrawSphere(const glm::vec3 &pos, const float radius, const Color &color) {
     Engine::DrawSphere(pos, radius, color);
 }
-void DrawCubeTex(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
+void DrawCubeTex(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec3 &size,
                  const Color &color) {
     Engine::DrawCubeTex(tex, pos, size, color);
 }
-void DrawCubeTexAtlas(Texture2D *tex, const glm::vec3 pos, const glm::vec3 size,
-                      const Color &color) {
+void DrawCubeTexAtlas(const Texture2D *const tex, const glm::vec3 &pos,
+                      const glm::vec3 &size, const Color &color) {
     Engine::DrawCubeTexAtlas(tex, pos, size, color);
 }
-void DrawPlaneTex(Texture2D *tex, const glm::vec3 pos, const glm::vec2 size,
+void DrawPlaneTex(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec2 &size,
                   const Color &color) {
     Engine::DrawPlaneTex(tex, pos, size, color);
 }
-void DrawPlaneTexRot(Texture2D *tex, const glm::vec3 pos, const glm::vec3 rot,
-                     const glm::vec2 size, const Color &color) {
+void DrawPlaneTexRot(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec3 &rot,
+                     const glm::vec2 &size, const Color &color) {
     Engine::DrawPlaneTexRot(tex, pos, rot, size, color);
 }
-void DrawCubeMap(CubeMap *map) { Engine::DrawCubeMap(map); }
+void DrawCubeMap(const CubeMap *const map) { Engine::DrawCubeMap(map); }
 
 void ClearBackground(const Color &color) { Engine::ClearBackground(color); }
 void EndDraw() { Engine::EndDraw(); }

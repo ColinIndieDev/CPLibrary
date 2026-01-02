@@ -10,51 +10,51 @@ class Texture2D;
 
 class PlaneTex {
   public:
-    glm::vec3 position;
-    glm::vec3 rotation;
+    glm::vec3 pos;
+    glm::vec3 rot;
     glm::vec2 size;
     Color color;
 
-    explicit PlaneTex(glm::vec3 pos, glm::vec3 rotation, glm::vec2 size,
-                      Color color);
+    explicit PlaneTex(const glm::vec3 &pos, const glm::vec3 &rot,
+                      const glm::vec2 &size, const Color &color);
     ~PlaneTex();
 
     PlaneTex(const PlaneTex &) = delete;
     PlaneTex &operator=(const PlaneTex &) = delete;
 
     PlaneTex(PlaneTex &&other) noexcept
-        : position(other.position), rotation(other.rotation), size(other.size),
-          color(other.color), VBO(other.VBO), VAO(other.VAO) {
-        other.VBO = 0;
-        other.VAO = 0;
+        : pos(other.pos), rot(other.rot), size(other.size), color(other.color),
+          m_VBO(other.m_VBO), m_VAO(other.m_VAO) {
+        other.m_VBO = 0;
+        other.m_VAO = 0;
     }
 
     PlaneTex &operator=(PlaneTex &&other) noexcept {
         if (this != &other) {
-            if (VAO != 0 && glIsVertexArray(VAO)) {
-                glDeleteVertexArrays(1, &VAO);
+            if (m_VAO != 0 && glIsVertexArray(m_VAO)) {
+                glDeleteVertexArrays(1, &m_VAO);
             }
-            if (VBO != 0 && glIsBuffer(VBO)) {
-                glDeleteBuffers(1, &VBO);
+            if (m_VBO != 0 && glIsBuffer(m_VBO)) {
+                glDeleteBuffers(1, &m_VBO);
             }
 
-            position = other.position;
-            rotation = other.rotation;
+            pos = other.pos;
+            rot = other.rot;
             size = other.size;
             color = other.color;
 
-            VBO = other.VBO;
-            VAO = other.VAO;
-            other.VBO = 0;
-            other.VAO = 0;
+            m_VBO = other.m_VBO;
+            m_VAO = other.m_VAO;
+            other.m_VBO = 0;
+            other.m_VAO = 0;
         }
         return *this;
     }
 
-    void Draw(const Shader &shader, const Texture2D *texture) const;
-    void DrawDepth(const Shader &shader, const Texture2D *texture) const;
+    void Draw(const Shader &shader, const Texture2D *tex) const;
+    void DrawDepth(const Shader &shader, const Texture2D *tex) const;
 
   private:
-    unsigned int VBO{}, VAO{};
+    uint32_t m_VBO{}, m_VAO{};
 };
 } // namespace CPL

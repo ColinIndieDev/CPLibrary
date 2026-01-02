@@ -7,13 +7,13 @@ struct Color;
 
 class PointLight3D {
   public:
-    explicit PointLight3D(const glm::vec3 position, const float intensity,
+    explicit PointLight3D(const glm::vec3 &pos, const float intensity,
                           const float constant, const float linear,
                           const float quadratic, const Color &color)
-        : position(position), intensity(intensity), color(color),
-          constant(constant), linear(linear), quadratic(quadratic) {}
+        : pos(pos), intensity(intensity), color(color), constant(constant),
+          linear(linear), quadratic(quadratic) {}
 
-    glm::vec3 position{};
+    glm::vec3 pos{};
     float intensity = 0;
     Color color{};
     float constant = 0;

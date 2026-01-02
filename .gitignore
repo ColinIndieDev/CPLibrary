@@ -14,3 +14,4 @@ build
 build_web
 .cache
 .directory
+.clang-tidy

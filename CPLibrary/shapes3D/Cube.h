@@ -9,40 +9,41 @@ class Shader;
 
 class Cube {
   public:
-    glm::vec3 position;
+    glm::vec3 pos;
     glm::vec3 size;
     Color color;
 
-    explicit Cube(glm::vec3 pos, glm::vec3 size, Color color);
+    explicit Cube(const glm::vec3 &pos, const glm::vec3 &size,
+                  const Color &color);
     ~Cube();
 
     Cube(const Cube &) = delete;
     Cube &operator=(const Cube &) = delete;
 
     Cube(Cube &&other) noexcept
-        : position(other.position), size(other.size), color(other.color),
-          VBO(other.VBO), VAO(other.VAO) {
-        other.VBO = 0;
-        other.VAO = 0;
+        : pos(other.pos), size(other.size), color(other.color),
+          m_VBO(other.m_VBO), m_VAO(other.m_VAO) {
+        other.m_VBO = 0;
+        other.m_VAO = 0;
     }
 
     Cube &operator=(Cube &&other) noexcept {
         if (this != &other) {
-            if (VAO != 0 && glIsVertexArray(VAO)) {
-                glDeleteVertexArrays(1, &VAO);
+            if (m_VAO != 0 && glIsVertexArray(m_VAO)) {
+                glDeleteVertexArrays(1, &m_VAO);
             }
-            if (VBO != 0 && glIsBuffer(VBO)) {
-                glDeleteBuffers(1, &VBO);
+            if (m_VBO != 0 && glIsBuffer(m_VBO)) {
+                glDeleteBuffers(1, &m_VBO);
             }
 
-            position = other.position;
+            pos = other.pos;
             size = other.size;
             color = other.color;
 
-            VBO = other.VBO;
-            VAO = other.VAO;
-            other.VBO = 0;
-            other.VAO = 0;
+            m_VBO = other.m_VBO;
+            m_VAO = other.m_VAO;
+            other.m_VBO = 0;
+            other.m_VAO = 0;
         }
         return *this;
     }
@@ -51,6 +52,6 @@ class Cube {
     void DrawDepth(const Shader &shader) const;
 
   private:
-    unsigned int VBO{}, VAO{};
+    uint32_t m_VBO{}, m_VAO{};
 };
 } // namespace CPL

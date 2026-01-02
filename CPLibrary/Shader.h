@@ -20,7 +20,7 @@ namespace CPL {
 	    void SetVector2f(const std::string &name, const glm::vec2& vec2) const;
         void SetVector3f(const std::string &name, const glm::vec3& vec3) const;
     private:
-        unsigned int m_ID;
-        static void m_CheckCompileErrors(unsigned int shader, const std::string& type);
+        uint32_t m_ID;
+        static void m_CheckCompileErrors(uint32_t shader, const std::string& type);
     };
 }

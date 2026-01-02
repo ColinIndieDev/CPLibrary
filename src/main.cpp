@@ -85,10 +85,10 @@ void MainLoop() {
 
     UpdateCam();
 
-    wavingLeavesOff = sin(GetTime());
+    wavingLeavesOff = std::sin(GetTime());
 
-    glm::vec3 lightPos(sin(GetTime() * 0.01f) * 5.0f, 5.0f,
-                       cos(GetTime() * 0.01f) * 5.0f);
+    glm::vec3 lightPos(std::sin(GetTime() * 0.01f) * 5.0f, 5.0f,
+                       std::cos(GetTime() * 0.01f) * 5.0f);
     glm::mat4 lightProjection =
         glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 25.0f);
     glm::mat4 lightView =
@@ -97,13 +97,13 @@ void MainLoop() {
 
     Shader &depthShader = Engine::GetDepthShader();
     depthShader.Use();
-    depthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
+    depthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix); 
 
     g_ShadowMap->BeginDepthPass(lightSpaceMatrix);
 
     for (auto &p : g_TreePos) {
         for (int y = 1; y < 5; y++) {
-            glm::vec3 stemPos(p.x, p.y + y * 0.2f, p.z);
+            glm::vec3 stemPos(p.x, p.y + (static_cast<float>(y) * 0.2f), p.z);
             Cube cube(stemPos, glm::vec3(0.2f), WHITE);
             cube.DrawDepth(depthShader);
         }
@@ -112,8 +112,8 @@ void MainLoop() {
                 for (int z = -1; z < 2; z++) {
                     if (x == 0 && y < 5 && z == 0)
                         continue;
-                    glm::vec3 leavePos(p.x + x * 0.2f + wavingLeavesOff * 0.01f,
-                                       p.y + y * 0.2f, p.z + z * 0.2f);
+                    glm::vec3 leavePos(p.x + (static_cast<float>(x) * 0.2f) + (wavingLeavesOff * 0.01f),
+                                       p.y + (static_cast<float>(y) * 0.2f), p.z + (static_cast<float>(z) * 0.2f));
                     CubeTex cube(leavePos, glm::vec3(0.2f), WHITE);
                     cube.DrawDepthAtlas(depthShader, g_OakLeaveTex.get());
                 }
@@ -122,13 +122,13 @@ void MainLoop() {
     }
 
     for (auto& p : g_GrassPos) {
-       DrawGrassDepth(p, depthShader); 
+       DrawGrassDepth(p + glm::vec3(0, 0.1f, 0.1f), depthShader); 
     }
     for (auto& p : g_RedTulpPos) {
-        DrawRedTulpDepth(p, depthShader);
+        DrawRedTulpDepth(p + glm::vec3(0, 0.1f, 0.1f), depthShader);
     }
 
-    g_ShadowMap->EndDepthPass();
+    ShadowMap::EndDepthPass();
 
     ClearBackground(SKY_BLUE);
 
@@ -169,7 +169,7 @@ void MainLoop() {
 
     for (auto &p : g_TreePos) {
         for (int y = 1; y < 5; y++) {
-            glm::vec3 stemPos(p.x, p.y + y * 0.2f, p.z);
+            glm::vec3 stemPos(p.x, p.y + (static_cast<float>(y) * 0.2f), p.z);
             if (GetCam3D().frustum.IsCubeVisible(stemPos, glm::vec3(0.1f))) {
                 DrawCubeTexAtlas(g_OakLogTex.get(), stemPos, glm::vec3(0.2f),
                                  WHITE);
@@ -180,8 +180,8 @@ void MainLoop() {
                 for (int z = -1; z < 2; z++) {
                     if (x == 0 && y < 5 && z == 0)
                         continue;
-                    glm::vec3 leavePos(p.x + x * 0.2f + wavingLeavesOff * 0.01f,
-                                       p.y + y * 0.2f, p.z + z * 0.2f);
+                    glm::vec3 leavePos(p.x + (static_cast<float>(x) * 0.2f) + (wavingLeavesOff * 0.01f),
+                                       p.y + (static_cast<float>(y) * 0.2f), p.z + (static_cast<float>(z) * 0.2f));
                     if (GetCam3D().frustum.IsCubeVisible(leavePos,
                                                          glm::vec3(0.1f))) {
                         DrawCubeTexAtlas(g_OakLeaveTex.get(), leavePos,
@@ -262,30 +262,30 @@ int main() {
         for (int y = -10; y < 10; y++) {
             for (int z = -10; z < 10; z++) {
                 g_BlockPos.emplace_back(
-                    glm::vec3(x * 0.2f, y * 0.2f, z * 0.2f));
+                    static_cast<float>(x) * 0.2f, static_cast<float>(y) * 0.2f, static_cast<float>(z) * 0.2f);
             }
         }
     }
 
     for (int i = 0; i < RandInt(5, 15); i++) {
-        g_TreePos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 9 * 0.2f),
+        g_TreePos.emplace_back(RandInt(-10 * 0.2f, 9.0f * 0.2f),
                                          9 * 0.2f,
-                                         RandInt(-10 * 0.2f, 9 * 0.2f)));
+                                         RandInt(-10 * 0.2f, 9.0f * 0.2f));
     }
 
     for (int i = 0; i < RandInt(25, 75); i++) {
-        g_GrassPos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 9 * 0.2f),
+        g_GrassPos.emplace_back(RandInt(-10 * 0.2f, 9 * 0.2f),
                                           10 * 0.2f,
-                                          RandInt(-10 * 0.2f, 9 * 0.2f)));
+                                          RandInt(-10 * 0.2f, 9 * 0.2f));
     }
 
     for (int i = 0; i < RandInt(5, 15); i++) {
-        g_RedTulpPos.emplace_back(glm::vec3(RandInt(-10 * 0.2f, 9 * 0.2f),
+        g_RedTulpPos.emplace_back(RandInt(-10 * 0.2f, 9 * 0.2f),
                                           10 * 0.2f,
-                                          RandInt(-10 * 0.2f, 9 * 0.2f)));
+                                          RandInt(-10 * 0.2f, 9 * 0.2f));
     }
 
-    while (!WindowShouldClose()) {
+    while (!static_cast<bool>(WindowShouldClose())) {
         MainLoop();
     }
     CloseWindow();

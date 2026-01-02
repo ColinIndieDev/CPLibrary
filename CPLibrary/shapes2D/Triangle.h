@@ -9,42 +9,43 @@ class Shader;
 
 class Triangle {
   public:
-    glm::vec2 position;
+    glm::vec2 pos;
     glm::vec2 size;
     Color color;
-    mutable float rotationAngle = 0.0f;
+    mutable float rotAngle = 0.0f;
 
-    explicit Triangle(glm::vec2 pos, glm::vec2 size, Color color);
+    explicit Triangle(const glm::vec2 &pos, const glm::vec2 &size,
+                      const Color &color);
     ~Triangle();
 
     Triangle(const Triangle &) = delete;
     Triangle &operator=(const Triangle &) = delete;
 
     Triangle(Triangle &&other) noexcept
-        : position(other.position), size(other.size), color(other.color),
-          rotationAngle(other.rotationAngle), VBO(other.VBO), VAO(other.VAO) {
-        other.VBO = 0;
-        other.VAO = 0;
+        : pos(other.pos), size(other.size), color(other.color),
+          rotAngle(other.rotAngle), m_VBO(other.m_VBO), m_VAO(other.m_VAO) {
+        other.m_VBO = 0;
+        other.m_VAO = 0;
     }
 
     Triangle &operator=(Triangle &&other) noexcept {
         if (this != &other) {
-            if (VAO != 0 && glIsVertexArray(VAO)) {
-                glDeleteVertexArrays(1, &VAO);
+            if (m_VAO != 0 && glIsVertexArray(m_VAO)) {
+                glDeleteVertexArrays(1, &m_VAO);
             }
-            if (VBO != 0 && glIsBuffer(VBO)) {
-                glDeleteBuffers(1, &VBO);
+            if (m_VBO != 0 && glIsBuffer(m_VBO)) {
+                glDeleteBuffers(1, &m_VBO);
             }
 
-            position = other.position;
+            pos = other.pos;
             size = other.size;
             color = other.color;
-            rotationAngle = other.rotationAngle;
-            VBO = other.VBO;
-            VAO = other.VAO;
+            rotAngle = other.rotAngle;
+            m_VBO = other.m_VBO;
+            m_VAO = other.m_VAO;
 
-            other.VBO = 0;
-            other.VAO = 0;
+            other.m_VBO = 0;
+            other.m_VAO = 0;
         }
         return *this;
     }
@@ -52,6 +53,6 @@ class Triangle {
     void Draw(const Shader &shader, bool filled) const;
 
   private:
-    unsigned int VBO{}, VAO{};
+    uint32_t m_VBO{}, m_VAO{};
 };
 } // namespace CPL

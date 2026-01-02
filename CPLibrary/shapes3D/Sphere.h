@@ -16,8 +16,7 @@ class Sphere {
     float radius;
     Color color;
 
-    explicit Sphere(const glm::vec3 pos, const float radius,
-                    const Color &color);
+    explicit Sphere(const glm::vec3 &pos, float radius, const Color &color);
     ~Sphere();
 
     Sphere(const Sphere &) = delete;
@@ -65,8 +64,8 @@ class Sphere {
     void DrawDepth(const Shader &shader) const;
 
   private:
-    unsigned int m_VBO{}, m_VAO{}, m_EBO{};
+    uint32_t m_VBO{}, m_VAO{}, m_EBO{};
     std::vector<Vertex> m_Vertices;
-    std::vector<int> m_Indices;
+    std::vector<uint32_t> m_Indices;
 };
 } // namespace CPL

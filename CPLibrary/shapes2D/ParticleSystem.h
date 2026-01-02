@@ -7,32 +7,30 @@ namespace CPL {
 class Texture2D;
 class ParticleSystem {
   public:
-    glm::vec2 position;
+    glm::vec2 pos;
 
-    ParticleSystem(const glm::vec2 &position) : position(position) {}
+    ParticleSystem(const glm::vec2 &pos) : pos(pos) {}
     void Update();
     void Draw();
-    void AddParticle(Texture2D *texture, const Color &color,
-                     const float lifeTime, const glm::vec2 &direction,
-                     const glm::vec2 &offset);
+    void AddParticle(Texture2D *tex, const Color &color, float lifeTime,
+                     const glm::vec2 &dir, const glm::vec2 &offset);
 
     struct Particle {
-        glm::vec2 position;
+        glm::vec2 pos;
         float curLifeTime = 0;
         float lifeTime;
-        glm::vec2 direction;
+        glm::vec2 dir;
         bool active = true;
         Texture2D *particleTex;
         Color color;
 
-        Particle(const glm::vec2 &position, Texture2D *texture,
-                 const Color &color, const float lifeTime,
-                 const glm::vec2 &direction)
-            : position(position), lifeTime(lifeTime), direction(direction),
-              particleTex(texture), color(color) {}
+        Particle(const glm::vec2 &pos, Texture2D *const tex, const Color &color,
+                 const float lifeTime, const glm::vec2 &dir)
+            : pos(pos), lifeTime(lifeTime), dir(dir), particleTex(tex),
+              color(color) {}
         void Update() {
             curLifeTime += GetDeltaTime();
-            position += direction * glm::vec2(GetDeltaTime());
+            pos += dir * glm::vec2(GetDeltaTime());
         }
     };
 

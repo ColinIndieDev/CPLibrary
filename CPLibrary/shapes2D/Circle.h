@@ -9,18 +9,18 @@ class Shader;
 
 class Circle {
   public:
-    glm::vec2 position;
+    glm::vec2 pos;
     float radius;
     Color color;
 
-    explicit Circle(glm::vec2 pos, float radius, Color color);
+    explicit Circle(const glm::vec2 &pos, float radius, const Color &color);
     ~Circle();
 
     Circle(const Circle &) = delete;
     Circle &operator=(const Circle &) = delete;
 
     Circle(Circle &&other) noexcept
-        : position(other.position), radius(other.radius), color(other.color),
+        : pos(other.pos), radius(other.radius), color(other.color),
           m_VBO(other.m_VBO), m_VAO(other.m_VAO),
           m_OutlineVBO(other.m_OutlineVBO), m_OutlineVAO(other.m_OutlineVAO),
           m_VertexCount(other.m_VertexCount) {
@@ -45,7 +45,7 @@ class Circle {
                 glDeleteBuffers(1, &m_OutlineVBO);
             }
 
-            position = other.position;
+            pos = other.pos;
             radius = other.radius;
             color = other.color;
             m_VBO = other.m_VBO;
@@ -66,8 +66,8 @@ class Circle {
     void DrawOutline(const Shader &shader) const;
 
   private:
-    unsigned int m_VBO{}, m_VAO{};
-    unsigned int m_OutlineVBO{}, m_OutlineVAO{};
+    uint32_t m_VBO{}, m_VAO{};
+    uint32_t m_OutlineVBO{}, m_OutlineVAO{};
     int m_VertexCount = 0;
 };
 } // namespace CPL

@@ -8,54 +8,54 @@ class Shader;
 
 class Texture2D {
   public:
-    glm::vec2 position;
+    glm::vec2 pos;
     glm::vec2 size;
     glm::vec2 textureSize;
     int channels{};
-    float rotationAngle = 0;
+    float rotAngle = 0;
     Color color;
-    unsigned int texture{};
+    unsigned int tex{};
 
-    explicit Texture2D(const std::string &filePath, glm::vec2 size,
+    explicit Texture2D(const std::string &filePath, const glm::vec2 &size,
                        const TextureFiltering &textureFiltering);
-    Texture2D(const std::string &filePath, glm::vec2 position, glm::vec2 size,
-              const Color &color, const TextureFiltering &textureFiltering);
+    Texture2D(const std::string &filePath, const glm::vec2 &pos,
+              const glm::vec2 &size, const Color &color,
+              const TextureFiltering &textureFiltering);
     ~Texture2D() { Unload(); }
 
     Texture2D(const Texture2D &) = delete;
     Texture2D &operator=(const Texture2D &) = delete;
 
     Texture2D(Texture2D &&other) noexcept
-        : position(other.position), size(other.size),
-          textureSize(other.textureSize), channels(other.channels),
-          rotationAngle(other.rotationAngle), color(other.color),
-          VBO(other.VBO), VAO(other.VAO), EBO(other.EBO),
-          texture(other.texture) {
-        other.VBO = 0;
-        other.VAO = 0;
-        other.EBO = 0;
-        other.texture = 0;
+        : pos(other.pos), size(other.size), textureSize(other.textureSize),
+          channels(other.channels), rotAngle(other.rotAngle),
+          color(other.color), m_VBO(other.m_VBO), m_VAO(other.m_VAO),
+          m_EBO(other.m_EBO), tex(other.tex) {
+        other.m_VBO = 0;
+        other.m_VAO = 0;
+        other.m_EBO = 0;
+        other.tex = 0;
     }
 
     Texture2D &operator=(Texture2D &&other) noexcept {
         if (this != &other) {
             Unload();
 
-            position = other.position;
+            pos = other.pos;
             size = other.size;
             textureSize = other.textureSize;
             channels = other.channels;
-            rotationAngle = other.rotationAngle;
+            rotAngle = other.rotAngle;
             color = other.color;
-            VBO = other.VBO;
-            VAO = other.VAO;
-            EBO = other.EBO;
-            texture = other.texture;
+            m_VBO = other.m_VBO;
+            m_VAO = other.m_VAO;
+            m_EBO = other.m_EBO;
+            tex = other.tex;
 
-            other.VBO = 0;
-            other.VAO = 0;
-            other.EBO = 0;
-            other.texture = 0;
+            other.m_VBO = 0;
+            other.m_VAO = 0;
+            other.m_EBO = 0;
+            other.tex = 0;
         }
         return *this;
     }
@@ -64,6 +64,6 @@ class Texture2D {
     void Unload() const;
 
   private:
-    unsigned int VBO{}, VAO{}, EBO{};
+    uint32_t m_VBO{}, m_VAO{}, m_EBO{};
 };
 } // namespace CPL

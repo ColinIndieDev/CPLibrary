@@ -10,13 +10,13 @@
 namespace CPL {
 std::string Text::s_CurFont;
 std::map<std::string, std::map<GLchar, Character>> Text::s_Fonts;
-unsigned int Text::s_VAO;
-unsigned int Text::s_VBO;
+uint32_t Text::s_VAO;
+uint32_t Text::s_VBO;
 
 void Text::Init(const std::string &fontPath, const std::string &fontName,
                 const TextureFiltering &textureFiltering) {
-    FT_Library ft;
-    if (FT_Init_FreeType(&ft)) {
+    FT_Library ft{};
+    if (static_cast<bool>(FT_Init_FreeType(&ft))) {
         Logging::Log(Logging::MessageStates::ERROR,
                      "Could not init FreeType Library");
         exit(-1);
@@ -29,8 +29,8 @@ void Text::Init(const std::string &fontPath, const std::string &fontName,
         exit(-1);
     }
 
-    FT_Face face;
-    if (FT_New_Face(ft, fontPath.c_str(), 0, &face)) {
+    FT_Face face{};
+    if (static_cast<bool>(FT_New_Face(ft, fontPath.c_str(), 0, &face))) {
         Logging::Log(Logging::MessageStates::ERROR, "Failed to load font");
         exit(-1);
     }
@@ -39,12 +39,12 @@ void Text::Init(const std::string &fontPath, const std::string &fontName,
 
     std::map<GLchar, Character> characters;
     for (unsigned char c = 0; c < 128; c++) {
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+        if (static_cast<bool>(FT_Load_Char(face, c, FT_LOAD_RENDER))) {
             Logging::Log(Logging::MessageStates::ERROR, "Failed to load Glyph");
             continue;
         }
 
-        unsigned int texture;
+        u_int32_t texture = 0;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8,
@@ -63,11 +63,12 @@ void Text::Init(const std::string &fontPath, const std::string &fontName,
                             ? GL_LINEAR
                             : GL_NEAREST);
 
-        Character character = {
+        Character character(
             texture,
             glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
             glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            static_cast<unsigned int>(face->glyph->advance.x)};
+            static_cast<uint32_t>(face->glyph->advance.x)
+        );
         characters.insert(std::pair<char, Character>(c, character));
     }
     s_Fonts.insert(std::pair(fontName, characters));
@@ -104,33 +105,34 @@ void Text::DrawText(const Shader &shader, const std::string &text,
     glBindVertexArray(s_VAO);
 
     for (char c : text) {
-        const auto [TextureID, Size, Bearing, Advance] =
+        const auto [textureID, size, bearing, advance] =
             s_Fonts[s_CurFont].at(c);
 
-        const float xPos = pos.x + static_cast<float>(Bearing.x) * scale;
+        const float xPos = pos.x + (static_cast<float>(bearing.x) * scale);
         const float yPos =
             pos.y +
-            (float)(s_Fonts[s_CurFont]['H'].Bearing.y - Bearing.y) * scale;
-        const float width = static_cast<float>(Size.x) * scale;
-        const float height = static_cast<float>(Size.y) * scale;
+            (static_cast<float>((s_Fonts.at(s_CurFont).at('H').bearing.y - bearing.y)) * scale);
+        const float width = static_cast<float>(size.x) * scale;
+        const float height = static_cast<float>(size.y) * scale;
 
-        const float vertices[6][4] = {
+        const std::array<std::array<float, 4>, 6> vertices = {{
             {xPos, yPos + height, 0.0f, 1.0f},
             {xPos, yPos, 0.0f, 0.0f},
             {xPos + width, yPos, 1.0f, 0.0f},
 
             {xPos, yPos + height, 0.0f, 1.0f},
             {xPos + width, yPos, 1.0f, 0.0f},
-            {xPos + width, yPos + height, 1.0f, 1.0f}};
+            {xPos + width, yPos + height, 1.0f, 1.0f}
+        }};
 
-        glBindTexture(GL_TEXTURE_2D, TextureID);
+        glBindTexture(GL_TEXTURE_2D, textureID);
         glBindBuffer(GL_ARRAY_BUFFER, s_VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices.data());
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        pos.x += static_cast<float>(Advance >> 6) * scale;
+        pos.x += static_cast<float>(advance >> 6) * scale;
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -150,12 +152,12 @@ glm::vec2 Text::GetTextSize(const std::string &fontName,
 
     for (char c : text) {
         const Character &ch = s_Fonts[fontName].at(c);
-        const float h = static_cast<float>(ch.Size.y) * scale;
+        const float h = static_cast<float>(ch.size.y) * scale;
         maxAboveBaseline = std::max(maxAboveBaseline,
-                                    static_cast<float>(ch.Bearing.y) * scale);
+                                    static_cast<float>(ch.bearing.y) * scale);
         maxBelowBaseline = std::max(
-            maxBelowBaseline, (h - static_cast<float>(ch.Bearing.y) * scale));
-        width += static_cast<float>(ch.Advance >> 6) * scale;
+            maxBelowBaseline, (h - (static_cast<float>(ch.bearing.y) * scale)));
+        width += static_cast<float>(ch.advance >> 6) * scale;
     }
     height = maxAboveBaseline + maxBelowBaseline;
     return {width, height};

@@ -11,7 +11,7 @@ void TimerManager::Update(const float delta) {
 
 Timer *TimerManager::AddTimer(float duration, bool loop,
                               const std::function<void(Timer *)> &cb) {
-    s_Timers.push_back({duration, loop, cb});
+    s_Timers.emplace_back(duration, loop, cb);
     return &s_Timers.back();
 }
 

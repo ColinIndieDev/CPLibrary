@@ -10,7 +10,7 @@ std::vector<std::unique_ptr<ma_sound>> AudioManager::s_ActiveSounds;
 
 void AudioManager::Init() {
     if (ma_engine_init(nullptr, &s_Engine) != MA_SUCCESS) {
-        Logging::Log(2, "Failed to init audio engine!");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to init audio engine!");
         exit(-1);
     }
 }
@@ -34,7 +34,7 @@ void AudioManager::PlaySFX(const Audio &audio) {
     if (ma_sound_init_from_file(&s_Engine, audio.path.c_str(),
                                 MA_SOUND_FLAG_DECODE, nullptr, nullptr,
                                 sound.get()) != MA_SUCCESS) {
-        Logging::Log(2, "Failed to init SFX!");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to init SFX!");
         return;
     }
     ma_sound_set_pitch(sound.get(), 1.0f);
@@ -48,7 +48,7 @@ void AudioManager::PlaySFXPitch(const Audio &audio, const float pitch) {
     if (ma_sound_init_from_file(&s_Engine, audio.path.c_str(),
                                 MA_SOUND_FLAG_DECODE, nullptr, nullptr,
                                 sound.get()) != MA_SUCCESS) {
-        Logging::Log(2, "Failed to initialize SFX!");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to initialize SFX!");
         return;
     }
     ma_sound_set_pitch(sound.get(), pitch);
@@ -68,7 +68,7 @@ void AudioManager::PlayMusic(const Audio &audio) {
     if (ma_sound_init_from_file(&s_Engine, audio.path.c_str(),
                                 MA_SOUND_FLAG_DECODE, nullptr, nullptr,
                                 s_Music.get()) != MA_SUCCESS) {
-        Logging::Log(2, "Failed to load music!");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to load music!");
         s_Music.reset();
         return;
     }
@@ -105,7 +105,7 @@ void AudioManager::PlayMusicPitch(const Audio &audio, const float pitch) {
     if (ma_sound_init_from_file(&s_Engine, audio.path.c_str(),
                                 MA_SOUND_FLAG_DECODE, nullptr, nullptr,
                                 s_Music.get()) != MA_SUCCESS) {
-        Logging::Log(2, "Failed to load music!");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to load music!");
         s_Music.reset();
         return;
     }

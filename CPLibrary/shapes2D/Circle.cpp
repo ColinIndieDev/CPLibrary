@@ -2,21 +2,21 @@
 #include "../CPL.h"
 #include "../Shader.h"
 #include <cmath>
+#include <numbers>
 #include <vector>
 
-#define PI 3.14159265358979323846
 namespace CPL {
-Circle::Circle(const glm::vec2 pos, const float radius, const Color color)
-    : position(pos), radius(radius), color(color) {
+Circle::Circle(const glm::vec2 &pos, const float radius, const Color &color)
+    : pos(pos), radius(radius), color(color) {
     std::vector<float> vertices;
     const int segments = std::ceil(radius);
-    vertices.reserve(segments * 3);
+    vertices.reserve(static_cast<int>(segments * 3));
     for (int i = 0; i <= segments; i++) {
-        const float theta = 2 * static_cast<float>(PI) /
+        const float theta = static_cast<float>(2 * std::numbers::pi) /
                             static_cast<float>(segments) *
                             static_cast<float>(i);
-        float x = 0.0f + radius * std::cos(theta);
-        float y = 0.0f + radius * std::sin(theta);
+        float x = 0.0f + (radius * std::cos(theta));
+        float y = 0.0f + (radius * std::sin(theta));
         vertices.push_back(x);
         vertices.push_back(y);
         vertices.push_back(0);
@@ -75,7 +75,7 @@ void Circle::Draw(const Shader &shader) const {
     auto transform = glm::mat4(1.0f);
 
     shader.SetMatrix4fv("transform", transform);
-    shader.SetVector3f("offset", glm::vec3(position, 0.0f));
+    shader.SetVector3f("offset", glm::vec3(pos, 0.0f));
     shader.SetColor("inputColor", color);
 
     glBindVertexArray(m_VAO);
@@ -87,7 +87,7 @@ void Circle::DrawOutline(const Shader &shader) const {
     auto transform = glm::mat4(1.0f);
 
     shader.SetMatrix4fv("transform", transform);
-    shader.SetVector3f("offset", glm::vec3(position, 0.0f));
+    shader.SetVector3f("offset", glm::vec3(pos, 0.0f));
     shader.SetColor("inputColor", color);
 
     glBindVertexArray(m_OutlineVAO);

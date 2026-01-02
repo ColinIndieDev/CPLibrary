@@ -5,66 +5,56 @@
 #include <stb_image.h>
 
 namespace CPL {
-Texture2D::Texture2D(const std::string &filePath, const glm::vec2 position,
-                     const glm::vec2 size, const Color &color,
+Texture2D::Texture2D(const std::string &filePath, const glm::vec2 &pos,
+                     const glm::vec2 &size, const Color &color,
                      const TextureFiltering &textureFiltering)
-    : position(position), size(size), textureSize(0), color(color) {
-    const float vertices[] = {
-        // positions                                                    //
-        // texture coords
-        static_cast<float>(size.x),
-        0.0f,
-        0.0f,
-        1.0f,
-        1.0f, // top right
-        static_cast<float>(size.x),
-        static_cast<float>(size.y),
-        0.0f,
-        1.0f,
-        0.0f, // bottom right
-        0.0f,
-        static_cast<float>(size.y),
-        0.0f,
-        0.0f,
-        0.0f, // bottom left
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f,
-        1.0f // top left
-    };
-    constexpr unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    : pos(pos), size(size), textureSize(0), color(color) {
+    const std::array<float, 20> vertices = {
+        size.x, 0.0f,   0.0f,  1.0f, 1.0f,
+        size.x, size.y, 0.0f,  1.0f, 0.0f,
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+        0.0f,   size.y, 0.0f,  0.0f, 0.0f,
+        0.0f,   0.0f,   0.0f,  0.0f, 1.0f
+    };
+    constexpr std::array<uint32_t, 6> indices = {
+        0, 1, 3, 
+        1, 2, 3
+    };
+
+    glGenVertexArrays(1, &m_VAO);
+    glGenBuffers(1, &m_VBO);
+    glGenBuffers(1, &m_EBO);
+    glBindVertexArray(m_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(),
                  GL_STATIC_DRAW);
-    // Position
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
-    // Texture coordinates
+
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           reinterpret_cast<void *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR : GL_NEAREST);
+                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR
+                                                                 : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR : GL_NEAREST);
-    stbi_set_flip_vertically_on_load(true);
-    int width, height;
+                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR
+                                                                 : GL_NEAREST);
+    stbi_set_flip_vertically_on_load(1);
+    int width = 0;
+    int height = 0;
     unsigned char *data =
         stbi_load(filePath.c_str(), &width, &height, &channels, 0);
     GLenum format = 0;
@@ -74,7 +64,7 @@ Texture2D::Texture2D(const std::string &filePath, const glm::vec2 position,
         format = GL_RGB;
     else if (channels == 4)
         format = GL_RGBA;
-    if (data) {
+    if (static_cast<bool>(data)) {
         this->textureSize.x = static_cast<float>(width);
         this->textureSize.y = static_cast<float>(height);
         glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format),
@@ -83,55 +73,62 @@ Texture2D::Texture2D(const std::string &filePath, const glm::vec2 position,
                      GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        Logging::Log(2, "Failed to load texture");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to load texture");
     }
     stbi_image_free(data);
 }
-Texture2D::Texture2D(const std::string &filePath, const glm::vec2 size,
+Texture2D::Texture2D(const std::string &filePath, const glm::vec2 &size,
                      const TextureFiltering &textureFiltering)
-    : position(0.0f), size(size), textureSize(0), color(WHITE) {
-    const float vertices[] = {
-        // positions                        // texture coords
-        this->size.x, 0.0f,         0.0f, 1.0f, 1.0f, // top right
-        this->size.x, this->size.y, 0.0f, 1.0f, 0.0f, // bottom right
-        0.0f,         this->size.y, 0.0f, 0.0f, 0.0f, // bottom left
-        0.0f,         0.0f,         0.0f, 0.0f, 1.0f  // top left
-    };
-    constexpr unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    : pos(0.0f), size(size), textureSize(0), color(WHITE) {
+    const std::array<float, 20> vertices = {
+        size.x, 0.0f,   0.0f,  1.0f, 1.0f,
+        size.x, size.y, 0.0f,  1.0f, 0.0f,
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+        0.0f,   size.y, 0.0f,  0.0f, 0.0f,
+        0.0f,   0.0f,   0.0f,  0.0f, 1.0f
+    };
+    constexpr std::array<uint32_t, 6> indices = {
+        0, 1, 3, 
+        1, 2, 3
+    };
+
+    glGenVertexArrays(1, &m_VAO);
+    glGenBuffers(1, &m_VBO);
+    glGenBuffers(1, &m_EBO);
+    glBindVertexArray(m_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(),
                  GL_STATIC_DRAW);
-    // Position
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
-    // Texture coordinates
+    
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           reinterpret_cast<void *>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR : GL_NEAREST);
+                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR
+                                                                 : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR : GL_NEAREST);
-    stbi_set_flip_vertically_on_load(true);
-    int width, height;
+                    textureFiltering == TextureFiltering::LINEAR ? GL_LINEAR
+                                                                 : GL_NEAREST);
+    stbi_set_flip_vertically_on_load(1);
+    int width = 0;
+    int height = 0;
     unsigned char *data =
         stbi_load(filePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-    if (data) {
+    if (static_cast<bool>(data)) {
         this->textureSize.x = static_cast<float>(width);
         this->textureSize.y = static_cast<float>(height);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
@@ -140,36 +137,35 @@ Texture2D::Texture2D(const std::string &filePath, const glm::vec2 size,
                      GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        Logging::Log(2, "Failed to load texture");
+        Logging::Log(Logging::MessageStates::ERROR, "Failed to load texture");
     }
     stbi_image_free(data);
 }
 
 void Texture2D::Unload() const {
-    if (texture != 0)
-        glDeleteTextures(1, &texture);
-    if (VAO != 0)
-        glDeleteVertexArrays(1, &VAO);
-    if (VBO != 0)
-        glDeleteBuffers(1, &VBO);
+    if (tex != 0)
+        glDeleteTextures(1, &tex);
+    if (m_VAO != 0)
+        glDeleteVertexArrays(1, &m_VAO);
+    if (m_VBO != 0)
+        glDeleteBuffers(1, &m_VBO);
 }
 
 void Texture2D::Draw(const Shader &shader) const {
     auto transform = glm::mat4(1.0f);
-    const glm::vec2 center = {position.x + size.x / 2,
-                              position.y + size.y / 2};
+    const glm::vec2 center = {pos.x + (size.x / 2), pos.y + (size.y / 2)};
     transform = glm::translate(transform, glm::vec3(center, 0.0f));
-    transform = glm::rotate(transform, glm::radians(rotationAngle),
+    transform = glm::rotate(transform, glm::radians(rotAngle),
                             glm::vec3(0.0f, 0.0f, 1.0f));
     transform = glm::translate(transform, glm::vec3(-center, 0.0f));
 
     shader.SetMatrix4fv("transform", transform);
-    shader.SetVector3f("offset", glm::vec3(position, 0.0f));
+    shader.SetVector3f("offset", glm::vec3(pos, 0.0f));
     shader.SetColor("inputColor", color);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glBindVertexArray(VAO);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);

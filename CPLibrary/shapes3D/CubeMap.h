@@ -6,14 +6,16 @@ class Shader;
 class CubeMap {
   public:
     explicit CubeMap(const std::string &path);
-    unsigned int LoadCubeMapFromImages(const std::vector<std::string> &faces);
-    unsigned char *ExtractSubImage(unsigned char *fullImage, int fullWidth,
-                                   int fullHeight, int xOffset, int yOffset,
-                                   int faceWidth, int faceHeight, int channels);
-    unsigned int LoadCubeMapFromCross(const std::string &path);
-    void Draw(const Shader &shader);
+    static uint32_t
+    LoadCubeMapFromImages(const std::vector<std::string> &faces);
+    static std::vector<unsigned char>
+    ExtractSubImage(const unsigned char *fullImage, int fullWidth,
+                    int fullHeight, int xOff, int yOff, int faceWidth,
+                    int faceHeight, int channels);
+    static uint32_t LoadCubeMapFromCross(const std::string &path);
+    void Draw(const Shader &shader) const;
 
   private:
-    unsigned int VAO, VBO, cubeMapTexture;
+    uint32_t m_VAO{}, m_VBO{}, m_CubeMapTex;
 };
 } // namespace CPL

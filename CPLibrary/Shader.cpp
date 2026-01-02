@@ -18,7 +18,8 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     try {
         vShaderFile.open(vertexPath);
         fShaderFile.open(fragmentPath);
-        std::stringstream vShaderStream, fShaderStream;
+        std::stringstream vShaderStream;
+        std::stringstream fShaderStream;
         vShaderStream << vShaderFile.rdbuf();
         fShaderStream << fShaderFile.rdbuf();
         vShaderFile.close();
@@ -32,7 +33,8 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
 
-    unsigned int vertex, fragment;
+    uint32_t vertex = 0;
+    uint32_t fragment = 0;
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
@@ -86,25 +88,25 @@ void Shader::SetVector3f(const std::string &name, const glm::vec3 &vec3) const {
                 vec3.z);
 }
 
-void Shader::m_CheckCompileErrors(const unsigned int shader,
+void Shader::m_CheckCompileErrors(const uint32_t shader,
                                   const std::string &type) {
-    int success;
-    char infoLog[1024];
+    int success = 0;
+    std::array<char, 1024> infoLog{};
     if (type != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(shader, 1024, nullptr, infoLog);
+        if (!static_cast<bool>(success)) {
+            glGetShaderInfoLog(shader, 1024, nullptr, infoLog.data());
             Logging::Log(Logging::MessageStates::ERROR,
                          "Shader compilation error: " + type + "\n" +
-                             std::string(infoLog));
+                             std::string(infoLog.data()));
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(shader, 1024, nullptr, infoLog);
+        if (!static_cast<bool>(success)) {
+            glGetProgramInfoLog(shader, 1024, nullptr, infoLog.data());
             Logging::Log(Logging::MessageStates::ERROR,
                          "Program linking error of type: " + type + "\n" +
-                             std::string(infoLog));
+                             std::string(infoLog.data()));
         }
     }
 }
