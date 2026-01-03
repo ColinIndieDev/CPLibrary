@@ -65,7 +65,17 @@ target_include_directories(miniaudio INTERFACE "${CMAKE_BINARY_DIR}/_deps/miniau
 # GLAD
 add_subdirectory(external/glad)
 
-add_executable(Example src/main.cpp
+add_executable(Example 
+    src/main.cpp
+    src/TextureLoader.cpp
+    src/TextureLoader.h
+    src/WorldGen.cpp
+    src/WorldGen.h
+    src/Block.cpp
+    src/Block.h
+    src/Chunk.cpp
+    src/Chunk.h
+
     CPLibrary/Shader.cpp
     CPLibrary/Shader.h
     CPLibrary/shapes2D/Triangle.cpp
