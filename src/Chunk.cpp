@@ -1,6 +1,7 @@
 #include "Chunk.h"
+#include "ChunkManager.h"
 
-Chunk::Chunk(const glm::vec3 &chunkPos) : m_Pos(chunkPos) {
+Chunk::Chunk(const glm::ivec3 &chunkPos) : m_Pos(chunkPos) {
     m_Blocks.resize(static_cast<int>(s_Size * s_Height * s_Size),
                     Block{BlockType::AIR});
 }
@@ -14,26 +15,26 @@ Chunk::~Chunk() {
     }
 }
 
-void Chunk::SetBlock(const glm::vec3 &pos, const BlockType &type) {
+void Chunk::SetBlock(const glm::ivec3 &pos, const BlockType &type) {
     if (pos.x < 0 || pos.x >= s_Size || pos.y < 0 || pos.y >= s_Height ||
         pos.z < 0 || pos.z >= s_Size)
         return;
     m_Blocks[m_GetIndex(pos)].type = type;
 }
 
-Block Chunk::GetBlock(const glm::vec3 &pos) const {
+Block Chunk::GetBlock(const glm::ivec3 &pos) const {
     if (pos.x < 0 || pos.x >= s_Size || pos.y < 0 || pos.y >= s_Height ||
         pos.z < 0 || pos.z >= s_Size)
         return Block{BlockType::AIR};
     return m_Blocks[m_GetIndex(pos)];
 }
 
-int Chunk::m_GetIndex(const glm::vec3 &pos) const {
+int Chunk::m_GetIndex(const glm::ivec3 &pos) const {
     return pos.x + pos.z * s_Size + pos.y * s_Size * s_Size;
 }
 
-bool Chunk::m_RenderFace(const glm::vec3 &pos,
-                         const FaceDirection &face) const {
+bool Chunk::m_RenderFace(const glm::ivec3 &pos, const FaceDirection &face,
+                         ChunkManager &manager) const {
     Block block = GetBlock(pos);
     if (!block.IsSolid())
         return false;
@@ -47,8 +48,19 @@ bool Chunk::m_RenderFace(const glm::vec3 &pos,
         {0, 1, 0}   // Top face
     }};
 
-    glm::vec3 offset = offsets.at(static_cast<int>(face));
-    Block neighbor = GetBlock(pos + offset);
+    glm::ivec3 offset = offsets.at(static_cast<int>(face));
+    glm::ivec3 neighborGridPos = pos + offset;
+    Block neighbor;
+
+    if (neighborGridPos.x >= 0 && neighborGridPos.x < s_Size &&
+        neighborGridPos.y >= 0 && neighborGridPos.y < s_Height &&
+        neighborGridPos.z >= 0 && neighborGridPos.z < s_Size) {
+        neighbor = GetBlock(neighborGridPos);
+    } else {
+        glm::ivec3 worldPos =
+            m_Pos * glm::ivec3(s_Size, s_Height, s_Size) + neighborGridPos;
+        neighbor = manager.GetBlockGlobal(worldPos);
+    }
 
     return !neighbor.IsSolid() || (!neighbor.IsOpaque() && block.IsOpaque());
 }
@@ -61,8 +73,7 @@ void Chunk::m_AddFaceToMesh(const BlockType &type, const glm::vec3 &worldPos,
 
     for (int i = 0; i < 6; i++) {
         glm::vec3 pos = worldPos + faceData.pos.at(i);
-        glm::vec2 uv = faceData.uvs.at(
-            i);
+        glm::vec2 uv = faceData.uvs.at(i);
 
         batch.vertices.push_back(pos.x);
         batch.vertices.push_back(pos.y);
@@ -77,7 +88,7 @@ void Chunk::m_AddFaceToMesh(const BlockType &type, const glm::vec3 &worldPos,
     }
 }
 
-void Chunk::GenMesh() {
+void Chunk::GenMesh(ChunkManager &manager) {
     for (auto &[type, mesh] : m_Meshes) {
         mesh.vertices.clear();
     }
@@ -98,7 +109,7 @@ void Chunk::GenMesh() {
 
                 for (int f = 0; f < 6; f++) {
                     auto face = static_cast<FaceDirection>(f);
-                    if (m_RenderFace(glm::vec3(x, y, z), face)) {
+                    if (m_RenderFace(glm::vec3(x, y, z), face, manager)) {
                         m_AddFaceToMesh(block.type, worldPos, face);
                     }
                 }

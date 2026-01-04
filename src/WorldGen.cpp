@@ -27,9 +27,9 @@ std::vector<glm::vec3> WorldGen::GenTerrain(const glm::ivec3 &size) {
     return blockPos;
 }
 
-std::vector<glm::vec3> WorldGen::GenTrees(const glm::ivec3 &terrainSize,
-                                          const int count) {
-    std::vector<glm::vec3> treePos;
+std::vector<glm::ivec3> WorldGen::GenTrees(const glm::ivec3 &terrainSize,
+                                           const int count) {
+    std::vector<glm::ivec3> treePos;
     treePos.reserve(count);
 
     int minX = 0;
@@ -39,9 +39,7 @@ std::vector<glm::vec3> WorldGen::GenTrees(const glm::ivec3 &terrainSize,
     int maxZ = terrainSize.z - 1;
 
     for (int i = 0; i < count; i++) {
-        glm::vec3 pos(static_cast<float>(RandInt(minX, maxX)),
-                      static_cast<float>(y),
-                      static_cast<float>(RandInt(minZ, maxZ)));
+        glm::ivec3 pos(RandInt(minX, maxX), y, RandInt(minZ, maxZ));
 
         treePos.push_back(pos);
     }

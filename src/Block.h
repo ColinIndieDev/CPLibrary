@@ -28,8 +28,6 @@ struct FaceVertices {
 class FaceData {
   public:
     static const std::array<FaceVertices, 6> s_Faces;
-
-    // static glm::vec2 GetAtlasOff(BlockType type, FaceDirection face);
 };
 
 struct Block {

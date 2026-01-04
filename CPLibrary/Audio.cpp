@@ -1,6 +1,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "Audio.h"
-#include "Logging.h"
+#include "utils/Logging.h"
 #include "miniaudio.h"
 
 namespace CPL {

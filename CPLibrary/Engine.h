@@ -9,7 +9,7 @@
 
 #include "Colors.h"
 #include "KeyInputs.h"
-#include "Logging.h"
+#include "utils/Logging.h"
 #include "shapes3D/Frustum.h"
 #include <GLFW/glfw3.h>
 

@@ -1,7 +1,7 @@
 #include "Engine.h"
 #include "Audio.h"
 #include "GLFW/glfw3.h"
-#include "Logging.h"
+#include "utils/Logging.h"
 #include "Shader.h"
 #include "Text.h"
 #include "shapes2D/Circle.h"

@@ -1,7 +1,7 @@
 #include "Text.h"
 
 #include "CPL.h"
-#include "Logging.h"
+#include "utils/Logging.h"
 #include "Shader.h"
 #include <filesystem>
 #include <ft2build.h>

@@ -7,7 +7,7 @@
 class WorldGen {
   public:
     static std::vector<glm::vec3> GenTerrain(const glm::ivec3 &size);
-    static std::vector<glm::vec3> GenTrees(const glm::ivec3 &terrainSize,
+    static std::vector<glm::ivec3> GenTrees(const glm::ivec3 &terrainSize,
                                            int count);
     static std::vector<std::vector<glm::vec3>>
     GenFoliage(const glm::ivec3 &terrainSize, int grassCount, int flowerCount);

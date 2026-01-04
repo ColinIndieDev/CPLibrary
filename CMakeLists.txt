@@ -75,6 +75,8 @@ add_executable(Example
     src/Block.h
     src/Chunk.cpp
     src/Chunk.h
+    src/ChunkManager.cpp
+    src/ChunkManager.h
 
     CPLibrary/Shader.cpp
     CPLibrary/Shader.h
@@ -123,7 +125,8 @@ add_executable(Example
     CPLibrary/timers/TimerManager.cpp
     CPLibrary/timers/TimerManager.h
     CPLibrary/CPLibrary.h
-    CPLibrary/Logging.h
+    CPLibrary/utils/Logging.h
+    CPLibrary/utils/ScopedTimer.h
     CPLibrary/Audio.cpp
     CPLibrary/Audio.h
 )

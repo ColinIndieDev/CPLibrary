@@ -75,33 +75,3 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
         {2*w, 2*h}, {1*w, 1*h}, {1*w, 2*h}
     }}}
 }};
-
-/*glm::vec2 FaceData::GetAtlasOff(BlockType type, FaceDirection face) {    
-    switch (type) {
-        case BlockType::STONE:
-            return {0, 0};  // (0,0) in atlas
-            
-        case BlockType::DIRT:
-            return {w, 0};  // (1,0) in atlas
-            
-        case BlockType::GRASS:
-            if (face == FaceDirection::TOP)
-                return {2*w, h};  // Grass top
-            else if (face == FaceDirection::BOTTOM)
-                return {2*w, 2*h};  // Dirt bottom
-            else
-                return {2*w, 0};  // Grass side
-                
-        case BlockType::WOOD:
-            return {0, h};
-            
-        case BlockType::LEAVES:
-            return {w, h};
-            
-        case BlockType::SAND:
-            return {0, 2*h};
-            
-        default:
-            return {0, 0};
-    }
-}*/

@@ -1,6 +1,7 @@
 #include "../CPLibrary/CPLibrary.h"
 #include "Block.h"
 #include "Chunk.h"
+#include "ChunkManager.h"
 #include "TextureLoader.h"
 #include "WorldGen.h"
 #include <string>
@@ -11,17 +12,16 @@ PRIORITIZE_GPU_BY_VENDOR
 std::unique_ptr<ShadowMap> g_ShadowMap;
 std::unique_ptr<CubeMap> g_CubeMap;
 
-std::vector<glm::vec3> g_BlockPos;
-std::vector<glm::vec3> g_TreePos;
 std::vector<glm::vec3> g_GrassPos;
 std::vector<glm::vec3> g_RedTulpPos;
 
 std::map<BlockType, Texture2D *> g_TexAtlases;
-std::vector<Chunk> g_Chunks;
+ChunkManager g_ChunkManager;
 
 glm::ivec2 mapSize(16, 16);
 glm::ivec3 terrainSize(16, 64, 16);
 
+/*
 void DrawGrass(const glm::vec3 pos) {
     // To fit the edges use pythagoras -> c² = a² + b² ( a, b = 0.2f) ~ 0.28f
     DrawPlaneTexRot(TextureLoader::GetBlockTex(TextureLoader::BlockType::GRASS),
@@ -60,7 +60,7 @@ void DrawRedTulpDepth(const glm::vec3 pos, const Shader &depthShader) {
     plane2.DrawDepth(depthShader, TextureLoader::GetBlockTex(
                                       TextureLoader::BlockType::RED_TULP));
 }
-
+*/
 void UpdateCam() {
     float aspect = GetScreenWidth() / GetScreenHeight();
     Camera3D &cam = GetCam3D();
@@ -82,7 +82,7 @@ void UpdateCam() {
     if (IsKeyPressedOnce(KEY_ESCAPE))
         DestroyWindow();
 }
-
+/*
 glm::mat4 GetLightSpaceMatrix() {
     glm::vec3 lightPos(std::sin(GetTime() * 0.01f) * 5.0f,
                        (static_cast<float>(terrainSize.y) * 0.2f) + 3.2f,
@@ -136,6 +136,7 @@ void HandleShadowMap() {
     ShadowMap::EndDepthPass();
 }
 
+
 void ActivateShadowMap() {
     Shader &shader = GetShader(DrawModes::CUBE_TEX_LIGHT);
     shader.SetMatrix4fv("lightSpaceMatrix", GetLightSpaceMatrix());
@@ -143,34 +144,34 @@ void ActivateShadowMap() {
 
     g_ShadowMap->BindForReading(1);
 }
+*/
 
-void DrawTreeStem(const glm::vec3 &treePos, Chunk &chunk) {
+void GenTreeStem(const glm::ivec3 &treePos, Chunk &chunk) {
     for (int y = 0; y < 4; y++) {
-        glm::vec3 stemPos(treePos.x, treePos.y + (static_cast<float>(y)),
-                          treePos.z);
+        glm::ivec3 stemPos(treePos.x, treePos.y + y, treePos.z);
         chunk.SetBlock(stemPos, BlockType::OAK_LOG);
     }
 }
-void DrawTreeLeaves(const glm::vec3 &treePos, Chunk &chunk) {
+void GenTreeLeaves(const glm::ivec3 &treePos, Chunk &chunk) {
     for (int x = -1; x < 2; x++) {
         for (int y = 2; y < 5; y++) {
             for (int z = -1; z < 2; z++) {
                 if (x == 0 && y < 4 && z == 0)
                     continue;
-                glm::vec3 leavePos(treePos.x + (static_cast<float>(x)),
-                                   treePos.y + (static_cast<float>(y)),
-                                   treePos.z + (static_cast<float>(z)));
+                glm::ivec3 leavePos(treePos.x + x, treePos.y + y,
+                                    treePos.z + z);
                 chunk.SetBlock(leavePos, BlockType::OAK_LEAVES);
             }
         }
     }
 }
-void DrawTrees(Chunk &chunk) {
-    for (auto &p : g_TreePos) {
-        DrawTreeStem(p, chunk);
-        DrawTreeLeaves(p, chunk);
+void GenTrees(Chunk &chunk, const std::vector<glm::ivec3> &treePos) {
+    for (const auto &p : treePos) {
+        GenTreeStem(p, chunk);
+        GenTreeLeaves(p, chunk);
     }
 }
+/*
 void DrawFoliage() {
     for (auto &p : g_GrassPos) {
         if (GetCam3D().frustum.IsCubeVisible(p, glm::vec3(0.1f))) {
@@ -183,6 +184,7 @@ void DrawFoliage() {
         }
     }
 }
+*/
 
 void MainLoop() {
     UpdateCPL();
@@ -203,8 +205,25 @@ void MainLoop() {
         DirectionalLight(glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)),
                          glm::vec3(0.3f), glm::vec3(1.0f), glm::vec3(1.0f)));
 
-    for (auto &c : g_Chunks) {
-        c.Draw(GetShader(DrawModes::CUBE_TEX_LIGHT), g_TexAtlases);
+    for (auto &c : g_ChunkManager.chunks) {
+        const float blockSize = 0.2f;
+        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
+        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
+        const glm::vec3 center(glm::vec3(c.first) * halfSizeXZ * 2.0f +
+                               glm::vec3(halfSizeXZ, 0, halfSizeXZ));
+        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
+
+        /*
+        BeginDraw(DrawModes::SHAPE_3D);
+        EnableFaceCulling(false);
+        DrawCube(center, halfSize * 2.0f, Color(255, 0, 0, 100));
+        EnableFaceCulling(true);
+        BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+        */
+
+        if (GetCam3D().frustum.IsCubeVisible(center, halfSize)) {
+            c.second.Draw(GetShader(DrawModes::CUBE_TEX_LIGHT), g_TexAtlases);
+        }
     }
 
     EnableFaceCulling(false);
@@ -214,11 +233,14 @@ void MainLoop() {
 
     BeginDraw(DrawModes::TEXT, false);
 
-    DrawText({0, 0}, 0.5f,
-             "X: " + std::to_string(GetCam3D().position.x) +
-                 ", Y: " + std::to_string(GetCam3D().position.y) +
-                 ", Z: " + std::to_string(GetCam3D().position.z),
-             WHITE);
+    DrawText(
+        {0, 0}, 0.5f,
+        "X: " + std::to_string(static_cast<int>(GetCam3D().position.x * 5)) +
+            ", Y: " +
+            std::to_string(static_cast<int>(GetCam3D().position.y * 5)) +
+            ", Z: " +
+            std::to_string(static_cast<int>(GetCam3D().position.z * 5)),
+        WHITE);
 
     ShowDetails();
 
@@ -259,38 +281,46 @@ int main() {
     g_TexAtlases[BlockType::OAK_LEAVES] =
         TextureLoader::GetBlockTex(TextureLoader::BlockType::OAK_LEAVES);
 
-
-    for (int x = 0; x < mapSize.x; x++) {
-        for (int z = 0; z < mapSize.y; z++) {
-            g_Chunks.emplace_back(glm::vec3(x, 0, z));
+    for (int x = -mapSize.x; x < mapSize.x; x++) {
+        for (int z = -mapSize.y; z < mapSize.y; z++) {
+            glm::ivec3 chunkPos(x, 0, z);
+            g_ChunkManager.chunks.insert({chunkPos, Chunk(chunkPos)});
         }
     }
 
-    for (auto &c : g_Chunks) {
-        for (int y = 0; y < 64; y++) {
-            for (int z = 0; z < 16; z++) {
-                for (int x = 0; x < 16; x++) {
-                    if (y == 0)
-                        c.SetBlock(glm::vec3(x, y, z), BlockType::BEDROCK);
-                    else if (y < 59)
-                        c.SetBlock(glm::vec3(x, y, z), BlockType::STONE);
-                    else if (y != 63)
-                        c.SetBlock(glm::vec3(x, y, z), BlockType::DIRT);
-                    else
-                        c.SetBlock(glm::vec3(x, y, z), BlockType::GRASS_BLOCK);
+    {
+        ScopedTimer timer("Creating chunks (16 x 16)");
+        for (auto &c : g_ChunkManager.chunks) {
+            for (int y = 0; y < 64; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        if (y == 0)
+                            c.second.SetBlock(glm::ivec3(x, y, z),
+                                              BlockType::BEDROCK);
+                        else if (y < 59)
+                            c.second.SetBlock(glm::ivec3(x, y, z),
+                                              BlockType::STONE);
+                        else if (y != 63)
+                            c.second.SetBlock(glm::ivec3(x, y, z),
+                                              BlockType::DIRT);
+                        else
+                            c.second.SetBlock(glm::ivec3(x, y, z),
+                                              BlockType::GRASS_BLOCK);
+                    }
                 }
             }
         }
+
+        for (auto &c : g_ChunkManager.chunks) {
+            GenTrees(c.second, WorldGen::GenTrees(terrainSize, RandInt(0, 10)));
+        }
     }
 
-    g_TreePos = WorldGen::GenTrees(terrainSize, 5);
-
-    for (auto &c : g_Chunks) {
-        DrawTrees(c);
-    }
-
-    for (auto &c : g_Chunks) {
-        c.GenMesh();
+    {
+        ScopedTimer timer("Generating chunks (16 x 16)");
+        for (auto &c : g_ChunkManager.chunks) {
+            c.second.GenMesh(g_ChunkManager);
+        }
     }
 
     while (!static_cast<bool>(WindowShouldClose())) {

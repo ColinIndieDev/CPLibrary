@@ -1,6 +1,6 @@
 #include "Shader.h"
 #include "CPL.h"
-#include "Logging.h"
+#include "utils/Logging.h"
 
 #include <fstream>
 #include <iostream>
