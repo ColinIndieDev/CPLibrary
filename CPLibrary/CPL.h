@@ -133,7 +133,7 @@ void SetTimeScale(float scale);
 void LockMouse(bool enabled);
 void EnableVSync(bool enabled);
 void EnableFaceCulling(bool enabled);
-int WindowShouldClose();
+bool WindowShouldClose();
 
 float GetScreenWidth();
 float GetScreenHeight();
@@ -147,7 +147,7 @@ bool IsKeyDown(int key);
 bool IsKeyUp(int key);
 bool IsKeyPressedOnce(int key);
 bool IsKeyReleased(int key);
-unsigned int GetCharPressed();
+uint32_t GetCharPressed();
 bool IsMouseDown(int button);
 bool IsMousePressedOnce(int button);
 bool IsMouseReleased(int button);

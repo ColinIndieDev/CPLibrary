@@ -65,6 +65,14 @@ target_include_directories(miniaudio INTERFACE "${CMAKE_BINARY_DIR}/_deps/miniau
 # GLAD
 add_subdirectory(external/glad)
 
+# Fast Noise Lite
+FetchContent_Declare(
+        fastnoiselite
+        GIT_REPOSITORY https://github.com/Auburn/FastNoiseLite.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(fastnoiselite)
+
 add_executable(Example 
     src/main.cpp
     src/TextureLoader.cpp
@@ -77,6 +85,8 @@ add_executable(Example
     src/Chunk.h
     src/ChunkManager.cpp
     src/ChunkManager.h
+    src/Game.cpp
+    src/Game.h
 
     CPLibrary/Shader.cpp
     CPLibrary/Shader.h
@@ -132,7 +142,7 @@ add_executable(Example
 )
 
 # Include directories
-target_include_directories(Example PRIVATE ${stb_SOURCE_DIR})
+target_include_directories(Example PRIVATE ${stb_SOURCE_DIR} ${fastnoiselite_SOURCE_DIR}/Cpp)
 
 # Link libraries
 target_link_libraries(Example PRIVATE glad freetype miniaudio glm)

@@ -1,103 +1,201 @@
 #include "WorldGen.h"
 #include "../CPLibrary/CPLibrary.h"
-#include <cassert>
+#include "Block.h"
 
-using namespace CPL;
+void WorldGen::Init() {
+    m_InitNoises();
+    m_CreateChunks();
+}
 
-std::unordered_set<glm::vec3, WorldGen::Vec3Hash> WorldGen::m_UniquePos;
+uint32_t DeriveSeed(const uint32_t base, const uint32_t salt) {
+    uint32_t h = base;
+    h ^= salt + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+}
 
-std::vector<glm::vec3> WorldGen::GenTerrain(const glm::ivec3 &size) {
-    bool isOdd = size.x % 2 == 1 && size.z % 2 == 1;
-    assert(isOdd && "x and z coordinates must be odd to center the terrain!");
+void WorldGen::m_InitNoises() {
+    peakNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 76767676)));
+    peakNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    peakNoise.SetFrequency(0.0008f);
 
-    std::vector<glm::vec3> blockPos;
-    blockPos.reserve(static_cast<int32_t>(size.x * size.y * size.z));
+    mountainMask.SetSeed(static_cast<int>(DeriveSeed(seed, 69696969)));
+    mountainMask.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    mountainMask.SetFrequency(0.0015f);
 
-    for (int x = -static_cast<int>(size.x / 2);
-         x < static_cast<int>(size.x / 2); x++) {
-        for (int y = 0; y < size.y; y++) {
-            for (int z = -static_cast<int>(size.z / 2);
-                 z < static_cast<int>(size.z / 2); z++) {
-                blockPos.emplace_back(static_cast<float>(x) * 0.2f,
-                                      static_cast<float>(y) * 0.2f,
-                                      static_cast<float>(z) * 0.2f);
+    terrainNoise.SetSeed(static_cast<int>(seed));
+    terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
+    terrainNoise.SetFractalOctaves(4);
+    terrainNoise.SetFractalLacunarity(2.0f);
+    terrainNoise.SetFractalGain(0.5f);
+    terrainNoise.SetFrequency(0.008f);
+
+    treeNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 67676767)));
+    treeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    treeNoise.SetFrequency(0.007f);
+
+    caveNoise.SetSeed(static_cast<int>(seed + 1337));
+    caveNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveNoise.SetFrequency(0.03f);
+
+    caveRegionNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 12345678)));
+    caveRegionNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveRegionNoise.SetFrequency(0.3f);
+
+    caveEntranceNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveEntranceNoise.SetFrequency(0.02f);
+}
+void WorldGen::m_CreateChunks() {
+    for (int x = -mapSize.x; x < mapSize.x; x++) {
+        for (int z = -mapSize.y; z < mapSize.y; z++) {
+            glm::ivec3 chunkPos(x, 0, z);
+            manager.chunks.insert({chunkPos, Chunk(chunkPos)});
+        }
+    }
+}
+
+int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) {
+    float m = mountainMask.GetNoise(static_cast<float>(worldX),
+                                    static_cast<float>(worldZ));
+    m = (m + 1.0f) * 0.5f;
+
+    float p = peakNoise.GetNoise(static_cast<float>(worldX),
+                                 static_cast<float>(worldZ));
+    p = (p + 1.0f) * 0.5f;
+    p = std::pow(p, 6.0f);
+    float peakFactor = m * p;
+
+    float n = terrainNoise.GetNoise(static_cast<float>(worldX),
+                                    static_cast<float>(worldZ));
+
+    constexpr float amplitude = 12;
+    constexpr float mountainAmplitude = 50;
+    constexpr float peakAmplitude = 180;
+
+    int height = baseMapHeight +
+                 static_cast<int>((n * amplitude) + (m * mountainAmplitude) +
+                                  (peakFactor * peakAmplitude));
+
+    return std::clamp(height, minMapHeight, maxMapHeight);
+}
+
+void GenTreeStem(const glm::ivec3 &treePos, Chunk &chunk) {
+    for (int y = 0; y < 4; y++) {
+        glm::ivec3 stemPos(treePos.x, treePos.y + y, treePos.z);
+        chunk.SetBlock(stemPos, BlockType::OAK_LOG);
+    }
+}
+void GenTreeLeaves(const glm::ivec3 &treePos, Chunk &chunk) {
+    for (int x = -1; x < 2; x++) {
+        for (int y = 2; y < 5; y++) {
+            for (int z = -1; z < 2; z++) {
+                if (x == 0 && y < 4 && z == 0)
+                    continue;
+                glm::ivec3 leavePos(treePos.x + x, treePos.y + y,
+                                    treePos.z + z);
+                chunk.SetBlock(leavePos, BlockType::OAK_LEAVES);
             }
         }
     }
-    return blockPos;
+}
+void GenTree(const glm::ivec3 &treePos, Chunk &chunk) {
+    GenTreeStem(treePos, chunk);
+    GenTreeLeaves(treePos, chunk);
 }
 
-std::vector<glm::ivec3> WorldGen::GenTrees(const glm::ivec3 &terrainSize,
-                                           const int count) {
-    std::vector<glm::ivec3> treePos;
-    treePos.reserve(count);
+void WorldGen::m_GenChunks() {
+    ScopedTimer timer("Creating chunks (16 x 16)");
+    for (auto &c : manager.chunks) {
 
-    int minX = 0;
-    int maxX = terrainSize.x - 1;
-    int y = terrainSize.y;
-    int minZ = 0;
-    int maxZ = terrainSize.z - 1;
+        for (int z = 0; z < Chunk::s_Size; z++) {
+            for (int x = 0; x < Chunk::s_Size; x++) {
+                int worldX = (c.first.x * 16) + x;
+                int worldZ = (c.first.z * 16) + z;
 
-    for (int i = 0; i < count; i++) {
-        glm::ivec3 pos(RandInt(minX, maxX), y, RandInt(minZ, maxZ));
+                int height = GetTerrainHeight(worldX, worldZ);
 
-        treePos.push_back(pos);
-    }
+                for (int y = 0; y < Chunk::s_Height; y++) {
+                    if (y == 0)
+                        c.second.SetBlock(glm::ivec3(x, y, z),
+                                          BlockType::BEDROCK);
+                    else if (y == height && height < 100)
+                        c.second.SetBlock(glm::ivec3(x, y, z),
+                                          BlockType::GRASS_BLOCK);
+                    else if (y < height && y > height - 4)
+                        c.second.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
+                    else if (y <= height - 4 ||
+                             (y <= height && y >= 100 && height >= 100 && height < 170))
+                        c.second.SetBlock(glm::ivec3(x, y, z),
+                                          BlockType::STONE);
+                    else if (y <= height && y >= 170 && height >= 170)
+                        c.second.SetBlock(glm::ivec3(x, y, z),
+                                          BlockType::SNOW);
 
-    return treePos;
-}
+                    m_GenCaves(x, z, glm::ivec3(worldX, y, worldZ), height,
+                               c.second);
+                }
 
-std::vector<std::vector<glm::vec3>>
-WorldGen::GenFoliage(const glm::ivec3 &terrainSize, const int grassCount,
-                     const int flowerCount) {
-    return {m_GenGrass(terrainSize, grassCount),
-            m_GenFlowers(terrainSize, flowerCount)};
-}
-
-std::vector<glm::vec3> WorldGen::m_GenGrass(const glm::ivec3 &terrainSize,
-                                            const int count) {
-    std::vector<glm::vec3> grassPos;
-    grassPos.reserve(count);
-
-    int minX = -static_cast<int>(terrainSize.x / 2);
-    int maxX = static_cast<int>(terrainSize.x / 2) - 1;
-    int y = terrainSize.y;
-    int minZ = -static_cast<int>(terrainSize.z / 2);
-    int maxZ = static_cast<int>(terrainSize.z / 2) - 1;
-
-    while (grassPos.size() < static_cast<size_t>(count)) {
-        glm::vec3 pos(static_cast<float>(RandInt(minX, maxX)) * 0.2f,
-                      static_cast<float>(y) * 0.2f,
-                      static_cast<float>(RandInt(minZ, maxZ)) * 0.2f);
-
-        if (m_UniquePos.insert(pos).second) {
-            grassPos.push_back(pos);
+                m_GenTrees(x, z, worldX, worldZ, height, c.second);
+            }
         }
     }
-
-    return grassPos;
 }
 
-std::vector<glm::vec3> WorldGen::m_GenFlowers(const glm::ivec3 &terrainSize,
-                                              const int count) {
-    std::vector<glm::vec3> flowerPos;
-    flowerPos.reserve(count);
-
-    int minX = -static_cast<int>(terrainSize.x / 2);
-    int maxX = static_cast<int>(terrainSize.x / 2) - 1;
-    int y = terrainSize.y;
-    int minZ = -static_cast<int>(terrainSize.z / 2);
-    int maxZ = static_cast<int>(terrainSize.z / 2) - 1;
-
-    while (flowerPos.size() < static_cast<size_t>(count)) {
-        glm::vec3 pos(static_cast<float>(RandInt(minX, maxX)) * 0.2f,
-                      static_cast<float>(y) * 0.2f,
-                      static_cast<float>(RandInt(minZ, maxZ)) * 0.2f);
-
-        if (m_UniquePos.insert(pos).second) {
-            flowerPos.push_back(pos);
-        }
+void WorldGen::m_GenCaves(const int x, const int z, const glm::ivec3 &world,
+                          const int height, Chunk &chunk) {
+    if (world.y > height - 4) {
+        float entrance =
+            caveEntranceNoise.GetNoise(static_cast<float>(world.x) * 0.02f,
+                                       static_cast<float>(world.z) * 0.02f);
+        if (entrance < 0.6f)
+            return;
     }
 
-    return flowerPos;
+    if (world.y > 0) {
+
+        float region =
+            caveRegionNoise.GetNoise(static_cast<float>(world.x) * 0.05f,
+                                     static_cast<float>(world.z) * 0.05f);
+
+        if (region < 0.5f)
+            return;
+
+        constexpr float caveScale = 0.5f;
+
+        float n = caveNoise.GetNoise(static_cast<float>(world.x) * caveScale,
+                                     static_cast<float>(world.y) * caveScale,
+                                     static_cast<float>(world.z) * caveScale);
+        float tunnel = 1.0f - std::abs(n);
+
+        constexpr float maxCaveY = 1000.0f;
+
+        float depth = 1.0f - (static_cast<float>(world.y) / maxCaveY);
+        depth = std::clamp(depth, 0.2f, 1.0f);
+
+        if (tunnel * depth > 0.7f)
+            chunk.SetBlock(glm::ivec3(x, world.y, z), BlockType::AIR);
+    }
+}
+
+void WorldGen::m_GenTrees(const int x, const int z, const int worldX,
+                          const int worldZ, const int height, Chunk &chunk) {
+    float t = treeNoise.GetNoise(static_cast<float>(worldX),
+                                 static_cast<float>(worldZ));
+
+    Block block = chunk.GetBlock(glm::ivec3(x, height, z));
+
+    if (RandPercentFloat(4.0f * t) && block.IsSolid() && block.type != BlockType::SNOW)
+        GenTree(glm::ivec3(x, height + 1, z), chunk);
+}
+
+void WorldGen::m_CreateChunkMeshes() {
+    ScopedTimer timer("Generating chunks (16 x 16)");
+    for (auto &c : manager.chunks) {
+        c.second.GenMesh(manager);
+    }
+}
+
+void WorldGen::GenMap() {
+    m_GenChunks();
+    m_CreateChunkMeshes();
 }

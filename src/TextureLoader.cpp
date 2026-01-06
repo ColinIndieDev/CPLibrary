@@ -1,6 +1,6 @@
 #include "TextureLoader.h"
 
-std::vector<std::unique_ptr<Texture2D>> TextureLoader::s_BlockTexs(8);
+std::vector<std::unique_ptr<Texture2D>> TextureLoader::s_BlockTexs(9);
 
 std::unique_ptr<Texture2D> TextureLoader::s_CPLLogo;
 
@@ -14,7 +14,7 @@ void TextureLoader::Init() {
                                     glm::vec2(48, 32),
                                     TextureFiltering::NEAREST);
     s_BlockTexs[static_cast<int>(BlockType::DIRT)] =
-        std::make_unique<Texture2D>("assets/images/dirt.png", glm::vec2(16),
+        std::make_unique<Texture2D>("assets/images/dirt.png", glm::vec2(48, 32),
                                     TextureFiltering::NEAREST);
     s_BlockTexs[static_cast<int>(BlockType::STONE)] =
         std::make_unique<Texture2D>("assets/images/stone.png",
@@ -26,6 +26,10 @@ void TextureLoader::Init() {
                                     TextureFiltering::NEAREST);
     s_BlockTexs[static_cast<int>(BlockType::OAK_LEAVES)] =
         std::make_unique<Texture2D>("assets/images/oak_leaves.png",
+                                    glm::vec2(48, 32),
+                                    TextureFiltering::NEAREST);
+    s_BlockTexs[static_cast<int>(BlockType::SNOW)] =
+        std::make_unique<Texture2D>("assets/images/snow.png",
                                     glm::vec2(48, 32),
                                     TextureFiltering::NEAREST);
 

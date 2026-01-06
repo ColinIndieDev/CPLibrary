@@ -1,29 +1,44 @@
 #pragma once
 
+#include "ChunkManager.h"
+#include "FastNoiseLite.h"
 #include <glm/glm.hpp>
-#include <vector>
-#include <unordered_set>
 
 class WorldGen {
   public:
-    static std::vector<glm::vec3> GenTerrain(const glm::ivec3 &size);
-    static std::vector<glm::ivec3> GenTrees(const glm::ivec3 &terrainSize,
-                                           int count);
-    static std::vector<std::vector<glm::vec3>>
-    GenFoliage(const glm::ivec3 &terrainSize, int grassCount, int flowerCount);
-    
+    uint32_t seed;
+    ChunkManager manager;
+    glm::ivec2 mapSize;
+
+    int minMapHeight;
+    int maxMapHeight;
+    int baseMapHeight;
+
+    explicit WorldGen(const uint32_t seed, const glm::ivec2 &mapSize,
+                      const int minMapHeight, const int maxMapHeight,
+                      const int baseMapHeight)
+        : seed(seed), mapSize(mapSize), minMapHeight(minMapHeight),
+          maxMapHeight(maxMapHeight), baseMapHeight(baseMapHeight) {}
+
+    void Init();
+    void GenMap();
+
+    int GetTerrainHeight(int worldX, int worldZ);
+
   private:
-    struct Vec3Hash {
-        std::size_t operator()(const glm::vec3 &v) const {
-            return std::hash<float>()(v.x) ^ (std::hash<float>()(v.y) << 1) ^
-                   (std::hash<float>()(v.z) << 2);
-        }
-    };
+    FastNoiseLite terrainNoise;
+    FastNoiseLite treeNoise;
+    FastNoiseLite mountainMask;
+    FastNoiseLite peakNoise;
+    FastNoiseLite caveNoise;
+    FastNoiseLite caveRegionNoise;
+    FastNoiseLite caveEntranceNoise;
 
-    static std::unordered_set<glm::vec3, Vec3Hash> m_UniquePos;
-
-    static std::vector<glm::vec3> m_GenGrass(const glm::ivec3 &terrainSize,
-                                             int count);
-    static std::vector<glm::vec3> m_GenFlowers(const glm::ivec3 &terrainSize,
-                                               int count);
+    void m_InitNoises();
+    void m_GenTrees(int x, int z, int worldX, int worldZ, int height,
+                    Chunk &chunk);
+    void m_GenCaves(int x, int z, const glm::ivec3 &world, int height, Chunk& chunk);
+    void m_CreateChunks();
+    void m_GenChunks();
+    void m_CreateChunkMeshes();
 };

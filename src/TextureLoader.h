@@ -13,6 +13,7 @@ class TextureLoader {
         STONE,
         OAK_LOG,
         OAK_LEAVES,
+        SNOW,
         GRASS,
         RED_TULP,
     };

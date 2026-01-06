@@ -231,7 +231,7 @@ class Engine {
     static void EnableVSync(bool enabled);
     static void EnableFaceCulling(bool enabled);
     static void LockMouse(bool enabled);
-    static int WindowShouldClose();
+    static bool WindowShouldClose();
     static float GetScreenWidth();
     static float GetScreenHeight();
 
@@ -245,7 +245,7 @@ class Engine {
     static bool IsKeyUp(int key);
     static bool IsKeyPressedOnce(int key);
     static bool IsKeyReleased(int key);
-    static unsigned int GetCharPressed();
+    static uint32_t GetCharPressed();
     static bool IsMouseDown(int button);
     static bool IsMousePressedOnce(int button);
     static bool IsMouseReleased(int button);

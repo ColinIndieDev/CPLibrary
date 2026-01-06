@@ -1,7 +1,6 @@
 #include "Engine.h"
 #include "Audio.h"
 #include "GLFW/glfw3.h"
-#include "utils/Logging.h"
 #include "Shader.h"
 #include "Text.h"
 #include "shapes2D/Circle.h"
@@ -21,10 +20,11 @@
 #include "shapes3D/Sphere.h"
 #include "stb_image.h"
 #include "timers/TimerManager.h"
+#include "utils/Logging.h"
 #include <vector>
 
-unsigned int Engine::s_ScreenWidth;
-unsigned int Engine::s_ScreenHeight;
+uint32_t Engine::s_ScreenWidth;
+uint32_t Engine::s_ScreenHeight;
 glm::mat4 Engine::s_Projection2D;
 glm::mat4 Engine::s_Projection3D;
 
@@ -52,7 +52,7 @@ std::unordered_map<int, bool> Engine::s_MouseButtons;
 std::unordered_map<int, bool> Engine::s_PrevMouseButtons;
 
 GLFWwindow *Engine::s_Window;
-std::queue<unsigned int> Engine::s_CharQueue;
+std::queue<uint32_t> Engine::s_CharQueue;
 
 CPL::Camera2D Engine::s_Camera2D;
 CPL::Camera3D Engine::s_Camera3D;
@@ -230,45 +230,45 @@ void Engine::LockMouse(const bool enabled) {
 
 void Engine::InitShaders() {
 #ifdef __EMSCRIPTEN__
-    s_Shape2DShader = CPL::Shader("/assets/shaders/shader_web.vert",
-                                  "/assets/shaders/shader_web.frag");
-    s_TextShader = CPL::Shader("/assets/shaders/text_web.vert",
-                               "/assets/shaders/text_web.frag");
-    s_TextureShader = CPL::Shader("/assets/shaders/texture_web.vert",
-                                  "/assets/shaders/texture_web.frag");
-    s_LightShape2DShader = CPL::Shader("/assets/shaders/lightShader_web.vert",
-                                       "/assets/shaders/lightShader_web.frag");
-    s_LightTextureShader = CPL::Shader("assets/shaders/lightTexture_web.vert",
-                                       "assets/shaders/lightTexture_web.frag");
-    s_ScreenShader = CPL::Shader("/assets/shaders/screen_web.vert",
-                                 "/assets/shaders/screen_web.frag");
+    s_Shape2DShader = CPL::Shader("/assets/shaders/web/vert/shader_web.vert",
+                                  "/assets/shaders/web/frag/shader_web.frag");
+    s_TextShader = CPL::Shader("/assets/shaders/web/vert/text_web.vert",
+                               "/assets/shaders/web/frag/text_web.frag");
+    s_TextureShader = CPL::Shader("/assets/shaders/web/vert/texture_web.vert",
+                                  "/assets/shaders/web/frag/texture_web.frag");
+    s_LightShape2DShader = CPL::Shader("/assets/shaders/web/vert/lightShader_web.vert",
+                                       "/assets/shaders/web/frag/lightShader_web.frag");
+    s_LightTextureShader = CPL::Shader("assets/shaders/web/vert/lightTexture_web.vert",
+                                       "assets/shaders/web/frag/lightTexture_web.frag");
+    s_ScreenShader = CPL::Shader("/assets/shaders/web/vert/screen_web.vert",
+                                 "/assets/shaders/web/frag/screen_web.frag");
 #else
     s_Shape2DShader =
-        CPL::Shader("assets/shaders/shader.vert", "assets/shaders/shader.frag");
+        CPL::Shader("assets/shaders/default/vert/shader.vert", "assets/shaders/default/frag/shader.frag");
     s_TextShader =
-        CPL::Shader("assets/shaders/text.vert", "assets/shaders/text.frag");
-    s_TextureShader = CPL::Shader("assets/shaders/texture.vert",
-                                  "assets/shaders/texture.frag");
-    s_LightShape2DShader = CPL::Shader("assets/shaders/lightShader.vert",
-                                       "assets/shaders/lightShader.frag");
-    s_LightTextureShader = CPL::Shader("assets/shaders/lightTexture.vert",
-                                       "assets/shaders/lightTexture.frag");
+        CPL::Shader("assets/shaders/default/vert/text.vert", "assets/shaders/default/frag/text.frag");
+    s_TextureShader = CPL::Shader("assets/shaders/default/vert/texture.vert",
+                                  "assets/shaders/default/frag/texture.frag");
+    s_LightShape2DShader = CPL::Shader("assets/shaders/default/vert/lightShader.vert",
+                                       "assets/shaders/default/frag/lightShader.frag");
+    s_LightTextureShader = CPL::Shader("assets/shaders/default/vert/lightTexture.vert",
+                                       "assets/shaders/default/frag/lightTexture.frag");
     s_ScreenShader =
-        CPL::Shader("assets/shaders/screen.vert", "assets/shaders/screen.frag");
+        CPL::Shader("assets/shaders/default/vert/screen.vert", "assets/shaders/default/frag/screen.frag");
 
-    s_Shape3DShader = CPL::Shader("assets/shaders/cubeShader.vert",
-                                  "assets/shaders/cubeShader.frag");
-    s_CubeTexShader = CPL::Shader("assets/shaders/cubeTexShader.vert",
-                                  "assets/shaders/cubeTexShader.frag");
-    s_LightShape3DShader = CPL::Shader("assets/shaders/lightCubeShader.vert",
-                                       "assets/shaders/lightCubeShader.frag");
-    s_CubeMapShader = CPL::Shader("assets/shaders/cubeMapShader.vert",
-                                  "assets/shaders/cubeMapShader.frag");
+    s_Shape3DShader = CPL::Shader("assets/shaders/default/vert/cubeShader.vert",
+                                  "assets/shaders/default/frag/cubeShader.frag");
+    s_CubeTexShader = CPL::Shader("assets/shaders/default/vert/cubeTexShader.vert",
+                                  "assets/shaders/default/frag/cubeTexShader.frag");
+    s_LightShape3DShader = CPL::Shader("assets/shaders/default/vert/lightCubeShader.vert",
+                                       "assets/shaders/default/frag/lightCubeShader.frag");
+    s_CubeMapShader = CPL::Shader("assets/shaders/default/vert/cubeMapShader.vert",
+                                  "assets/shaders/default/frag/cubeMapShader.frag");
     s_LightCubeTexShader =
-        CPL::Shader("assets/shaders/lightCubeTexShader.vert",
-                    "assets/shaders/lightCubeTexShader.frag");
-    s_DepthShader = CPL::Shader("assets/shaders/depthShader.vert",
-                                "assets/shaders/depthShader.frag");
+        CPL::Shader("assets/shaders/default/vert/lightCubeTexShader.vert",
+                    "assets/shaders/default/frag/lightCubeTexShader.frag");
+    s_DepthShader = CPL::Shader("assets/shaders/default/vert/depthShader.vert",
+                                "assets/shaders/default/frag/depthShader.frag");
 #endif
 }
 
@@ -775,7 +775,9 @@ void Engine::EnableFaceCulling(const bool enabled) {
         glDisable(GL_CULL_FACE);
     }
 }
-int Engine::WindowShouldClose() { return glfwWindowShouldClose(s_Window); }
+bool Engine::WindowShouldClose() {
+    return static_cast<bool>(glfwWindowShouldClose(s_Window));
+}
 
 float Engine::GetScreenWidth() { return static_cast<float>(s_ScreenWidth); }
 float Engine::GetScreenHeight() { return static_cast<float>(s_ScreenHeight); }
@@ -819,7 +821,7 @@ bool Engine::IsKeyPressedOnce(const int key) {
 bool Engine::IsKeyReleased(const int key) {
     return !s_KeyStates[key] && s_PrevKeyStates[key];
 }
-unsigned int Engine::GetCharPressed() {
+uint32_t Engine::GetCharPressed() {
     s_CharInputEnabled = true;
     if (s_CharQueue.empty())
         return 0;

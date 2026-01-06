@@ -126,20 +126,21 @@ void DrawCube(const glm::vec3 &pos, const glm::vec3 &size, const Color &color) {
 void DrawSphere(const glm::vec3 &pos, const float radius, const Color &color) {
     Engine::DrawSphere(pos, radius, color);
 }
-void DrawCubeTex(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec3 &size,
-                 const Color &color) {
+void DrawCubeTex(const Texture2D *const tex, const glm::vec3 &pos,
+                 const glm::vec3 &size, const Color &color) {
     Engine::DrawCubeTex(tex, pos, size, color);
 }
 void DrawCubeTexAtlas(const Texture2D *const tex, const glm::vec3 &pos,
                       const glm::vec3 &size, const Color &color) {
     Engine::DrawCubeTexAtlas(tex, pos, size, color);
 }
-void DrawPlaneTex(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec2 &size,
-                  const Color &color) {
+void DrawPlaneTex(const Texture2D *const tex, const glm::vec3 &pos,
+                  const glm::vec2 &size, const Color &color) {
     Engine::DrawPlaneTex(tex, pos, size, color);
 }
-void DrawPlaneTexRot(const Texture2D *const tex, const glm::vec3 &pos, const glm::vec3 &rot,
-                     const glm::vec2 &size, const Color &color) {
+void DrawPlaneTexRot(const Texture2D *const tex, const glm::vec3 &pos,
+                     const glm::vec3 &rot, const glm::vec2 &size,
+                     const Color &color) {
     Engine::DrawPlaneTexRot(tex, pos, rot, size, color);
 }
 void DrawCubeMap(const CubeMap *const map) { Engine::DrawCubeMap(map); }
@@ -157,7 +158,7 @@ void EnableVSync(const bool enabled) { Engine::EnableVSync(enabled); }
 void EnableFaceCulling(const bool enabled) {
     Engine::EnableFaceCulling(enabled);
 }
-int WindowShouldClose() { return Engine::WindowShouldClose(); }
+bool WindowShouldClose() { return Engine::WindowShouldClose(); }
 
 float GetScreenWidth() { return Engine::GetScreenWidth(); }
 float GetScreenHeight() { return Engine::GetScreenHeight(); }
@@ -177,7 +178,7 @@ bool IsKeyDown(const int key) { return Engine::IsKeyDown(key); }
 bool IsKeyUp(const int key) { return Engine::IsKeyUp(key); }
 bool IsKeyPressedOnce(const int key) { return Engine::IsKeyPressedOnce(key); }
 bool IsKeyReleased(const int key) { return Engine::IsKeyReleased(key); }
-unsigned int GetCharPressed() { return Engine::GetCharPressed(); }
+uint32_t GetCharPressed() { return Engine::GetCharPressed(); }
 bool IsMouseDown(const int button) { return Engine::IsMouseDown(button); }
 bool IsMousePressedOnce(const int button) {
     return Engine::IsMousePressedOnce(button);

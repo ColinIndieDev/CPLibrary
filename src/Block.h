@@ -11,6 +11,7 @@ enum class BlockType : uint8_t {
     STONE,
     OAK_LOG,
     OAK_LEAVES,
+    SNOW,
 };
 
 enum class FaceDirection : uint8_t { BACK, FRONT, LEFT, RIGHT, BOTTOM, TOP };
