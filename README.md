@@ -47,22 +47,22 @@ and inspired by the ones from Raylib
 + + `fonts/`
 + + `images/`
 + + `shaders/`
-+ +  + `.frag (fragment shaders)`
-+ +  +  `.vert (vertex shaders)`
++ + + `default/`
++ + + + `frag/*.frag`
++ + + + `vert/*.vert`
++ + + `web/`
++ + + + `frag/*.frag`
++ + + + `vert/*.vert` 
 + `external/`
 + + `glad/`
 + `CPLibrary/`
-+ + `shapes2D/`
-+ + `shapes3D/`
-+ + `timers/`
++ + `include/`
++ + `src/`
 + + `CPLibrary.h`
-+ + `Engine.cpp & .h`  
-+ + `CPL.cpp & .h`
-+ + `more .cpp & .h files for other functionalities`
 
 The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one and the shader code. In `external/` is the implementation from `glad/` downloaded from its offical website.
 All code for the shaders like fragment as well as vertex are all stored inside the
-`shader/` folder (in assets as mentioned before). Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
+`shader/` folder and sorted (in assets as mentioned before). All `.h` and `.cpp` files for CPL are seperated. Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
 are contained and in `shapes3D/` the 3D related stuff needed. `Engine.h` & `.cpp` have all implementations of the functions that are available for the framework which can be used by wrappers basically in `CPL.h` and `.cpp`. The others should be self explaining I guess by their names.
 
 ## Functionality
