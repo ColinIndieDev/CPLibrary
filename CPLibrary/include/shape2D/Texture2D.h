@@ -14,7 +14,7 @@ class Texture2D {
     int channels{};
     float rotAngle = 0;
     Color color;
-    unsigned int tex{};
+    uint32_t tex{};
 
     explicit Texture2D(const std::string &filePath, const glm::vec2 &size,
                        const TextureFiltering &textureFiltering);

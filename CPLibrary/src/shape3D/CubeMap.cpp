@@ -1,5 +1,5 @@
-#include "CubeMap.h"
-#include "../Shader.h"
+#include "../../include/shape3D/CubeMap.h"
+#include "../../include/Shader.h"
 #include <stb_image.h>
 
 namespace CPL {

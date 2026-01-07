@@ -1,5 +1,5 @@
-#include "Sphere.h"
-#include "../Shader.h"
+#include "../../include/shape3D/Sphere.h"
+#include "../../include/Shader.h"
 #include <algorithm>
 
 namespace CPL {

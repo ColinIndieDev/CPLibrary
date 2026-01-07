@@ -1,5 +1,5 @@
-#include "ShadowMap.h"
-#include "../Engine.h"
+#include "../../include/shape3D/ShadowMap.h"
+#include "../../include/Engine.h"
 
 namespace CPL {
 ShadowMap::ShadowMap(const uint32_t res) : shadowWidth(res), shadowHeight(res) {

@@ -1,6 +1,6 @@
-#include "Circle.h"
-#include "../CPL.h"
-#include "../Shader.h"
+#include "../../include/shape2D/Circle.h"
+#include "../../include/CPL.h"
+#include "../../include/Shader.h"
 #include <cmath>
 #include <numbers>
 #include <vector>

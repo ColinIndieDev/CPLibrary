@@ -1,6 +1,6 @@
-#include "Rectangle.h"
-#include "../CPL.h"
-#include "../Shader.h"
+#include "../../include/shape2D/Rectangle.h"
+#include "../../include/CPL.h"
+#include "../../include/Shader.h"
 
 namespace CPL {
 Rectangle::Rectangle(const glm::vec2 &pos, const glm::vec2 &size,

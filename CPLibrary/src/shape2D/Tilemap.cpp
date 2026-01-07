@@ -1,6 +1,6 @@
-#include "Tilemap.h"
-#include "../Shader.h"
-#include "Texture2D.h"
+#include "../../include/shape2D/Tilemap.h"
+#include "../../include/Shader.h"
+#include "../../include/shape2D/Texture2D.h"
 #include <algorithm>
 
 namespace CPL {

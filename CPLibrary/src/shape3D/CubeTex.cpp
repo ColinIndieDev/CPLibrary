@@ -1,8 +1,8 @@
-#include "CubeTex.h"
-#include "../CPL.h"
-#include "../Shader.h"
-#include "../shapes2D/Texture2D.h"
-#include "Cube.h"
+#include "../../include/shape3D/CubeTex.h"
+#include "../../include/CPL.h"
+#include "../../include/Shader.h"
+#include "../../include/shape2D/Texture2D.h"
+#include "../../include/shape3D/Cube.h"
 
 namespace CPL {
 CubeTex::CubeTex(const glm::vec3 &pos, const glm::vec3 &size,

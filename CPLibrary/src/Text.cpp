@@ -1,8 +1,8 @@
-#include "Text.h"
+#include "../include/Text.h"
 
-#include "CPL.h"
-#include "utils/Logging.h"
-#include "Shader.h"
+#include "../include/CPL.h"
+#include "../include/util/Logging.h"
+#include "../include/Shader.h"
 #include <filesystem>
 #include <ft2build.h>
 #include FT_FREETYPE_H

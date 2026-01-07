@@ -1,6 +1,6 @@
-#include "ScreenQuad.h"
-#include "../Engine.h"
-#include "../Shader.h"
+#include "../../include/shape2D/ScreenQuad.h"
+#include "../../include/Engine.h"
+#include "../../include/Shader.h"
 
 namespace CPL {
 void ScreenQuad::Init(const int width, const int height) {

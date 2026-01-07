@@ -1,6 +1,6 @@
-#include "../CPL.h"
-#include "Cube.h"
-#include "../Shader.h"
+#include "../../include/CPL.h"
+#include "../../include/shape3D/Cube.h"
+#include "../../include/Shader.h"
 
 namespace CPL {
 Cube::Cube(const glm::vec3 &pos, const glm::vec3 &size, const Color &color)

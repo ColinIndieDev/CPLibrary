@@ -1,6 +1,5 @@
-#include "Line.h"
-
-#include "../Shader.h"
+#include "../../include/shape2D/Line.h"
+#include "../../include/Shader.h"
 
 namespace CPL {
 Line::Line(const glm::vec2 &startPos, const glm::vec2 &endPos,

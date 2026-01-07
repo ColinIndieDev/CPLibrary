@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.31)
 project(Example)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
@@ -73,78 +74,41 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fastnoiselite)
 
-add_executable(Example 
-    src/main.cpp
-    src/TextureLoader.cpp
-    src/TextureLoader.h
-    src/WorldGen.cpp
-    src/WorldGen.h
-    src/Block.cpp
-    src/Block.h
-    src/Chunk.cpp
-    src/Chunk.h
-    src/ChunkManager.cpp
-    src/ChunkManager.h
-    src/Game.cpp
-    src/Game.h
+file(GLOB_RECURSE CPL_SOURCE_FILES CONFIGURE_DEPENDS CPLibrary/src/*.cpp)
+file(GLOB_RECURSE CPL_HEADER_FILES CONFIGURE_DEPENDS CPLibrary/include/*.h)
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE DEPENDS src/*.cpp src/*.h)
 
-    CPLibrary/Shader.cpp
-    CPLibrary/Shader.h
-    CPLibrary/shapes2D/Triangle.cpp
-    CPLibrary/shapes2D/Triangle.h
-    CPLibrary/Engine.cpp
-    CPLibrary/Engine.h
-    CPLibrary/CPL.cpp
-    CPLibrary/CPL.h
-    CPLibrary/shapes2D/Rectangle.cpp
-    CPLibrary/shapes2D/Rectangle.h
-    CPLibrary/shapes2D/Circle.cpp
-    CPLibrary/shapes2D/Circle.h
-    CPLibrary/Colors.h
-    CPLibrary/KeyInputs.h
-    CPLibrary/Text.cpp
-    CPLibrary/Text.h
-    CPLibrary/shapes2D/Line.cpp
-    CPLibrary/shapes2D/Line.h
-    CPLibrary/shapes2D/Texture2D.cpp
-    CPLibrary/shapes2D/Texture2D.h
-	CPLibrary/shapes2D/ScreenQuad.cpp
-	CPLibrary/shapes2D/ScreenQuad.h
-    CPLibrary/shapes2D/GlobalLight.h
-	CPLibrary/shapes2D/PointLight.h
-    CPLibrary/shapes2D/Tilemap.cpp
-    CPLibrary/shapes2D/Tilemap.h
-    CPLibrary/shapes2D/ParticleSystem.h 
-    CPLibrary/shapes2D/ParticleSystem.cpp
-    CPLibrary/shapes3D/Cube.cpp
-    CPLibrary/shapes3D/Cube.h
-    CPLibrary/shapes3D/Sphere.cpp
-    CPLibrary/shapes3D/Sphere.h
-    CPLibrary/shapes3D/CubeTex.cpp
-    CPLibrary/shapes3D/CubeTex.h
-    CPLibrary/shapes3D/PlaneTex.cpp
-    CPLibrary/shapes3D/PlaneTex.h
-    CPLibrary/shapes3D/ShadowMap.cpp
-    CPLibrary/shapes3D/ShadowMap.h
-    CPLibrary/shapes3D/PointLight3D.h
-    CPLibrary/shapes3D/DirectionalLight.h
-    CPLibrary/shapes3D/Frustum.h
-    CPLibrary/shapes3D/CubeMap.cpp
-    CPLibrary/shapes3D/CubeMap.h
-    CPLibrary/timers/Timer.h
-    CPLibrary/timers/TimerManager.cpp
-    CPLibrary/timers/TimerManager.h
-    CPLibrary/CPLibrary.h
-    CPLibrary/utils/Logging.h
-    CPLibrary/utils/ScopedTimer.h
-    CPLibrary/Audio.cpp
-    CPLibrary/Audio.h
+message(STATUS "============================================")
+message(STATUS "Included files from CPL framework")
+message(STATUS "============================================")
+message(STATUS "----- CPL source files (.cpp) -----")
+foreach(f IN LISTS CPL_SOURCE_FILES)
+    file(RELATIVE_PATH rel ${CMAKE_SOURCE_DIR} ${f})
+    message(STATUS "  ${rel}")
+endforeach()
+
+message(STATUS "")
+message(STATUS "----- CPL header files (.h) -----")
+foreach(f IN LISTS CPL_HEADER_FILES)
+    file(RELATIVE_PATH rel ${CMAKE_SOURCE_DIR} ${f})
+    message(STATUS "  ${rel}")
+endforeach()
+message(STATUS "============================================")
+message(STATUS "Included files from src (game)")
+message(STATUS "============================================")
+message(STATUS "----- Game source files (.cpp & .h) -----")
+foreach(f IN LISTS SOURCE_FILES)
+    file(RELATIVE_PATH rel ${CMAKE_SOURCE_DIR} ${f})
+    message(STATUS "  ${rel}")
+endforeach()
+
+add_executable(Example
+    ${CPL_SOURCE_FILES}
+    ${CPL_HEADER_FILES}
+    ${SOURCE_FILES}
 )
 
-# Include directories
 target_include_directories(Example PRIVATE ${stb_SOURCE_DIR} ${fastnoiselite_SOURCE_DIR}/Cpp)
-
-# Link libraries
 target_link_libraries(Example PRIVATE glad freetype miniaudio glm)
 
 if (NOT EMSCRIPTEN)

@@ -1,6 +1,6 @@
-#include "../CPL.h"
-#include "Triangle.h"
-#include "../Shader.h"
+#include "../../include/CPL.h"
+#include "../../include/shape2D/Triangle.h"
+#include "../../include/Shader.h"
 
 namespace CPL {
     Triangle::Triangle(const glm::vec2 &pos, const glm::vec2 &size, const Color &color) : pos(pos), size(size), color(color) {

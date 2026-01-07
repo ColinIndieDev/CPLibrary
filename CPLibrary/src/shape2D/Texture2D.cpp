@@ -1,6 +1,6 @@
-#include "Texture2D.h"
-#include "../Shader.h"
-#include <filesystem>
+#include "../../include/shape2D/Texture2D.h"
+#include "../../include/Shader.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
