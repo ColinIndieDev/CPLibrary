@@ -29,4 +29,5 @@
 #include "include/timer/TimerManager.h"
 #include "include/util/Logging.h"
 #include "include/util/ScopedTimer.h"
+#include "include/util/OpenGLDebug.h"
 #include <GLFW/glfw3.h>

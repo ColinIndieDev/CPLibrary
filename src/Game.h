@@ -21,7 +21,7 @@ class Game {
     std::unique_ptr<CubeMap> m_Skybox;
     std::map<BlockType, Texture2D *> m_TexAtlases;
     
-    static void m_Update();
+    void m_Update();
     void m_Draw();
     void m_SetSpawnPoint();
     void m_InitAtlases();

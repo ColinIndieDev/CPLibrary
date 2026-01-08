@@ -24,6 +24,10 @@ class WorldGen {
     void GenMap();
 
     int GetTerrainHeight(int worldX, int worldZ);
+    void GenTrees(int x, int z, int worldX, int worldZ, int height,
+                  Chunk &chunk);
+    void GenCaves(int x, int z, const glm::ivec3 &world, int height,
+                  Chunk &chunk);
 
   private:
     FastNoiseLite terrainNoise;
@@ -35,10 +39,4 @@ class WorldGen {
     FastNoiseLite caveEntranceNoise;
 
     void m_InitNoises();
-    void m_GenTrees(int x, int z, int worldX, int worldZ, int height,
-                    Chunk &chunk);
-    void m_GenCaves(int x, int z, const glm::ivec3 &world, int height, Chunk& chunk);
-    void m_CreateChunks();
-    void m_GenChunks();
-    void m_CreateChunkMeshes();
 };

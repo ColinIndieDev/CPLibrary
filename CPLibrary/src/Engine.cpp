@@ -1,6 +1,5 @@
 #include "../include/Engine.h"
 #include "../include/Audio.h"
-#include "GLFW/glfw3.h"
 #include "../include/Shader.h"
 #include "../include/Text.h"
 #include "../include/shape2D/Circle.h"
@@ -18,9 +17,13 @@
 #include "../include/shape3D/PlaneTex.h"
 #include "../include/shape3D/PointLight3D.h"
 #include "../include/shape3D/Sphere.h"
-#include "stb_image.h"
 #include "../include/timer/TimerManager.h"
 #include "../include/util/Logging.h"
+#include "../include/util/OpenGLDebug.h"
+#include "GLFW/glfw3.h"
+#include "stb_image.h"
+#include <string>
+#include <utility>
 #include <vector>
 
 uint32_t Engine::s_ScreenWidth;
@@ -139,12 +142,44 @@ bool Engine::CheckCollisionVec2Circle(const glm::vec2 &one,
     return distanceSquared <= two.radius * two.radius;
 }
 
-void Engine::InitWindow(const int width, const int height, const char *title) {
+std::pair<int, int> Engine::GetOpenGLVersion(std::string version) {
+    version.erase(std::ranges::remove(version, '.').begin(), version.end());
+    if (version.size() > 2 || std::ranges::all_of(version, [](uint8_t c) {
+            return !std::isdigit(c);
+        })) {
+        Logging::Log(Logging::MessageStates::ERROR,
+                     "Invaid version type for OpenGL!");
+        return std::make_pair(3, 3);
+    }
+
+    std::pair<int, int> openGLVersion;
+    for (int i = 0; i < 2; i++) {
+        char c = version[i];
+        int val = c - '0';
+
+        if (i == 0)
+            openGLVersion.first = val;
+        else
+            openGLVersion.second = val;
+    }
+    return openGLVersion;
+}
+
+void Engine::InitWindow(const int width, const int height, const char *title,
+                        const bool openGLDebug,
+                        const std::string &openGLVersion) {
     glfwInit();
     glfwWindowHint(GLFW_SAMPLES, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+    std::pair<int, int> version = GetOpenGLVersion(openGLVersion);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version.first);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version.second);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, static_cast<int>(openGLDebug));
+
+    Logging::Log(Logging::MessageStates::INFO,
+                 "Using OpenGL version " + std::to_string(version.first) + "." +
+                     std::to_string(version.second));
 
     s_ScreenWidth = width;
     s_ScreenHeight = height;
@@ -171,6 +206,8 @@ void Engine::InitWindow(const int width, const int height, const char *title) {
                      "Failed to initialize GLAD");
         exit(-1);
     }
+
+    OpenGLDebug::EnableOpenGLDebug();
 
     InitShaders();
 #ifdef __EMSCRIPTEN__
@@ -236,34 +273,42 @@ void Engine::InitShaders() {
                                "/assets/shaders/web/frag/text_web.frag");
     s_TextureShader = CPL::Shader("/assets/shaders/web/vert/texture_web.vert",
                                   "/assets/shaders/web/frag/texture_web.frag");
-    s_LightShape2DShader = CPL::Shader("/assets/shaders/web/vert/lightShader_web.vert",
-                                       "/assets/shaders/web/frag/lightShader_web.frag");
-    s_LightTextureShader = CPL::Shader("assets/shaders/web/vert/lightTexture_web.vert",
-                                       "assets/shaders/web/frag/lightTexture_web.frag");
+    s_LightShape2DShader =
+        CPL::Shader("/assets/shaders/web/vert/lightShader_web.vert",
+                    "/assets/shaders/web/frag/lightShader_web.frag");
+    s_LightTextureShader =
+        CPL::Shader("assets/shaders/web/vert/lightTexture_web.vert",
+                    "assets/shaders/web/frag/lightTexture_web.frag");
     s_ScreenShader = CPL::Shader("/assets/shaders/web/vert/screen_web.vert",
                                  "/assets/shaders/web/frag/screen_web.frag");
 #else
-    s_Shape2DShader =
-        CPL::Shader("assets/shaders/default/vert/shader.vert", "assets/shaders/default/frag/shader.frag");
-    s_TextShader =
-        CPL::Shader("assets/shaders/default/vert/text.vert", "assets/shaders/default/frag/text.frag");
+    s_Shape2DShader = CPL::Shader("assets/shaders/default/vert/shader.vert",
+                                  "assets/shaders/default/frag/shader.frag");
+    s_TextShader = CPL::Shader("assets/shaders/default/vert/text.vert",
+                               "assets/shaders/default/frag/text.frag");
     s_TextureShader = CPL::Shader("assets/shaders/default/vert/texture.vert",
                                   "assets/shaders/default/frag/texture.frag");
-    s_LightShape2DShader = CPL::Shader("assets/shaders/default/vert/lightShader.vert",
-                                       "assets/shaders/default/frag/lightShader.frag");
-    s_LightTextureShader = CPL::Shader("assets/shaders/default/vert/lightTexture.vert",
-                                       "assets/shaders/default/frag/lightTexture.frag");
-    s_ScreenShader =
-        CPL::Shader("assets/shaders/default/vert/screen.vert", "assets/shaders/default/frag/screen.frag");
+    s_LightShape2DShader =
+        CPL::Shader("assets/shaders/default/vert/lightShader.vert",
+                    "assets/shaders/default/frag/lightShader.frag");
+    s_LightTextureShader =
+        CPL::Shader("assets/shaders/default/vert/lightTexture.vert",
+                    "assets/shaders/default/frag/lightTexture.frag");
+    s_ScreenShader = CPL::Shader("assets/shaders/default/vert/screen.vert",
+                                 "assets/shaders/default/frag/screen.frag");
 
-    s_Shape3DShader = CPL::Shader("assets/shaders/default/vert/cubeShader.vert",
-                                  "assets/shaders/default/frag/cubeShader.frag");
-    s_CubeTexShader = CPL::Shader("assets/shaders/default/vert/cubeTexShader.vert",
-                                  "assets/shaders/default/frag/cubeTexShader.frag");
-    s_LightShape3DShader = CPL::Shader("assets/shaders/default/vert/lightCubeShader.vert",
-                                       "assets/shaders/default/frag/lightCubeShader.frag");
-    s_CubeMapShader = CPL::Shader("assets/shaders/default/vert/cubeMapShader.vert",
-                                  "assets/shaders/default/frag/cubeMapShader.frag");
+    s_Shape3DShader =
+        CPL::Shader("assets/shaders/default/vert/cubeShader.vert",
+                    "assets/shaders/default/frag/cubeShader.frag");
+    s_CubeTexShader =
+        CPL::Shader("assets/shaders/default/vert/cubeTexShader.vert",
+                    "assets/shaders/default/frag/cubeTexShader.frag");
+    s_LightShape3DShader =
+        CPL::Shader("assets/shaders/default/vert/lightCubeShader.vert",
+                    "assets/shaders/default/frag/lightCubeShader.frag");
+    s_CubeMapShader =
+        CPL::Shader("assets/shaders/default/vert/cubeMapShader.vert",
+                    "assets/shaders/default/frag/cubeMapShader.frag");
     s_LightCubeTexShader =
         CPL::Shader("assets/shaders/default/vert/lightCubeTexShader.vert",
                     "assets/shaders/default/frag/lightCubeTexShader.frag");

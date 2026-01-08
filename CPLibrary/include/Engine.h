@@ -223,7 +223,8 @@ class Engine {
 
     static void ShowDetails();
 
-    static void InitWindow(int width, int height, const char *title);
+    static std::pair<int, int> GetOpenGLVersion(std::string version);
+    static void InitWindow(int width, int height, const char *title, bool openGLDebug, const std::string& openGLVersion);
     static void SetWindowIcon(const std::string &filePath);
     static void DestroyWindow();
     static void CloseWindow();

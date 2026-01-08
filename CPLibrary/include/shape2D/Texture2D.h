@@ -11,7 +11,6 @@ class Texture2D {
     glm::vec2 pos;
     glm::vec2 size;
     glm::vec2 textureSize;
-    int channels{};
     float rotAngle = 0;
     Color color;
     uint32_t tex{};
@@ -21,16 +20,15 @@ class Texture2D {
     Texture2D(const std::string &filePath, const glm::vec2 &pos,
               const glm::vec2 &size, const Color &color,
               const TextureFiltering &textureFiltering);
-    ~Texture2D() { Unload(); }
+    ~Texture2D() { m_Unload(); }
 
     Texture2D(const Texture2D &) = delete;
     Texture2D &operator=(const Texture2D &) = delete;
 
     Texture2D(Texture2D &&other) noexcept
         : pos(other.pos), size(other.size), textureSize(other.textureSize),
-          channels(other.channels), rotAngle(other.rotAngle),
-          color(other.color), m_VBO(other.m_VBO), m_VAO(other.m_VAO),
-          m_EBO(other.m_EBO), tex(other.tex) {
+          rotAngle(other.rotAngle), color(other.color), m_VBO(other.m_VBO),
+          m_VAO(other.m_VAO), m_EBO(other.m_EBO), tex(other.tex) {
         other.m_VBO = 0;
         other.m_VAO = 0;
         other.m_EBO = 0;
@@ -39,12 +37,11 @@ class Texture2D {
 
     Texture2D &operator=(Texture2D &&other) noexcept {
         if (this != &other) {
-            Unload();
+            m_Unload();
 
             pos = other.pos;
             size = other.size;
             textureSize = other.textureSize;
-            channels = other.channels;
             rotAngle = other.rotAngle;
             color = other.color;
             m_VBO = other.m_VBO;
@@ -61,9 +58,11 @@ class Texture2D {
     }
 
     void Draw(const Shader &shader) const;
-    void Unload() const;
 
   private:
     uint32_t m_VBO{}, m_VAO{}, m_EBO{};
+
+    void m_Load(const std::string &filePath, const TextureFiltering &textureFiltering);
+    void m_Unload() const;
 };
 } // namespace CPL

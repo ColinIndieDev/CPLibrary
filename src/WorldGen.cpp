@@ -2,10 +2,7 @@
 #include "../CPLibrary/CPLibrary.h"
 #include "Block.h"
 
-void WorldGen::Init() {
-    m_InitNoises();
-    m_CreateChunks();
-}
+void WorldGen::Init() { m_InitNoises(); }
 
 uint32_t DeriveSeed(const uint32_t base, const uint32_t salt) {
     uint32_t h = base;
@@ -44,14 +41,6 @@ void WorldGen::m_InitNoises() {
 
     caveEntranceNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     caveEntranceNoise.SetFrequency(0.02f);
-}
-void WorldGen::m_CreateChunks() {
-    for (int x = -mapSize.x; x < mapSize.x; x++) {
-        for (int z = -mapSize.y; z < mapSize.y; z++) {
-            glm::ivec3 chunkPos(x, 0, z);
-            manager.chunks.insert({chunkPos, Chunk(chunkPos)});
-        }
-    }
 }
 
 int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) {
@@ -103,46 +92,8 @@ void GenTree(const glm::ivec3 &treePos, Chunk &chunk) {
     GenTreeLeaves(treePos, chunk);
 }
 
-void WorldGen::m_GenChunks() {
-    ScopedTimer timer("Creating chunks (16 x 16)");
-    for (auto &c : manager.chunks) {
-
-        for (int z = 0; z < Chunk::s_Size; z++) {
-            for (int x = 0; x < Chunk::s_Size; x++) {
-                int worldX = (c.first.x * 16) + x;
-                int worldZ = (c.first.z * 16) + z;
-
-                int height = GetTerrainHeight(worldX, worldZ);
-
-                for (int y = 0; y < Chunk::s_Height; y++) {
-                    if (y == 0)
-                        c.second.SetBlock(glm::ivec3(x, y, z),
-                                          BlockType::BEDROCK);
-                    else if (y == height && height < 100)
-                        c.second.SetBlock(glm::ivec3(x, y, z),
-                                          BlockType::GRASS_BLOCK);
-                    else if (y < height && y > height - 4)
-                        c.second.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
-                    else if (y <= height - 4 ||
-                             (y <= height && y >= 100 && height >= 100 && height < 170))
-                        c.second.SetBlock(glm::ivec3(x, y, z),
-                                          BlockType::STONE);
-                    else if (y <= height && y >= 170 && height >= 170)
-                        c.second.SetBlock(glm::ivec3(x, y, z),
-                                          BlockType::SNOW);
-
-                    m_GenCaves(x, z, glm::ivec3(worldX, y, worldZ), height,
-                               c.second);
-                }
-
-                m_GenTrees(x, z, worldX, worldZ, height, c.second);
-            }
-        }
-    }
-}
-
-void WorldGen::m_GenCaves(const int x, const int z, const glm::ivec3 &world,
-                          const int height, Chunk &chunk) {
+void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
+                        const int height, Chunk &chunk) {
     if (world.y > height - 4) {
         float entrance =
             caveEntranceNoise.GetNoise(static_cast<float>(world.x) * 0.02f,
@@ -177,25 +128,22 @@ void WorldGen::m_GenCaves(const int x, const int z, const glm::ivec3 &world,
     }
 }
 
-void WorldGen::m_GenTrees(const int x, const int z, const int worldX,
-                          const int worldZ, const int height, Chunk &chunk) {
+void WorldGen::GenTrees(const int x, const int z, const int worldX,
+                        const int worldZ, const int height, Chunk &chunk) {
     float t = treeNoise.GetNoise(static_cast<float>(worldX),
                                  static_cast<float>(worldZ));
 
     Block block = chunk.GetBlock(glm::ivec3(x, height, z));
 
-    if (RandPercentFloat(4.0f * t) && block.IsSolid() && block.type != BlockType::SNOW)
+    if (RandPercentFloat(4.0f * t) && block.IsSolid() &&
+        block.type != BlockType::SNOW)
         GenTree(glm::ivec3(x, height + 1, z), chunk);
 }
 
-void WorldGen::m_CreateChunkMeshes() {
-    ScopedTimer timer("Generating chunks (16 x 16)");
-    for (auto &c : manager.chunks) {
-        c.second.GenMesh(manager);
-    }
-}
-
 void WorldGen::GenMap() {
-    m_GenChunks();
-    m_CreateChunkMeshes();
+    for (int x = -mapSize.x; x < mapSize.x; x++) {
+        for (int z = -mapSize.y; z < mapSize.y; z++) {
+            manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
+        }
+    }
 }

@@ -1,7 +1,7 @@
 #pragma once
+#include <cstdint>
 #include <iostream>
 #include <string>
-#include <cstdint>
 
 namespace Logging {
 enum class MessageStates : uint8_t {
@@ -10,11 +10,15 @@ enum class MessageStates : uint8_t {
     ERROR,
 };
 inline void Log(const MessageStates &warnLevel, const std::string &text) {
-    if (warnLevel == MessageStates::INFO)
+    if (warnLevel == MessageStates::INFO) {
         std::cout << "[INFO]: " << text << "\n";
-    else if (warnLevel == MessageStates::WARNING)
+        std::cout << "\n";
+    } else if (warnLevel == MessageStates::WARNING) {
         std::cout << "[WARNING]: " << text << "\n";
-    else
+        std::cout << "\n";
+    } else {
         std::cerr << "[ERROR]: " << text << "\n";
+        std::cout << "\n";
+    }
 }
 } // namespace Logging

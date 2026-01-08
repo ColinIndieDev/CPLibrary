@@ -10,7 +10,7 @@ void Game::Init() {
 
     m_InitAtlases();
 
-    const glm::ivec2 viewDistance(8); // Default: 16 (chunks) -> each chunk takes 7-8 ms
+    const glm::ivec2 viewDistance(16); // Default: 16 (chunks) -> each chunk takes 2ms to generate and 7-8 ms to mesh
 
     m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDistance, 30, Chunk::s_Height, 60);
     m_WorldGen->Init();
@@ -64,7 +64,10 @@ void UpdateControls() {
         DestroyWindow();
 }
 
-void Game::m_Update() { UpdateControls(); }
+void Game::m_Update() { 
+    UpdateControls(); 
+    m_WorldGen->manager.ProcessFinishedChunks();
+}
 
 float NormalizeYaw(float yaw) {
     yaw = static_cast<float>(fmod(yaw, 360.0));
@@ -117,18 +120,7 @@ void Game::m_Draw() {
         DirectionalLight(glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)),
                          glm::vec3(0.3f), glm::vec3(1.0f), glm::vec3(1.0f)));
 
-    for (auto &c : m_WorldGen->manager.chunks) {
-        const float blockSize = 0.2f;
-        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
-        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
-        const glm::vec3 center(glm::vec3(c.first) * halfSizeXZ * 2.0f +
-                               glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
-        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
-
-        if (GetCam3D().frustum.IsCubeVisible(center, halfSize)) {
-            c.second.Draw(GetShader(DrawModes::CUBE_TEX_LIGHT), m_TexAtlases);
-        }
-    }
+    m_WorldGen->manager.DrawChunks(GetShader(DrawModes::CUBE_TEX_LIGHT), m_TexAtlases);
 
     EnableFaceCulling(false);
 

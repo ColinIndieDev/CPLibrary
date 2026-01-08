@@ -23,8 +23,11 @@ bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two) {
     return Engine::CheckCollisionVec2Circle(one, two);
 }
 
-void InitWindow(const int width, const int height, const char *title) {
-    Engine::InitWindow(width, height, title);
+void InitWindow(const glm::ivec2 &size, const std::string &title, const bool openGLDebug, const std::string &openGLVersion) {
+    Engine::InitWindow(size.x, size.y, title.c_str(), openGLDebug, openGLVersion);
+}
+void InitWindow(const glm::ivec2 &size, const std::string &title, const std::string &openGLVersion) {
+    Engine::InitWindow(size.x, size.y, title.c_str(), false, openGLVersion);
 }
 void SetWindowIcon(const std::string &filePath) {
     Engine::SetWindowIcon(filePath);

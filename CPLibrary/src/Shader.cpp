@@ -97,7 +97,7 @@ void Shader::m_CheckCompileErrors(const uint32_t shader,
         if (!static_cast<bool>(success)) {
             glGetShaderInfoLog(shader, 1024, nullptr, infoLog.data());
             Logging::Log(Logging::MessageStates::ERROR,
-                         "Shader compilation error: " + type + "\n" +
+                         "Shader compilation error: " + type + "\n" + "-> " +
                              std::string(infoLog.data()));
         }
     } else {

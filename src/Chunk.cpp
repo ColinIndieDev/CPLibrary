@@ -116,7 +116,9 @@ void Chunk::GenMesh(ChunkManager &manager) {
             }
         }
     }
+}
 
+void Chunk::GenMeshGL() {
     for (auto &[type, mesh] : m_Meshes) {
         if (mesh.vertices.empty())
             continue;

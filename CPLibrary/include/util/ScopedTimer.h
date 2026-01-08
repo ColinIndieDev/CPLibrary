@@ -12,11 +12,10 @@ class ScopedTimer {
         m_End = std::chrono::steady_clock::now();
         m_Duration = m_End - m_Start;
         const float ms = m_Duration.count() * 1000.0f;
-        std::cout << "------------------------------------------------------\n";
-        std::cout << m_Text.c_str() << ": \n";
-        std::cout << (ms < 1000 ? ms : ms * 1000.0f)
+        std::cout << "[INFO]: " << m_Text.c_str() << "\n";
+        std::cout << "-> " << (ms < 1000 ? ms : ms / 1000.0f)
                   << (ms < 1000 ? " ms\n" : " s\n");
-        std::cout << "------------------------------------------------------\n";
+        std::cout << "\n";
     }
 
   private:

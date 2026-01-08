@@ -5,7 +5,9 @@ using namespace CPL;
 PRIORITIZE_GPU_BY_VENDOR
 
 int main() {
-    InitWindow(1200, 800, "Welcome to CPL 3D");
+    std::string openGLVersion = "3.3";
+    bool useOpenGLDebug = false;
+    InitWindow(glm::ivec2(1200, 800), "Welcome to CPL 3D", useOpenGLDebug, openGLVersion);
     LockMouse(true);
     EnableVSync(false);
 

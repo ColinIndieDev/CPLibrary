@@ -18,10 +18,48 @@ class Chunk {
     Chunk(const glm::ivec3 &chunkPos);
     ~Chunk();
 
+    Chunk(const Chunk &) = delete;
+    Chunk &operator=(const Chunk &) = delete;
+
+    Chunk(Chunk &&other) noexcept
+        : m_Pos(other.m_Pos), m_Blocks(std::move(other.m_Blocks)),
+          m_Meshes(std::move(other.m_Meshes)) {
+        for (auto &[type, mesh] : other.m_Meshes) {
+            mesh.VAO = 0;
+            mesh.VBO = 0;
+            mesh.vertexCount = 0;
+            mesh.vertices.clear();
+        }
+    }
+
+    Chunk &operator=(Chunk &&other) noexcept {
+        if (this != &other) {
+            for (auto &[type, mesh] : m_Meshes) {
+                if (mesh.VAO != 0)
+                    glDeleteVertexArrays(1, &mesh.VAO);
+                if (mesh.VBO != 0)
+                    glDeleteBuffers(1, &mesh.VBO);
+            }
+
+            m_Pos = other.m_Pos;
+            m_Blocks = std::move(other.m_Blocks);
+            m_Meshes = std::move(other.m_Meshes);
+
+            for (auto &[type, mesh] : other.m_Meshes) {
+                mesh.VAO = 0;
+                mesh.VBO = 0;
+                mesh.vertexCount = 0;
+                mesh.vertices.clear();
+            }
+        }
+        return *this;
+    }
+
     void SetBlock(const glm::ivec3 &pos, const BlockType &type);
     [[nodiscard]] Block GetBlock(const glm::ivec3 &pos) const;
 
     void GenMesh(ChunkManager &manager);
+    void GenMeshGL();
 
     void Draw(const Shader &shader,
               const std::map<BlockType, Texture2D *> &atlases);
