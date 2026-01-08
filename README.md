@@ -1,10 +1,12 @@
 ![CPLlogo](assets/images/logo.png)
 
 # CPLibrary (CPL)
+
 ## About
 CPL (named by me) is my custom framework made from scratch. This framework is entirely written \
 in C++ and uses OpenGL & other low-level libraries like GLFW, GLAD, STBImage etc. \
 Currently I worked on this just for around 3 months
+
 ## Example code
 
 ```
@@ -37,32 +39,41 @@ int main() {
     return 0;
 }
 ```
-An actual example code for 3D can be found inside the `src/` folder and for 2D inside `example2D/`!
+An actual example code for 3D can be found inside the `example3D/` folder and for 2D inside `example2D/`! Currently there is also a Minecraft Clone, a project of mine I am working on inside `src/` but probably I will make a seperate project out of it.
 
 As you can see, the functions and naming conventions are pretty similar \
 and inspired by the ones from Raylib
+
+## Games/Projects where I used CPL
+It is not much yet but these are the projects and their link to GitHub:
+
+> [!IMPORTANT]
+> All these project use an older version of CPL so do not get confused by that
+
+- [Flappy Bird Clone](https://github.com/ColinIndieDev/Flappy-Bird-Clone)
+- [Digit Recognition AI](https://github.com/ColinIndieDev/Digit-Recognition-AI)
 
 ## Structure
 + `assets/`
 + + `fonts/`
 + + `images/`
 + + `shaders/`
-+ +  + `.frag (fragment shaders)`
-+ +  +  `.vert (vertex shaders)`
++ + + `default/`
++ + + + `frag/*.frag`
++ + + + `vert/*.vert`
++ + + `web/`
++ + + + `frag/*.frag`
++ + + + `vert/*.vert` 
 + `external/`
 + + `glad/`
 + `CPLibrary/`
-+ + `shapes2D/`
-+ + `shapes3D/`
-+ + `timers/`
++ + `include/`
++ + `src/`
 + + `CPLibrary.h`
-+ + `Engine.cpp & .h`  
-+ + `CPL.cpp & .h`
-+ + `more .cpp & .h files for other functionalities`
 
 The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one and the shader code. In `external/` is the implementation from `glad/` downloaded from its offical website.
 All code for the shaders like fragment as well as vertex are all stored inside the
-`shader/` folder (in assets as mentioned before). Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
+`shader/` folder and sorted (in assets as mentioned before). All `.h` and `.cpp` files for CPL are seperated. Inside `shapes2D/`, classes of primitves (rectangle, circle etc.), textures & screen quad
 are contained and in `shapes3D/` the 3D related stuff needed. `Engine.h` & `.cpp` have all implementations of the functions that are available for the framework which can be used by wrappers basically in `CPL.h` and `.cpp`. The others should be self explaining I guess by their names.
 
 ## Functionality
@@ -77,24 +88,28 @@ to Web with Emscripten.
 - Textures
 - Text + Fonts
 - Tilemaps
-- Post Processing
 - Particle System
 
 3D:
 - 3D shapes (Cubes & Spheres)
-- Cube Textures
+- 3D textures (Cubes & Planes)
 - Cubemaps
-- Shadows (Shadow Map)
+- Directional shadows (Shadow Map)
 
 Both:
 - Camera
 - Lighting
+- Post Processing
   
 Others:
 - Random number generator wrapper
 - Key and Mouse Inputs
 - Sounds & Music
 - Timer
+- Tools
+  - OpenGL debugger
+  - Logging
+  - Scoped timer
 
 It is recommended to take a look at the example projects / demonstrations which will show core functionalities and how to use them correctly. Alternatively you may look up the functions inside the documentation but note that it may contains minor mistakes or is outdated. I will keep my best to refresh and update it regularily!
 
@@ -178,7 +193,7 @@ It is recommended to take a look at the example projects / demonstrations which 
 > duration in s \
 > if loop is true, then timer updates every frame even without being in the game loop
 
-`void TimerManager::AddTimer(float duration, bool loop, std::function<void()> event);` 
+`Timer* TimerManager::AddTimer(float duration, bool loop, std::function<void()> event);` 
 > Add an event which should be executed in 'duration'
 
 `void TimerManager::StopTimers();` 
@@ -213,7 +228,7 @@ It is recommended to take a look at the example projects / demonstrations which 
 > Stop current playing music
 
 ### Window
-`void InitWindow(int width, int height, const char* title);` 
+`void InitWindow(glm::ivec2 size, char* title, bool openGLDebug = false);` 
 > Create a window with a title and a certain width & height
 
 `void SetWindowIcon(std::string imagePath);` 
@@ -314,7 +329,7 @@ and if 2D or 3D
 `void ClearBackground(Color color);`
 > In the next frame, the previous frame will be cleared with the chosen color
 
-`void BeginDraw(DrawModes mode, bool mode2D);`
+`void BeginDraw(DrawModes mode, bool mode2D = false);`
 > Start drawing and choose a draw mode (which activates the corresponding shader), mode2D does not need to be given especially when in 3D
 
 `void EndDraw();`
@@ -333,7 +348,7 @@ and if 2D or 3D
 `bool IsKeyReleased(int key);`
 > Return if key is released (once)
 
-`unsigned int GetCharPressed()`
+`uint32_t GetCharPressed()`
 > Returns the current char pressed as a unsigned int
 
 `bool IsMouseDown(int button);`
@@ -345,7 +360,7 @@ and if 2D or 3D
 `bool IsMouseReleased(int button);`
 > Return if corresponding mouse button is released
 
-`glm::vec2 GetMousePosition();`
+`glm::vec2 GetMousePos();`
 > Returns the position of the cursor on the screen / window
 
 ### Collisions
@@ -358,10 +373,10 @@ and if 2D or 3D
 `bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);`
 > Return true if a 2d vector collides with a rectangle
 
-`bool CheckCollisionCircles(const Circle& one, const Circle& two);`
+`bool CheckCollisionCircles(Circle one, Circle two);`
 > Return true if two circles collide
 
-`bool CheckCollisionVec2Circle(const glm::vec2& one, const Circle& two);`
+`bool CheckCollisionVec2Circle(glm::vec2 one, Circle two);`
 > Return true if a 2d vector collides with a circle
 
 ### 2D Tilemap
@@ -378,10 +393,10 @@ and if 2D or 3D
 `void BeginEditing();`
 > Enable editing for adding tiles (clears all tiles from before)
 
-`void AddTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);`
+`void AddTile(glm::vec2 position, glm::vec2 size, Texture2D* texture);`
 > Add a texture to the tilemap
 
-`void DeleteTile(glm::vec2 position, glm::vec2 size, const Texture2D* texture);`
+`void DeleteTile(glm::vec2 position, glm::vec2 size, Texture2D* texture);`
 > Delete a texture from the tilemap
 
 `bool TileExist(glm::vec2 position, glm::vec2 size);`
@@ -431,9 +446,15 @@ and if 2D or 3D
 `void DrawTex2DRot(Texture2D* tex, glm::vec2 pos, float angle, Color color);`
 > Draw a texture with rotation
 
-### Drawing 3D textures (Cube)
+### Drawing 3D textures
 `void DrawCubeTex(Texture2D* tex, glm::vec3 pos, glm::vec3 size, Color color);`
 > Draw a cube made out of a texture 2D each side
+
+`void DrawPlaneTex(Texture2D* tex, glm::vec3 pos, glm::vec2 size, Color color);`
+> Draw a texture 2D plane
+
+`void DrawPlaneTexRot(Texture2D* tex, glm::vec3 pos, glm::vec3 rot, glm::vec2 size, Color color);`
+> Draw a texture 2D plane with rotation along x, y and z axis
 
 ### 3D Shadows (Shadow Map)
 > [!IMPORTANT]
@@ -442,7 +463,7 @@ and if 2D or 3D
 > sm.beginDepthPass(lightSpaceMatrix);
 > ...
 
-`class ShadowMap(unsigned int resolution);`
+`class ShadowMap(uint32_t resolution);`
 > Create a shadow map with a given shadow resolution
 
 `void BeginDepthPass(glm::mat4 matrix);`
@@ -451,7 +472,7 @@ and if 2D or 3D
 `void EndDepthPass();`
 > Everything after will not have its shadow stored
 
-`void BindForReading(int value);`
+`void BindForReading(uint32_t textureUnit = 1);`
 > Use shadow map to draw shadows into the scene (value has not to be given as a parameter)
 
 ### Drawing text
@@ -467,7 +488,7 @@ and if 2D or 3D
 `std::string GetDefaultFont();`
 > Returns name of the default font
 
-`glm::vec2 GetTextSize(std::string fontName, std::string text, float scale);`
+`glm::vec2 Text::GetTextSize(std::string fontName, std::string text, float scale);`
 > Get text size (width & height)
 
 `void Text::Init(std::string fontPath, std::string fontName, TextureFiltering filteringMode);`
