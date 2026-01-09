@@ -1,7 +1,9 @@
 #include "ChunkManager.h"
 #include "WorldGen.h"
-#include <iterator>
 #include <string>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
 
 int FloorDiv(const int x, const int y) {
     return (x / y) - (x % y != 0 && (x ^ y) < 0 ? 1 : 0);
@@ -12,12 +14,13 @@ int PositiveMod(const int x, const int y) {
     return result < 0 ? result + y : result;
 }
 
-ChunkManager::ChunkManager(const int threadCount) {
+ChunkManager::ChunkManager(const uint32_t threadCount) {
     for (int i = 0; i < threadCount; i++) {
         m_Workers.emplace_back(&ChunkManager::m_WorkerThread, this);
     }
 
-    Logging::Log(Logging::MessageStates::INFO, "Initializing " + std::to_string(threadCount) + " threads!");
+    Logging::Log(Logging::MessageStates::INFO,
+                 "Initializing " + std::to_string(threadCount) + " threads!");
 }
 
 ChunkManager::~ChunkManager() { Stop(); }
@@ -34,9 +37,13 @@ void ChunkManager::Stop() {
 }
 
 void ChunkManager::RequestChunkGen(const glm::ivec3 &pos, WorldGen *worldGen) {
+    glm::vec3 playerChunkPos(
+        0); // TODO make a GetPlayerChunk() that returns a ivec3
+    int priority =
+        static_cast<int>(glm::distance2(glm::vec3(pos), playerChunkPos));
     {
         std::lock_guard<std::mutex> lock(m_RequestMutex);
-        m_RequestQueue.push({pos, worldGen});
+        m_RequestQueue.push({pos, worldGen, priority});
         m_PendingChunks++;
     }
     m_RequestCV.notify_one();
@@ -50,14 +57,102 @@ void ChunkManager::ProcessFinishedChunks() {
         m_FinishedQueue.pop();
         {
             std::lock_guard<std::mutex> chunkLock(m_ChunksMutex);
-            chunk.GenMeshGL();
-            chunks.emplace(pos, std::move(chunk));        
+            chunks.emplace(pos, std::move(chunk));
+
+            const std::array<glm::ivec3, 4> neighbors = {{
+                {0, 0, -1},
+                {0, 0, 1},
+                {-1, 0, 0},
+                {1, 0, 0},
+            }};
+
+            bool allNeighborsExist = true;
+            for (const auto &n : neighbors) {
+                glm::ivec3 npos = pos + n;
+                if (!chunks.contains(npos)) {
+                    allNeighborsExist = false;
+                    break;
+                }
+            }
+
+            for (const auto &n : neighbors) {
+                glm::ivec3 npos = pos + n;
+
+                if (chunks.contains(npos)) {
+                    Chunk *chunk = &chunks.at(pos);
+                    Chunk *neighborChunk = &chunks.at(npos);
+
+                    chunk->MarkDirty();
+                    neighborChunk->MarkDirty();
+                    if (!m_DirtyList.contains(pos)) {
+                        m_DirtyQueue.emplace(chunk);
+                        m_DirtyList.emplace(pos);
+                    }
+                    if (!m_DirtyList.contains(npos)) {
+                        m_DirtyQueue.emplace(neighborChunk);
+                        m_DirtyList.emplace(npos);
+                    }
+                }
+            }
         }
+    }
+}
+
+void ChunkManager::ProcessDirtyChunks(const int maxPerFrame) {
+    if (m_DirtyQueue.empty())
+        return;
+
+    int processed = 0;
+    while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
+        Chunk *chunk = m_DirtyQueue.front();
+        m_DirtyQueue.pop();
+        m_DirtyList.erase(chunk->GetPos());
+
+        chunk->GenMesh(*this, false);
+        chunk->state = Chunk::MeshState::READY;
+        chunk->needUpload = true;
+
+        const std::array<glm::ivec3, 4> neighbors = {{
+            {0, 0, -1}, 
+            {0, 0, 1}, 
+            {-1, 0, 0}, 
+            {1, 0, 0}
+        }};
+        
+        for (const auto &n : neighbors) {
+            glm::ivec3 npos = chunk->GetPos() + n;
+            
+            auto it = chunks.find(npos);
+            if (it != chunks.end()) {
+                Chunk* neighbor = &it->second;
+                
+                if (neighbor->state == Chunk::MeshState::MESHED_LOCAL) {
+                    if (!m_DirtyList.contains(npos)) {
+                        neighbor->MarkDirty();
+                        m_DirtyQueue.emplace(neighbor);
+                        m_DirtyList.emplace(npos);
+                    }
+                }
+            }
+        }
+
+        processed++;
     }
 }
 
 bool ChunkManager::IsGenComplete() const {
     return m_PendingChunks == 0 && m_FinishedQueue.empty();
+}
+
+void ChunkManager::UploadChunkMeshes() {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    for (auto &[pos, chunk] : chunks) {
+        if (chunk.needUpload) {
+            chunk.GenMeshGL();
+            chunk.needUpload = false;
+        }
+    }
 }
 
 void ChunkManager::DrawChunks(const Shader &shader,
@@ -92,11 +187,14 @@ void ChunkManager::m_WorkerThread() {
             if (m_RequestQueue.empty())
                 continue;
 
-            request = m_RequestQueue.front();
+            request = m_RequestQueue.top();
             m_RequestQueue.pop();
         }
         Chunk chunk = m_GenChunk(request.position, request.worldGen);
-        chunk.GenMesh(*this);
+        bool localOnly = true;
+        chunk.GenMesh(*this, localOnly);
+        chunk.state = Chunk::MeshState::MESHED_LOCAL;
+        chunk.needUpload = true;
 
         {
             std::lock_guard<std::mutex> lock(m_FinishedMutex);

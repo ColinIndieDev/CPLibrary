@@ -1,7 +1,7 @@
 #include "Game.h"
 
 void Game::Init() {
-    m_Skybox = std::make_unique<CubeMap>("assets/images/sky.png");
+    m_Skybox = std::make_unique<CubeMap>("assets/images/day.png");
 
     Audio music = AudioManager::LoadAudio("assets/sounds/aria_math_music.mp3");
     AudioManager::PlayMusic(music);
@@ -10,9 +10,10 @@ void Game::Init() {
 
     m_InitAtlases();
 
-    const glm::ivec2 viewDistance(16); // Default: 16 (chunks) -> each chunk takes 2ms to generate and 7-8 ms to mesh
+    const glm::ivec2 viewDistance(32); // Default: 16 (chunks)
 
-    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDistance, 30, Chunk::s_Height, 60);
+    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDistance,
+                                            30, Chunk::s_Height, 60);
     m_WorldGen->Init();
     m_WorldGen->GenMap();
 
@@ -34,7 +35,8 @@ void Game::Run() {
 void Game::m_SetSpawnPoint() {
     const glm::ivec2 spawnPoint(0);
 
-    const int height = m_WorldGen->GetTerrainHeight(spawnPoint.x, spawnPoint.y) + 3;
+    const int height =
+        m_WorldGen->GetTerrainHeight(spawnPoint.x, spawnPoint.y) + 3;
     GetCam3D().position.y = static_cast<float>(height) * 0.2f;
 }
 
@@ -64,9 +66,11 @@ void UpdateControls() {
         DestroyWindow();
 }
 
-void Game::m_Update() { 
-    UpdateControls(); 
+void Game::m_Update() {
+    UpdateControls();
     m_WorldGen->manager.ProcessFinishedChunks();
+    m_WorldGen->manager.ProcessDirtyChunks(5);
+    m_WorldGen->manager.UploadChunkMeshes();
 }
 
 float NormalizeYaw(float yaw) {
@@ -116,11 +120,18 @@ void Game::m_Draw() {
 
     SetShininess3D(6);
 
-    SetDirLight3D(
-        DirectionalLight(glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)),
-                         glm::vec3(0.3f), glm::vec3(1.0f), glm::vec3(1.0f)));
+    DirectionalLight day(glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)),
+                         Color(76.5, 76.5, 76.5, 255), glm::vec3(1.0f),
+                         glm::vec3(1.0f));
 
-    m_WorldGen->manager.DrawChunks(GetShader(DrawModes::CUBE_TEX_LIGHT), m_TexAtlases);
+    DirectionalLight night(glm::normalize(glm::vec3(0.0f)),
+                           Color(0, 26, 103, 255), glm::vec3(1.0f),
+                           glm::vec3(0.0f));
+
+    SetDirLight3D(day);
+
+    m_WorldGen->manager.DrawChunks(GetShader(DrawModes::CUBE_TEX_LIGHT),
+                                   m_TexAtlases);
 
     EnableFaceCulling(false);
 
@@ -134,6 +145,37 @@ void Game::m_Draw() {
 
     BeginDraw(DrawModes::TEXT, false);
 
+    int ready = 0;
+    int meshLocal = 0;
+    int dirty = 0;
+    int none = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_WorldGen->manager.m_ChunksMutex);
+        for (auto &[pos, chunk] : m_WorldGen->manager.chunks) {
+            switch (chunk.state) {
+            case Chunk::MeshState::READY:
+                ready++;
+                break;
+            case Chunk::MeshState::MESHED_LOCAL:
+                meshLocal++;
+                break;
+            case Chunk::MeshState::DIRTY:
+                dirty++;
+                break;
+            case Chunk::MeshState::NONE:
+                none++;
+                break;
+            }
+        }
+    }
+
+    DrawTextShadow({0, 75}, {3, -3}, 0.5f,
+                   "Chunks - Ready: " + std::to_string(ready) +
+                       " | Local: " + std::to_string(meshLocal) +
+                       " | Dirty: " + std::to_string(dirty) +
+                       " | None: " + std::to_string(none),
+                   WHITE, DARK_GRAY);
+
     DrawTextShadow(
         {0, 0}, {3, -3}, 0.5f,
         "X: " + std::to_string(static_cast<int>(GetCam3D().position.x * 5)) +
@@ -142,11 +184,12 @@ void Game::m_Draw() {
             ", Z: " +
             std::to_string(static_cast<int>(GetCam3D().position.z * 5)),
         WHITE, DARK_GRAY);
-    DrawTextShadow({0, 25}, {3, -3}, 0.5f, "Seed: " + std::to_string(m_WorldGen->seed),
-             WHITE, DARK_GRAY);
+    DrawTextShadow({0, 25}, {3, -3}, 0.5f,
+                   "Seed: " + std::to_string(m_WorldGen->seed), WHITE,
+                   DARK_GRAY);
 
-    DrawTextShadow({GetScreenWidth() / 2, 0}, {7, -7}, 1.0f, GetCardinalDir(GetCam3D().yaw),
-             WHITE, DARK_GRAY);
+    DrawTextShadow({GetScreenWidth() / 2, 0}, {7, -7}, 1.0f,
+                   GetCardinalDir(GetCam3D().yaw), WHITE, DARK_GRAY);
 
     ShowDetails();
 

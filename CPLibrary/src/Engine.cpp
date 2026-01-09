@@ -518,19 +518,23 @@ void Engine::AddPointLights3D(const std::vector<CPL::PointLight3D> &lights) {
 void Engine::SetDirLight3D(const CPL::DirectionalLight &light) {
     s_LightShape3DShader.Use();
     s_LightShape3DShader.SetVector3f("viewPos", s_Camera3D.position);
-    s_LightShape3DShader.SetVector3f("dirLight.direction",
-                                     glm::vec3(-0.2f, -1.0f, -0.3f));
-    s_LightShape3DShader.SetVector3f("dirLight.ambient", glm::vec3(0.3f));
-    s_LightShape3DShader.SetVector3f("dirLight.diffuse", glm::vec3(1, 1, 0.9f));
-    s_LightShape3DShader.SetVector3f("dirLight.specular", glm::vec3(1));
+    s_LightShape3DShader.SetVector3f("dirLight.direction", light.dir);
+    s_LightShape3DShader.SetVector3f("dirLight.ambient",
+                                     glm::vec3(light.ambient.r / 255,
+                                               light.ambient.g / 255,
+                                               light.ambient.b / 255));
+    s_LightShape3DShader.SetVector3f("dirLight.diffuse", light.diffuse);
+    s_LightShape3DShader.SetVector3f("dirLight.specular", light.specular);
 
     s_LightCubeTexShader.Use();
     s_LightCubeTexShader.SetVector3f("viewPos", s_Camera3D.position);
-    s_LightCubeTexShader.SetVector3f("dirLight.direction",
-                                     glm::vec3(-0.2f, -1.0f, -0.3f));
-    s_LightCubeTexShader.SetVector3f("dirLight.ambient", glm::vec3(0.3f));
-    s_LightCubeTexShader.SetVector3f("dirLight.diffuse", glm::vec3(1, 1, 0.9f));
-    s_LightCubeTexShader.SetVector3f("dirLight.specular", glm::vec3(1));
+    s_LightCubeTexShader.SetVector3f("dirLight.direction", light.dir);
+    s_LightCubeTexShader.SetVector3f("dirLight.ambient",
+                                     glm::vec3(light.ambient.r / 255,
+                                               light.ambient.g / 255,
+                                               light.ambient.b / 255));
+    s_LightCubeTexShader.SetVector3f("dirLight.diffuse", light.diffuse);
+    s_LightCubeTexShader.SetVector3f("dirLight.specular", light.specular);
 
     ResetShader();
 }

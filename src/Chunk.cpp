@@ -1,7 +1,8 @@
 #include "Chunk.h"
 #include "ChunkManager.h"
 
-Chunk::Chunk(const glm::ivec3 &chunkPos) : m_Pos(chunkPos) {
+Chunk::Chunk(const glm::ivec3 &chunkPos)
+    : state(MeshState::NONE), needUpload(false), m_Pos(chunkPos) {
     m_Blocks.resize(static_cast<int>(s_Size * s_Height * s_Size),
                     Block{BlockType::AIR});
 }
@@ -12,6 +13,12 @@ Chunk::~Chunk() {
             glDeleteVertexArrays(1, &mesh.VAO);
         if (mesh.VBO != 0)
             glDeleteBuffers(1, &mesh.VBO);
+    }
+}
+
+void Chunk::MarkDirty() {
+    if (state == MeshState::READY || state == MeshState::MESHED_LOCAL) {
+        state = MeshState::DIRTY;
     }
 }
 
@@ -29,12 +36,14 @@ Block Chunk::GetBlock(const glm::ivec3 &pos) const {
     return m_Blocks[m_GetIndex(pos)];
 }
 
-int Chunk::m_GetIndex(const glm::ivec3 &pos) const {
-    return pos.x + pos.z * s_Size + pos.y * s_Size * s_Size;
+glm::ivec3 Chunk::GetPos() { return m_Pos; }
+
+int Chunk::m_GetIndex(const glm::ivec3 &pos) {
+    return pos.x + (pos.z * s_Size) + (( pos.y * s_Size) * s_Size);
 }
 
 bool Chunk::m_RenderFace(const glm::ivec3 &pos, const FaceDirection &face,
-                         ChunkManager &manager) const {
+                         ChunkManager &manager, const bool localOnly) const {
     Block block = GetBlock(pos);
     if (!block.IsSolid())
         return false;
@@ -57,6 +66,9 @@ bool Chunk::m_RenderFace(const glm::ivec3 &pos, const FaceDirection &face,
         neighborGridPos.z >= 0 && neighborGridPos.z < s_Size) {
         neighbor = GetBlock(neighborGridPos);
     } else {
+        if (localOnly)             
+            return false;          
+
         glm::ivec3 worldPos =
             m_Pos * glm::ivec3(s_Size, s_Height, s_Size) + neighborGridPos;
         neighbor = manager.GetBlockGlobal(worldPos);
@@ -88,7 +100,7 @@ void Chunk::m_AddFaceToMesh(const BlockType &type, const glm::vec3 &worldPos,
     }
 }
 
-void Chunk::GenMesh(ChunkManager &manager) {
+void Chunk::GenMesh(ChunkManager &manager, const bool localOnly) {
     for (auto &[type, mesh] : m_Meshes) {
         mesh.vertices.clear();
     }
@@ -103,13 +115,14 @@ void Chunk::GenMesh(ChunkManager &manager) {
                     continue;
 
                 glm::vec3 worldPos(
-                    ((m_Pos.x * s_Size) + static_cast<float>(x)) * blockSize,
-                    ((m_Pos.y * s_Height) + static_cast<float>(y)) * blockSize,
-                    ((m_Pos.z * s_Size) + static_cast<float>(z)) * blockSize);
+                    (static_cast<float>((m_Pos.x * s_Size)) + static_cast<float>(x)) * blockSize,
+                    (static_cast<float>((m_Pos.y * s_Height)) + static_cast<float>(y)) * blockSize,
+                    (static_cast<float>((m_Pos.z * s_Size)) + static_cast<float>(z)) * blockSize);
 
                 for (int f = 0; f < 6; f++) {
                     auto face = static_cast<FaceDirection>(f);
-                    if (m_RenderFace(glm::vec3(x, y, z), face, manager)) {
+                    if (m_RenderFace(glm::vec3(x, y, z), face, manager,
+                                     localOnly)) {
                         m_AddFaceToMesh(block.type, worldPos, face);
                     }
                 }

@@ -12,8 +12,18 @@ class ChunkManager;
 
 class Chunk {
   public:
+    enum class MeshState : uint8_t {
+        NONE,
+        MESHED_LOCAL,
+        DIRTY,
+        READY,
+    };
+
     static constexpr int s_Size = 16;
     static constexpr int s_Height = 256;
+
+    MeshState state;
+    bool needUpload;
 
     Chunk(const glm::ivec3 &chunkPos);
     ~Chunk();
@@ -22,7 +32,7 @@ class Chunk {
     Chunk &operator=(const Chunk &) = delete;
 
     Chunk(Chunk &&other) noexcept
-        : m_Pos(other.m_Pos), m_Blocks(std::move(other.m_Blocks)),
+        : state(other.state), needUpload(other.needUpload), m_Pos(other.m_Pos), m_Blocks(std::move(other.m_Blocks)),
           m_Meshes(std::move(other.m_Meshes)) {
         for (auto &[type, mesh] : other.m_Meshes) {
             mesh.VAO = 0;
@@ -41,6 +51,8 @@ class Chunk {
                     glDeleteBuffers(1, &mesh.VBO);
             }
 
+            state = other.state;
+            needUpload = other.needUpload;
             m_Pos = other.m_Pos;
             m_Blocks = std::move(other.m_Blocks);
             m_Meshes = std::move(other.m_Meshes);
@@ -55,10 +67,13 @@ class Chunk {
         return *this;
     }
 
+    void MarkDirty();
+
     void SetBlock(const glm::ivec3 &pos, const BlockType &type);
     [[nodiscard]] Block GetBlock(const glm::ivec3 &pos) const;
+    glm::ivec3 GetPos();
 
-    void GenMesh(ChunkManager &manager);
+    void GenMesh(ChunkManager &manager, bool localOnly);
     void GenMeshGL();
 
     void Draw(const Shader &shader,
@@ -77,10 +92,10 @@ class Chunk {
 
     std::map<BlockType, MeshBatch> m_Meshes;
 
-    [[nodiscard]] int m_GetIndex(const glm::ivec3 &pos) const;
+    [[nodiscard]] static int m_GetIndex(const glm::ivec3 &pos);
     [[nodiscard]] bool m_RenderFace(const glm::ivec3 &pos,
                                     const FaceDirection &face,
-                                    ChunkManager &manager) const;
+                                    ChunkManager &manager, bool localOnly) const;
     void m_AddFaceToMesh(const BlockType &type, const glm::vec3 &worldPos,
                          const FaceDirection &face);
 };
