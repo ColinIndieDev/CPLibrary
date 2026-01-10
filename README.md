@@ -53,6 +53,13 @@ It is not much yet but these are the projects and their link to GitHub:
 - [Flappy Bird Clone](https://github.com/ColinIndieDev/Flappy-Bird-Clone)
 - [Digit Recognition AI](https://github.com/ColinIndieDev/Digit-Recognition-AI)
 
+There is also a demo here a Minecraft Clone made using my framework, you can find it inside the `src/` folder! \
+Here are some screenshots:
+
+![Screenshot1](screenshots/screenshot1.png)
+
+![Screenshot2](screenshots/screenshot2.png)
+
 ## Structure
 + `assets/`
 + + `fonts/`
