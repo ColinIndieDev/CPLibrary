@@ -6,7 +6,9 @@ std::vector<Timer> TimerManager::s_Timers{};
 void TimerManager::Update(const float delta) {
     for (auto &t : s_Timers)
         t.Update(delta);
-    std::erase_if(s_Timers, [](auto &t) { return t.finished; });
+    s_Timers.erase(std::remove_if(s_Timers.begin(), s_Timers.end(),
+                                  [](auto &t) { return t.finished; }),
+                   s_Timers.end());
 }
 
 Timer *TimerManager::AddTimer(float duration, bool loop,

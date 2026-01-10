@@ -1,8 +1,8 @@
 #include "../include/Text.h"
 
 #include "../include/CPL.h"
-#include "../include/util/Logging.h"
 #include "../include/Shader.h"
+#include "../include/util/Logging.h"
 #include <filesystem>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -67,8 +67,7 @@ void Text::Init(const std::string &fontPath, const std::string &fontName,
             texture,
             glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
             glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            static_cast<uint32_t>(face->glyph->advance.x)
-        );
+            static_cast<uint32_t>(face->glyph->advance.x));
         characters.insert(std::pair<char, Character>(c, character));
     }
     s_Fonts.insert(std::pair(fontName, characters));
@@ -92,7 +91,7 @@ void Text::Init(const std::string &fontPath, const std::string &fontName,
 }
 
 void Text::Use(const std::string &fontName) {
-    if (s_Fonts.contains(fontName))
+    if (auto it = s_Fonts.find(fontName); it != s_Fonts.end())
         s_CurFont = fontName;
     else
         Logging::Log(Logging::MessageStates::WARNING, "Cannot find font");
@@ -110,20 +109,20 @@ void Text::DrawText(const Shader &shader, const std::string &text,
 
         const float xPos = pos.x + (static_cast<float>(bearing.x) * scale);
         const float yPos =
-            pos.y +
-            (static_cast<float>((s_Fonts.at(s_CurFont).at('H').bearing.y - bearing.y)) * scale);
+            pos.y + (static_cast<float>((
+                         s_Fonts.at(s_CurFont).at('H').bearing.y - bearing.y)) *
+                     scale);
         const float width = static_cast<float>(size.x) * scale;
         const float height = static_cast<float>(size.y) * scale;
 
-        const std::array<std::array<float, 4>, 6> vertices = {{
-            {xPos, yPos + height, 0.0f, 1.0f},
-            {xPos, yPos, 0.0f, 0.0f},
-            {xPos + width, yPos, 1.0f, 0.0f},
+        const std::array<std::array<float, 4>, 6> vertices = {
+            {{xPos, yPos + height, 0.0f, 1.0f},
+             {xPos, yPos, 0.0f, 0.0f},
+             {xPos + width, yPos, 1.0f, 0.0f},
 
-            {xPos, yPos + height, 0.0f, 1.0f},
-            {xPos + width, yPos, 1.0f, 0.0f},
-            {xPos + width, yPos + height, 1.0f, 1.0f}
-        }};
+             {xPos, yPos + height, 0.0f, 1.0f},
+             {xPos + width, yPos, 1.0f, 0.0f},
+             {xPos + width, yPos + height, 1.0f, 1.0f}}};
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glBindBuffer(GL_ARRAY_BUFFER, s_VBO);
@@ -140,7 +139,7 @@ void Text::DrawText(const Shader &shader, const std::string &text,
 
 glm::vec2 Text::GetTextSize(const std::string &fontName,
                             const std::string &text, const float scale) {
-    if (!s_Fonts.contains(fontName)) {
+    if (auto it = s_Fonts.find(fontName); it == s_Fonts.end()) {
         Logging::Log(Logging::MessageStates::WARNING, "Cannot find font");
         return glm::vec2(0.0f);
     }

@@ -1,12 +1,22 @@
 #include "../../include/shape3D/CubeMap.h"
 #include "../../include/Shader.h"
+#include "glm/trigonometric.hpp"
 #include <stb_image.h>
 
 namespace CPL {
 CubeMap::CubeMap(const std::string &path)
-    : m_CubeMapTex(LoadCubeMapFromCross(path)) {
+    : rot(0), m_CubeMapTex(LoadCubeMapFromCross(path)) {
+        m_Init();
+}
+
+CubeMap::CubeMap(const std::vector<std::string> &paths)
+    : rot(0), m_CubeMapTex(LoadCubeMapFromImages(paths)) {
+        m_Init();
+}
+
+void CubeMap::m_Init() {
     const std::array<float, 108> vertices = {
-        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f, 
         -1.0f, -1.0f, -1.0f, 
          1.0f, -1.0f, -1.0f,
          1.0f, -1.0f, -1.0f, 
@@ -20,12 +30,12 @@ CubeMap::CubeMap(const std::string &path)
         -1.0f,  1.0f,  1.0f,  
         -1.0f, -1.0f,  1.0f,
 
-         1.0f, -1.0f, -1.0f, 
-         1.0f, -1.0f,  1.0f,  
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,  
-         1.0f,  1.0f, -1.0f, 
-         1.0f, -1.0f, -1.0f,
+        1.0f,  -1.0f, -1.0f, 
+        1.0f,  -1.0f,  1.0f,  
+        1.0f,   1.0f,  1.0f,
+        1.0f,   1.0f,  1.0f,  
+        1.0f,   1.0f, -1.0f, 
+        1.0f,  -1.0f, -1.0f,
 
         -1.0f, -1.0f, 1.0f,  
         -1.0f,  1.0f, 1.0f,  
@@ -69,12 +79,12 @@ uint32_t CubeMap::LoadCubeMapFromImages(const std::vector<std::string> &faces) {
     int nrComponents = 0;
 
     for (uint32_t i = 0; i < faces.size(); i++) {
-        unsigned char *data =
+        uint8_t *data =
             stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
         if (static_cast<bool>(data)) {
             GLenum format = (nrComponents == 4) ? GL_RGBA : GL_RGB;
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-                         static_cast<int>(format), width, height, 0, GL_RGB,
+                         static_cast<int>(format), width, height, 0, format,
                          GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         } else {
@@ -122,7 +132,8 @@ uint32_t CubeMap::LoadCubeMapFromCross(const std::string &path) {
     unsigned char *fullImage =
         stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
     if (!static_cast<bool>(fullImage)) {
-        Logging::Log(Logging::MessageStates::WARNING, "Failed to load image: " + path);
+        Logging::Log(Logging::MessageStates::WARNING,
+                     "Failed to load image: " + path);
         return 0;
     }
 
@@ -170,11 +181,23 @@ void CubeMap::Draw(const Shader &shader) const {
     glDepthFunc(GL_LEQUAL);
     shader.Use();
     auto view = GetCam3D().GetViewMatrix();
-    glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
+    glm::mat4 boxView = glm::mat4(glm::mat3(view));
+
+    glm::mat4 boxRot =
+        glm::rotate(glm::mat4(1.0f), glm::radians(rot.x), glm::vec3(1, 0, 0));
+
+    boxRot =
+        glm::rotate(boxRot, glm::radians(rot.y), glm::vec3(0, 1, 0));
+
+    boxRot =
+        glm::rotate(boxRot, glm::radians(rot.z), glm::vec3(0, 0, 1));
+
+    glm::mat4 finalView = boxView * boxRot;
+
     shader.SetMatrix4fv(
         "projection",
         GetCam3D().GetProjectionMatrix(GetScreenWidth() / GetScreenHeight()) *
-            skyboxView);
+            finalView);
     glBindVertexArray(m_VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_CubeMapTex);

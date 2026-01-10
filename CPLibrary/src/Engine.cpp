@@ -143,10 +143,14 @@ bool Engine::CheckCollisionVec2Circle(const glm::vec2 &one,
 }
 
 std::pair<int, int> Engine::GetOpenGLVersion(std::string version) {
-    version.erase(std::ranges::remove(version, '.').begin(), version.end());
-    if (version.size() > 2 || std::ranges::all_of(version, [](uint8_t c) {
-            return !std::isdigit(c);
-        })) {
+    version.erase(std::remove(version.begin(), version.end(), '.'),
+                  version.end());
+    bool onlyDigits =
+        !version.empty() &&
+        std::all_of(version.begin(), version.end(), [](const auto &c) {
+            return !std::isdigit(static_cast<uint8_t>(c));
+        });
+    if (version.size() > 2 || onlyDigits) {
         Logging::Log(Logging::MessageStates::ERROR,
                      "Invaid version type for OpenGL!");
         return std::make_pair(3, 3);
@@ -184,11 +188,10 @@ void Engine::InitWindow(const int width, const int height, const char *title,
     s_ScreenWidth = width;
     s_ScreenHeight = height;
 
-    s_Projection2D = glm::ortho(0.0f, static_cast<float>(width),
-                                static_cast<float>(height), 0.0f, -1.0f, 1.0f);
-    s_Projection3D = glm::perspective(
-        glm::radians(s_Camera3D.fov),
-        static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+    s_Projection2D = CPL::Camera2D::GetProjectionMatrix(
+        glm::ivec2(s_ScreenWidth, s_ScreenHeight));
+    s_Projection3D = s_Camera3D.GetProjectionMatrix(
+        static_cast<float>(s_ScreenWidth) / static_cast<float>(s_ScreenHeight));
 
     s_Window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (s_Window == nullptr) {
@@ -730,6 +733,14 @@ void Engine::DrawPlaneTexRot(const CPL::Texture2D *const tex,
 void Engine::DrawCubeMap(const CPL::CubeMap *const map) {
     glDepthMask(GL_FALSE);
     map->Draw(s_CubeMapShader);
+    glDepthMask(GL_TRUE);
+}
+
+void Engine::DrawCubeMapRot(CPL::CubeMap *map, const glm::vec3 &rot) {
+    glDepthMask(GL_FALSE);
+    map->rot = rot;
+    map->Draw(s_CubeMapShader);
+    map->rot = glm::vec3(0);
     glDepthMask(GL_TRUE);
 }
 

@@ -141,8 +141,20 @@ void WorldGen::GenTrees(const int x, const int z, const int worldX,
 }
 
 void WorldGen::GenMap() {
-    for (int x = -mapSize.x; x < mapSize.x; x++) {
-        for (int z = -mapSize.y; z < mapSize.y; z++) {
+    for (int x = -viewDist; x < viewDist; x++) {
+        for (int z = -viewDist; z < viewDist; z++) {
+            manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
+        }
+    }
+}
+
+void WorldGen::UpdateMap() {
+    const glm::ivec3 playerChunkPos = ChunkManager::GetPlayerChunkPos(GetCam3D().position);
+    if (manager.lastPlayerChunkPos == playerChunkPos)
+        return;
+
+    for (int x = playerChunkPos.x - viewDist; x < playerChunkPos.x + viewDist; x++) {
+        for (int z = playerChunkPos.z - viewDist; z < playerChunkPos.z + viewDist; z++) {
             manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
         }
     }

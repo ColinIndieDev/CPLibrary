@@ -14,7 +14,7 @@ int PositiveMod(const int x, const int y) {
     return result < 0 ? result + y : result;
 }
 
-ChunkManager::ChunkManager(const uint32_t threadCount) {
+ChunkManager::ChunkManager(const uint32_t threadCount) : lastPlayerChunkPos(0) {
     for (int i = 0; i < threadCount; i++) {
         m_Workers.emplace_back(&ChunkManager::m_WorkerThread, this);
     }
@@ -37,13 +37,19 @@ void ChunkManager::Stop() {
 }
 
 void ChunkManager::RequestChunkGen(const glm::ivec3 &pos, WorldGen *worldGen) {
-    glm::vec3 playerChunkPos(
-        0); // TODO make a GetPlayerChunk() that returns a ivec3
+    auto cIt = chunks.find(pos);
+    auto uIt = m_UnfinishedList.find(pos);
+    if (cIt != chunks.end() || uIt != m_UnfinishedList.end())
+        return;
+
+    glm::vec3 playerChunkPos =
+        GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
     int priority =
         static_cast<int>(glm::distance2(glm::vec3(pos), playerChunkPos));
     {
         std::lock_guard<std::mutex> lock(m_RequestMutex);
         m_RequestQueue.push({pos, worldGen, priority});
+        m_UnfinishedList.insert(pos);
         m_PendingChunks++;
     }
     m_RequestCV.notify_one();
@@ -69,7 +75,7 @@ void ChunkManager::ProcessFinishedChunks() {
             bool allNeighborsExist = true;
             for (const auto &n : neighbors) {
                 glm::ivec3 npos = pos + n;
-                if (!chunks.contains(npos)) {
+                if (auto it = chunks.find(npos); it == chunks.end()) {
                     allNeighborsExist = false;
                     break;
                 }
@@ -78,18 +84,28 @@ void ChunkManager::ProcessFinishedChunks() {
             for (const auto &n : neighbors) {
                 glm::ivec3 npos = pos + n;
 
-                if (chunks.contains(npos)) {
+                if (auto it = chunks.find(npos); it != chunks.end()) {
                     Chunk *chunk = &chunks.at(pos);
                     Chunk *neighborChunk = &chunks.at(npos);
 
                     chunk->MarkDirty();
                     neighborChunk->MarkDirty();
-                    if (!m_DirtyList.contains(pos)) {
-                        m_DirtyQueue.emplace(chunk);
+                    if (auto it = m_DirtyList.find(pos);
+                        it == m_DirtyList.end()) {
+                        glm::vec3 playerChunkPos =
+                            GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
+                        int priority = static_cast<int>(
+                            glm::distance2(glm::vec3(pos), playerChunkPos));
+                        m_DirtyQueue.emplace(chunk, priority);
                         m_DirtyList.emplace(pos);
                     }
-                    if (!m_DirtyList.contains(npos)) {
-                        m_DirtyQueue.emplace(neighborChunk);
+                    if (auto it = m_DirtyList.find(npos);
+                        it == m_DirtyList.end()) {
+                        glm::vec3 playerChunkPos =
+                            GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
+                        int priority = static_cast<int>(
+                            glm::distance2(glm::vec3(npos), playerChunkPos));
+                        m_DirtyQueue.emplace(neighborChunk, priority);
                         m_DirtyList.emplace(npos);
                     }
                 }
@@ -104,7 +120,7 @@ void ChunkManager::ProcessDirtyChunks(const int maxPerFrame) {
 
     int processed = 0;
     while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
-        Chunk *chunk = m_DirtyQueue.front();
+        Chunk *chunk = m_DirtyQueue.top().chunk;
         m_DirtyQueue.pop();
         m_DirtyList.erase(chunk->GetPos());
 
@@ -112,24 +128,27 @@ void ChunkManager::ProcessDirtyChunks(const int maxPerFrame) {
         chunk->state = Chunk::MeshState::READY;
         chunk->needUpload = true;
 
-        const std::array<glm::ivec3, 4> neighbors = {{
-            {0, 0, -1}, 
-            {0, 0, 1}, 
-            {-1, 0, 0}, 
-            {1, 0, 0}
-        }};
-        
+        m_UnfinishedList.erase(chunk->GetPos());
+
+        const std::array<glm::ivec3, 4> neighbors = {
+            {{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}}};
+
         for (const auto &n : neighbors) {
             glm::ivec3 npos = chunk->GetPos() + n;
-            
+
             auto it = chunks.find(npos);
             if (it != chunks.end()) {
-                Chunk* neighbor = &it->second;
-                
+                Chunk *neighbor = &it->second;
+
                 if (neighbor->state == Chunk::MeshState::MESHED_LOCAL) {
-                    if (!m_DirtyList.contains(npos)) {
+                    if (auto it = m_DirtyList.find(npos);
+                        it == m_DirtyList.end()) {
                         neighbor->MarkDirty();
-                        m_DirtyQueue.emplace(neighbor);
+                        glm::vec3 playerChunkPos =
+                            GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
+                        int priority = static_cast<int>(
+                            glm::distance2(glm::vec3(npos), playerChunkPos));
+                        m_DirtyQueue.emplace(neighbor, priority);
                         m_DirtyList.emplace(npos);
                     }
                 }
@@ -155,9 +174,27 @@ void ChunkManager::UploadChunkMeshes() {
     }
 }
 
-void ChunkManager::DrawChunks(const Shader &shader,
-                              const std::map<BlockType, Texture2D *> &atlases) {
+bool ChunkManager::OutOfRenderDist(const glm::ivec3 &chunkPos,
+                                     const int viewDist) {
+    return glm::distance2(glm::vec3(GetPlayerChunkPos(GetCam3D().position)),
+                          glm::vec3(chunkPos)) >
+           static_cast<float>(viewDist * viewDist);
+}
+
+uint32_t
+ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
+                         const std::map<BlockType, Texture2D *> &atlases,
+                         const int viewDist) {
     std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+
+    glColorMask(0, 0, 0, 0);
+
+    std::vector<Chunk *> sortedChunks;
+    sortedChunks.reserve(chunks.size());
 
     for (auto &[pos, chunk] : chunks) {
         const float blockSize = 0.2f;
@@ -167,10 +204,42 @@ void ChunkManager::DrawChunks(const Shader &shader,
                                glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
         const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
 
-        if (GetCam3D().frustum.IsCubeVisible(center, halfSize)) {
-            chunk.Draw(shader, atlases);
-        }
+        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) ||
+            OutOfRenderDist(pos, viewDist))
+            continue;
+
+        sortedChunks.push_back(&chunk);
     }
+
+    std::sort(sortedChunks.begin(), sortedChunks.end(),
+              [&](Chunk *a, Chunk *b) {
+                  glm::vec3 aPos = a->GetPos();
+                  glm::vec3 bPos = b->GetPos();
+
+                  float da = glm::length2(aPos - GetCam3D().position);
+                  float db = glm::length2(bPos - GetCam3D().position);
+
+                  return da < db;
+              });
+
+    depthShader.Use();
+    for (auto &chunk : sortedChunks) {
+        chunk->DrawDepth(depthShader, atlases);
+    }
+
+    glColorMask(1, 1, 1, 1);
+    glDepthMask(GL_FALSE);
+    glDepthFunc(GL_EQUAL);
+
+    shader.Use();
+    for (auto &chunk : sortedChunks) {
+        chunk->Draw(shader, atlases);
+    }
+
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+
+    return sortedChunks.size();
 }
 
 void ChunkManager::m_WorkerThread() {
@@ -245,6 +314,13 @@ Chunk *ChunkManager::GetChunk(const glm::ivec3 &chunkPos) {
         return &it->second;
     }
     return nullptr;
+}
+
+glm::ivec3 ChunkManager::GetPlayerChunkPos(const glm::vec3 &playerPos) {
+    const float blockSize = 0.2f;
+    const glm::ivec3 playerChunkPos(playerPos.x / blockSize / Chunk::s_Size, 0,
+                                    playerPos.z / blockSize / Chunk::s_Size);
+    return playerChunkPos;
 }
 
 Block ChunkManager::GetBlockGlobal(const glm::ivec3 &worldPos) {

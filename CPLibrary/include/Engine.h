@@ -9,8 +9,8 @@
 
 #include "Colors.h"
 #include "KeyInputs.h"
-#include "util/Logging.h"
 #include "shape3D/Frustum.h"
+#include "util/Logging.h"
 #include <GLFW/glfw3.h>
 
 namespace CPL {
@@ -39,6 +39,10 @@ enum class PostProcessingModes : uint8_t {
 };
 
 struct Color {
+    Color() : r(0), g(0), b(0), a(0) {}
+    Color(const float r, const float g, const float b, const float a)
+        : r(r), g(g), b(b), a(a) {}
+    Color(const float val) : r(val), g(val), b(val), a(val) {}
     float r, g, b, a;
 };
 
@@ -86,6 +90,11 @@ struct Camera2D {
 
         return view;
     }
+    [[nodiscard]] static glm::mat4
+    GetProjectionMatrix(const glm::ivec2 &screenSize) {
+        return glm::ortho(0.0f, static_cast<float>(screenSize.x),
+                          static_cast<float>(screenSize.y), 0.0f, -1.0f, 1.0f);
+    }
 };
 
 struct Camera3D {
@@ -106,7 +115,7 @@ struct Camera3D {
         return glm::lookAt(position, position + front, up);
     }
     [[nodiscard]] glm::mat4 GetProjectionMatrix(const float aspect) const {
-        return glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
+        return glm::perspective(glm::radians(fov), aspect, 0.1f, 1000.0f);
     }
 
     void UpdateFrustum(const float aspect) {
@@ -181,8 +190,8 @@ class Engine {
                            const CPL::Color &color);
     static void DrawCubeTex(const CPL::Texture2D *tex, const glm::vec3 &pos,
                             const glm::vec3 &size, const CPL::Color &color);
-    static void DrawCubeTexAtlas(const CPL::Texture2D *tex, const glm::vec3 &pos,
-                                 const glm::vec3 &size,
+    static void DrawCubeTexAtlas(const CPL::Texture2D *tex,
+                                 const glm::vec3 &pos, const glm::vec3 &size,
                                  const CPL::Color &color);
     static void DrawPlaneTex(const CPL::Texture2D *tex, const glm::vec3 &pos,
                              const glm::vec2 &size, const CPL::Color &color);
@@ -190,6 +199,7 @@ class Engine {
                                 const glm::vec3 &rot, const glm::vec2 &size,
                                 const CPL::Color &color);
     static void DrawCubeMap(const CPL::CubeMap *map);
+    static void DrawCubeMapRot(CPL::CubeMap *map, const glm::vec3 &rot);
 
     static void ResetShader();
 
@@ -224,7 +234,8 @@ class Engine {
     static void ShowDetails();
 
     static std::pair<int, int> GetOpenGLVersion(std::string version);
-    static void InitWindow(int width, int height, const char *title, bool openGLDebug, const std::string& openGLVersion);
+    static void InitWindow(int width, int height, const char *title,
+                           bool openGLDebug, const std::string &openGLVersion);
     static void SetWindowIcon(const std::string &filePath);
     static void DestroyWindow();
     static void CloseWindow();

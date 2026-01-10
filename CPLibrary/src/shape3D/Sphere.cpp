@@ -8,14 +8,15 @@ Sphere::Sphere(const glm::vec3 &pos, const float radius, const Color &color)
     const int res = static_cast<int>(250.0f * radius);
     const int stacks = std::clamp(res, 8, 64);
     const int sectors = stacks * 2;
+    static constexpr float pi = 3.14159f;
 
     for (int i = 0; i <= stacks; ++i) {
         float v = static_cast<float>(i) / static_cast<float>(stacks);
-        float theta = v * static_cast<float>(std::numbers::pi);
+        float theta = v * static_cast<float>(pi);
 
         for (int j = 0; j <= sectors; ++j) {
             float u = static_cast<float>(j) / static_cast<float>(sectors);
-            float phi = u * 2.0f * static_cast<float>(std::numbers::pi);
+            float phi = u * 2.0f * static_cast<float>(pi);
 
             glm::vec3 pos;
             pos.x = radius * std::sin(theta) * std::cos(phi);

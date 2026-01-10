@@ -23,10 +23,13 @@ bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two) {
     return Engine::CheckCollisionVec2Circle(one, two);
 }
 
-void InitWindow(const glm::ivec2 &size, const std::string &title, const bool openGLDebug, const std::string &openGLVersion) {
-    Engine::InitWindow(size.x, size.y, title.c_str(), openGLDebug, openGLVersion);
+void InitWindow(const glm::ivec2 &size, const std::string &title,
+                const bool openGLDebug, const std::string &openGLVersion) {
+    Engine::InitWindow(size.x, size.y, title.c_str(), openGLDebug,
+                       openGLVersion);
 }
-void InitWindow(const glm::ivec2 &size, const std::string &title, const std::string &openGLVersion) {
+void InitWindow(const glm::ivec2 &size, const std::string &title,
+                const std::string &openGLVersion) {
     Engine::InitWindow(size.x, size.y, title.c_str(), false, openGLVersion);
 }
 void SetWindowIcon(const std::string &filePath) {
@@ -147,6 +150,9 @@ void DrawPlaneTexRot(const Texture2D *const tex, const glm::vec3 &pos,
     Engine::DrawPlaneTexRot(tex, pos, rot, size, color);
 }
 void DrawCubeMap(const CubeMap *const map) { Engine::DrawCubeMap(map); }
+void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot) {
+    Engine::DrawCubeMapRot(map, rot);
+}
 
 void ClearBackground(const Color &color) { Engine::ClearBackground(color); }
 void EndDraw() { Engine::EndDraw(); }

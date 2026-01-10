@@ -51,21 +51,23 @@ class Frustum {
 
     [[nodiscard]] bool IsCubeVisible(const glm::vec3 &center,
                                      const glm::vec3 &halfSize) const {
-        return std::ranges::all_of(planes, [&](const Plane &plane) {
-            float radius = (halfSize.x * std::abs(plane.normal.x)) +
-                           (halfSize.y * std::abs(plane.normal.y)) +
-                           (halfSize.z * std::abs(plane.normal.z));
-            float distance = plane.GetDistance(center);
+        return std::all_of(
+            planes.begin(), planes.end(), [&](const Plane &plane) {
+                float radius = (halfSize.x * std::abs(plane.normal.x)) +
+                               (halfSize.y * std::abs(plane.normal.y)) +
+                               (halfSize.z * std::abs(plane.normal.z));
+                float distance = plane.GetDistance(center);
 
-            return distance >= -radius;
-        });
+                return distance >= -radius;
+            });
     }
 
     [[nodiscard]] bool IsSphereVisible(const glm::vec3 &center,
                                        const float radius) const {
-        return std::ranges::all_of(planes, [&](const Plane &plane) {
-            return plane.GetDistance(center) >= -radius;
-        });
+        return std::all_of(planes.begin(), planes.end(),
+                           [&](const Plane &plane) {
+                               return plane.GetDistance(center) >= -radius;
+                           });
     }
 };
 } // namespace CPL

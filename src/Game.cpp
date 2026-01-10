@@ -1,18 +1,33 @@
 #include "Game.h"
+#include <string>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
 
 void Game::Init() {
-    m_Skybox = std::make_unique<CubeMap>("assets/images/day.png");
+    const std::vector<std::string> skyPaths = {
+        "assets/images/sky/nx.png",
+        "assets/images/sky/px.png",
+        "assets/images/sky/py.png",
+        "assets/images/sky/ny.png",
+        "assets/images/sky/nz.png",
+        "assets/images/sky/pz.png",
+    };
+    const std::string skyPath = "assets/images/day.png";
+    m_Skybox = std::make_unique<CubeMap>(skyPaths);
+
+    m_ShadowMap = std::make_unique<ShadowMap>(2048);
 
     Audio music = AudioManager::LoadAudio("assets/sounds/aria_math_music.mp3");
     AudioManager::PlayMusic(music);
 
     TextureLoader::Init();
-
+    
     m_InitAtlases();
 
-    const glm::ivec2 viewDistance(32); // Default: 16 (chunks)
-
-    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDistance,
+    depthShader = Shader("assets/shaders/default/vert/cubeTexShader.vert",
+                         "assets/shaders/default/frag/zPrepass.frag");
+    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDist,
                                             30, Chunk::s_Height, 60);
     m_WorldGen->Init();
     m_WorldGen->GenMap();
@@ -69,8 +84,9 @@ void UpdateControls() {
 void Game::m_Update() {
     UpdateControls();
     m_WorldGen->manager.ProcessFinishedChunks();
-    m_WorldGen->manager.ProcessDirtyChunks(5);
+    m_WorldGen->manager.ProcessDirtyChunks(1);
     m_WorldGen->manager.UploadChunkMeshes();
+    m_WorldGen->UpdateMap();
 }
 
 float NormalizeYaw(float yaw) {
@@ -110,9 +126,57 @@ std::string GetCardinalDir(float yaw) {
 }
 
 void Game::m_Draw() {
+    glm::vec3 lightPos(5.0f, 5.0f, 5.0f);
+    glm::mat4 lightProjection =
+        glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 25.0f);
+    glm::mat4 lightView =
+        glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    Shader &depthShader = Engine::GetDepthShader();
+    depthShader.Use();
+    depthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
+    
+    m_ShadowMap->BeginDepthPass(lightSpaceMatrix); 
+    
+    std::vector<Chunk *> sortedChunks;
+    sortedChunks.reserve(m_WorldGen->manager.chunks.size());
+
+    for (auto &[pos, chunk] : m_WorldGen->manager.chunks) {
+        const float blockSize = 0.2f;
+        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
+        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
+        const glm::vec3 center(glm::vec3(pos) * halfSizeXZ * 2.0f +
+                               glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
+        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
+
+        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) ||
+            ChunkManager::OutOfRenderDist(pos, viewDist))
+            continue;
+
+        sortedChunks.push_back(&chunk);
+    }
+
+    std::sort(sortedChunks.begin(), sortedChunks.end(),
+              [&](Chunk *a, Chunk *b) {
+                  glm::vec3 aPos = a->GetPos();
+                  glm::vec3 bPos = b->GetPos();
+
+                  float da = glm::length2(aPos - GetCam3D().position);
+                  float db = glm::length2(bPos - GetCam3D().position);
+
+                  return da < db;
+              });
+
+    for (auto& chunk : sortedChunks) {
+        chunk->DrawDepthShadow(depthShader, m_TexAtlases);
+    }
+    ShadowMap::EndDepthPass();
+
     ClearBackground(SKY_BLUE);
 
-    DrawCubeMap(m_Skybox.get());
+    float skyRot = GetTime() * 0.5f;
+    DrawCubeMapRot(m_Skybox.get(), glm::vec3(0, skyRot, 0));
 
     EnableFaceCulling(true);
 
@@ -130,8 +194,9 @@ void Game::m_Draw() {
 
     SetDirLight3D(day);
 
-    m_WorldGen->manager.DrawChunks(GetShader(DrawModes::CUBE_TEX_LIGHT),
-                                   m_TexAtlases);
+    //m_ShadowMap->BindForReading(1);
+    uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
+        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases, viewDist);
 
     EnableFaceCulling(false);
 
@@ -169,11 +234,16 @@ void Game::m_Draw() {
         }
     }
 
-    DrawTextShadow({0, 75}, {3, -3}, 0.5f,
+    DrawTextShadow({0, 60}, {3, -3}, 0.5f,
                    "Chunks - Ready: " + std::to_string(ready) +
                        " | Local: " + std::to_string(meshLocal) +
                        " | Dirty: " + std::to_string(dirty) +
                        " | None: " + std::to_string(none),
+                   WHITE, DARK_GRAY);
+
+    DrawTextShadow({0, 90}, {3, -3}, 0.5f,
+                   "Chunks drawn: " + std::to_string(chunksDrawn) + " / " +
+                       std::to_string(m_WorldGen->manager.chunks.size()),
                    WHITE, DARK_GRAY);
 
     DrawTextShadow(
@@ -184,7 +254,7 @@ void Game::m_Draw() {
             ", Z: " +
             std::to_string(static_cast<int>(GetCam3D().position.z * 5)),
         WHITE, DARK_GRAY);
-    DrawTextShadow({0, 25}, {3, -3}, 0.5f,
+    DrawTextShadow({0, 30}, {3, -3}, 0.5f,
                    "Seed: " + std::to_string(m_WorldGen->seed), WHITE,
                    DARK_GRAY);
 

@@ -2,6 +2,7 @@
 #include "../include/Audio.h"
 #include "../include/util/Logging.h"
 #include "miniaudio.h"
+#include <algorithm>
 
 namespace CPL {
 ma_engine AudioManager::s_Engine;
@@ -10,7 +11,8 @@ std::vector<std::unique_ptr<ma_sound>> AudioManager::s_ActiveSounds;
 
 void AudioManager::Init() {
     if (ma_engine_init(nullptr, &s_Engine) != MA_SUCCESS) {
-        Logging::Log(Logging::MessageStates::ERROR, "Failed to init audio engine!");
+        Logging::Log(Logging::MessageStates::ERROR,
+                     "Failed to init audio engine!");
         exit(-1);
     }
 }
@@ -20,13 +22,16 @@ Audio AudioManager::LoadAudio(const std::string &audioPath) {
 }
 
 void AudioManager::Update() {
-    std::erase_if(s_ActiveSounds, [](auto &s) {
-        if (!ma_sound_is_playing(s.get())) {
-            ma_sound_uninit(s.get());
-            return true;
-        }
-        return false;
-    });
+    s_ActiveSounds.erase(std::remove_if(s_ActiveSounds.begin(),
+                                        s_ActiveSounds.end(),
+                                        [](auto &s) {
+                                            if (!ma_sound_is_playing(s.get())) {
+                                                ma_sound_uninit(s.get());
+                                                return true;
+                                            }
+                                            return false;
+                                        }),
+                         s_ActiveSounds.end());
 }
 
 void AudioManager::PlaySFX(const Audio &audio) {
@@ -48,7 +53,8 @@ void AudioManager::PlaySFXPitch(const Audio &audio, const float pitch) {
     if (ma_sound_init_from_file(&s_Engine, audio.path.c_str(),
                                 MA_SOUND_FLAG_DECODE, nullptr, nullptr,
                                 sound.get()) != MA_SUCCESS) {
-        Logging::Log(Logging::MessageStates::ERROR, "Failed to initialize SFX!");
+        Logging::Log(Logging::MessageStates::ERROR,
+                     "Failed to initialize SFX!");
         return;
     }
     ma_sound_set_pitch(sound.get(), pitch);

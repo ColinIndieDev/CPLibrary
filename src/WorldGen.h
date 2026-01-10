@@ -8,20 +8,21 @@ class WorldGen {
   public:
     uint32_t seed;
     ChunkManager manager;
-    glm::ivec2 mapSize;
+    int viewDist;
 
     int minMapHeight;
     int maxMapHeight;
     int baseMapHeight;
 
-    explicit WorldGen(const uint32_t seed, const glm::ivec2 &mapSize,
+    explicit WorldGen(const uint32_t seed, const int viewDist,
                       const int minMapHeight, const int maxMapHeight,
                       const int baseMapHeight)
-        : seed(seed), mapSize(mapSize), minMapHeight(minMapHeight),
+        : seed(seed), viewDist(viewDist), minMapHeight(minMapHeight),
           maxMapHeight(maxMapHeight), baseMapHeight(baseMapHeight) {}
 
     void Init();
     void GenMap();
+    void UpdateMap();
 
     int GetTerrainHeight(int worldX, int worldZ);
     void GenTrees(int x, int z, int worldX, int worldZ, int height,

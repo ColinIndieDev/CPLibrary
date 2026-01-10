@@ -32,7 +32,8 @@ class Chunk {
     Chunk &operator=(const Chunk &) = delete;
 
     Chunk(Chunk &&other) noexcept
-        : state(other.state), needUpload(other.needUpload), m_Pos(other.m_Pos), m_Blocks(std::move(other.m_Blocks)),
+        : state(other.state), needUpload(other.needUpload), m_Pos(other.m_Pos),
+          m_Blocks(std::move(other.m_Blocks)),
           m_Meshes(std::move(other.m_Meshes)) {
         for (auto &[type, mesh] : other.m_Meshes) {
             mesh.VAO = 0;
@@ -78,6 +79,10 @@ class Chunk {
 
     void Draw(const Shader &shader,
               const std::map<BlockType, Texture2D *> &atlases);
+    void DrawDepth(const Shader &shader,
+                   const std::map<BlockType, Texture2D *> &atlases);
+    void DrawDepthShadow(const Shader &shader,
+                   const std::map<BlockType, Texture2D *> &atlases);
 
   private:
     struct MeshBatch {
@@ -95,7 +100,8 @@ class Chunk {
     [[nodiscard]] static int m_GetIndex(const glm::ivec3 &pos);
     [[nodiscard]] bool m_RenderFace(const glm::ivec3 &pos,
                                     const FaceDirection &face,
-                                    ChunkManager &manager, bool localOnly) const;
+                                    ChunkManager &manager,
+                                    bool localOnly) const;
     void m_AddFaceToMesh(const BlockType &type, const glm::vec3 &worldPos,
                          const FaceDirection &face);
 };

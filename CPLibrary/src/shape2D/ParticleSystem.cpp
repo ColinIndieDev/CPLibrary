@@ -8,7 +8,9 @@ void ParticleSystem::Update() {
             p.active = false;
         }
     }
-    std::erase_if(particles, [](const Particle &p) { return !p.active; });
+    particles.erase(std::remove_if(particles.begin(), particles.end(),
+                                   [](const Particle &p) { return !p.active; }),
+                    particles.end());
 }
 
 void ParticleSystem::Draw() {
@@ -18,10 +20,8 @@ void ParticleSystem::Draw() {
 }
 
 void ParticleSystem::AddParticle(Texture2D *const tex, const Color &color,
-                                 const float lifeTime,
-                                 const glm::vec2 &dir,
+                                 const float lifeTime, const glm::vec2 &dir,
                                  const glm::vec2 &offset) {
-    particles.emplace_back(
-        pos + offset, tex, color, lifeTime, dir);
+    particles.emplace_back(pos + offset, tex, color, lifeTime, dir);
 }
 } // namespace CPL

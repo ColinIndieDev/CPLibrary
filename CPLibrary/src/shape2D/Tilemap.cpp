@@ -17,14 +17,13 @@ void Tilemap::AddTile(const glm::vec2 &pos, const glm::vec2 &size,
     if (!static_cast<bool>(tex) || tex->tex == 0)
         return;
     const std::array<float, 30> quad = {
-        pos.x,  pos.y,                  0, 0, 1,
+        pos.x,          pos.y,          0, 0, 1,
         pos.x + size.x, pos.y,          0, 1, 1,
         pos.x + size.x, pos.y + size.y, 0, 1, 0,
 
         pos.x,          pos.y,          0, 0, 1,
         pos.x + size.x, pos.y + size.y, 0, 1, 0,
-        pos.x,          pos.y + size.y, 0, 0, 0
-    };
+        pos.x,          pos.y + size.y, 0, 0, 0};
 
     auto &[vertices, VBO] = batches[tex->tex];
     vertices.insert(vertices.end(), std::begin(quad), std::end(quad));
@@ -37,9 +36,11 @@ void Tilemap::DeleteTile(const glm::vec2 &pos, const glm::vec2 &size,
                          const Texture2D *const tex) {
     if (!static_cast<bool>(tex) || tex->tex == 0)
         return;
-    std::erase_if(tiles, [&](const Tile &tile) {
-        return tile.pos == pos && tile.size == size;
-    });
+    tiles.erase(std::remove_if(tiles.begin(), tiles.end(),
+                               [&](const Tile &tile) {
+                                   return tile.pos == pos && tile.size == size;
+                               }),
+                tiles.end());
 
     auto it = batches.find(tex->tex);
     if (it == batches.end())
@@ -71,7 +72,7 @@ void Tilemap::DeleteTile(const glm::vec2 &pos, const glm::vec2 &size,
 
 bool Tilemap::TileExist(const glm::vec2 &pos, const glm::vec2 &size) {
     Tile tile(pos, size);
-    auto it = std::ranges::find(tiles.begin(), tiles.end(), tile);
+    auto it = std::find(tiles.begin(), tiles.end(), tile);
     return it != tiles.end();
 }
 
@@ -82,8 +83,7 @@ void Tilemap::CheckCollidableTiles(const glm::vec2 &size) {
 
         std::array<glm::vec2, 4> neighbors = {
             glm::vec2(p.x - 1, p.y), glm::vec2(p.x + 1, p.y),
-            glm::vec2(p.x, p.y - 1), glm::vec2(p.x, p.y + 1)
-        };
+            glm::vec2(p.x, p.y - 1), glm::vec2(p.x, p.y + 1)};
 
         for (auto &n : neighbors) {
             if (!TileExist(n * size, size)) {
@@ -100,12 +100,13 @@ void Tilemap::Draw() {
 
     if (GetCurMode() == DrawModes::TEX_LIGHT) {
         GetShader(DrawModes::TEX_LIGHT).SetMatrix4fv("transform", transform);
-        GetShader(DrawModes::TEX_LIGHT).SetVector3f("offset",
-                                       glm::vec3(glm::vec2(0, 0), 0.0f));
+        GetShader(DrawModes::TEX_LIGHT)
+            .SetVector3f("offset", glm::vec3(glm::vec2(0, 0), 0.0f));
         GetShader(DrawModes::TEX_LIGHT).SetColor("inputColor", WHITE);
     } else {
         GetShader(DrawModes::TEX).SetMatrix4fv("transform", transform);
-        GetShader(DrawModes::TEX).SetVector3f("offset", glm::vec3(glm::vec2(0, 0), 0.0f));
+        GetShader(DrawModes::TEX)
+            .SetVector3f("offset", glm::vec3(glm::vec2(0, 0), 0.0f));
         GetShader(DrawModes::TEX).SetColor("inputColor", WHITE);
     }
 
@@ -113,8 +114,10 @@ void Tilemap::Draw() {
 
     for (auto &[id, batch] : batches) {
         glBindBuffer(GL_ARRAY_BUFFER, batch.VBO);
-        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(batch.vertices.size() * sizeof(float)),
-                     batch.vertices.data(), GL_DYNAMIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            static_cast<GLsizeiptr>(batch.vertices.size() * sizeof(float)),
+            batch.vertices.data(), GL_DYNAMIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                               static_cast<void *>(nullptr));

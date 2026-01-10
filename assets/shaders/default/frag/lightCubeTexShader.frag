@@ -32,20 +32,15 @@ uniform sampler2D ourTexture;
 uniform sampler2D shadowMap;  
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
-    // Perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     
-    // Transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    
-    // Get depth from shadow map
+
     float closestDepth = texture(shadowMap, projCoords.xy).r;
     float currentDepth = projCoords.z;
     
-    // Bias to prevent shadow acne
     float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     
-    // PCF (soft shadows)
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     for(int x = -1; x <= 1; ++x) {
@@ -56,7 +51,6 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     }
     shadow /= 9.0;
     
-    // Keep shadow at 0.0 when outside far plane
     if(projCoords.z > 1.0)
         shadow = 0.0;
     
@@ -105,7 +99,6 @@ void main() {
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
     
-    // Calculate lighting
     vec3 lighting = CalcDirLight(dirLight, normal, viewDir);
     
     for(int i = 0; i < numPointLights; i++)
@@ -118,9 +111,15 @@ void main() {
     vec3 diffuseSpecular = lighting - ambient;
     lighting = ambient + (1.0 - shadow) * diffuseSpecular;
     
-    // Final color
     vec3 baseColor = inputColor.rgb / 255 * textureColor.rgb;
-    vec3 finalColor = baseColor * lighting;
+    vec3 result = baseColor * lighting;
+
+    vec3 fogColor = vec3(0.4, 0.8, 1.0);
+    float dist = length(FragPos.xz - viewPos.xz);
+    float fogFactor = clamp((40.0 - dist) / (40.0 - 39.0), 0.0, 1.0);
+
+    vec3 finalColor = mix(fogColor, result, fogFactor);
+    float finalAlpha = mix(0, 255, fogFactor);
     
-    FragColor = vec4(finalColor, inputColor.a / 255 * textureColor.a);
+    FragColor = vec4(finalColor, inputColor.a / 255 * textureColor.a * finalAlpha);
 }

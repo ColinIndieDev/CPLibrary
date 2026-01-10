@@ -10,9 +10,10 @@ Circle::Circle(const glm::vec2 &pos, const float radius, const Color &color)
     : pos(pos), radius(radius), color(color) {
     std::vector<float> vertices;
     const int segments = std::ceil(radius);
+    static constexpr float pi = 3.14159f;
     vertices.reserve(static_cast<int>(segments * 3));
     for (int i = 0; i <= segments; i++) {
-        const float theta = static_cast<float>(2 * std::numbers::pi) /
+        const float theta = static_cast<float>(2 * pi) /
                             static_cast<float>(segments) *
                             static_cast<float>(i);
         float x = 0.0f + (radius * std::cos(theta));

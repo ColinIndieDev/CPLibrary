@@ -66,8 +66,11 @@ bool CheckCollisionVec2Rect(const glm::vec2 &one, const Rectangle &two);
 bool CheckCollisionCircles(const Circle &one, const Circle &two);
 bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two);
 
-void InitWindow(const glm::ivec2 &size, const std::string &title, bool openGLDebug = false, const std::string& openGLVersion = "3.3");
-void InitWindow(const glm::ivec2 &size, const std::string &title, const std::string& openGLVersion = "3.3");
+void InitWindow(const glm::ivec2 &size, const std::string &title,
+                bool openGLDebug = false,
+                const std::string &openGLVersion = "3.3");
+void InitWindow(const glm::ivec2 &size, const std::string &title,
+                const std::string &openGLVersion = "3.3");
 void SetWindowIcon(const std::string &filePath);
 void DestroyWindow();
 void CloseWindow();
@@ -113,15 +116,17 @@ void DrawTextShadow(const glm::vec2 &pos, const glm::vec2 &shadowOff,
 std::string GetDefaultFont();
 void DrawCube(const glm::vec3 &pos, const glm::vec3 &size, const Color &color);
 void DrawSphere(const glm::vec3 &pos, float radius, const Color &color);
-void DrawCubeTex(const Texture2D *tex, const glm::vec3 &pos, const glm::vec3 &size,
-                 const Color &color);
+void DrawCubeTex(const Texture2D *tex, const glm::vec3 &pos,
+                 const glm::vec3 &size, const Color &color);
 void DrawCubeTexAtlas(const Texture2D *tex, const glm::vec3 &pos,
                       const glm::vec3 &size, const Color &color);
-void DrawPlaneTex(const Texture2D *tex, const glm::vec3 &pos, const glm::vec2 &size,
-                  const Color &color);
-void DrawPlaneTexRot(const Texture2D *tex, const glm::vec3 &pos, const glm::vec3 &rot,
-                     const glm::vec2 &size, const Color &color);
+void DrawPlaneTex(const Texture2D *tex, const glm::vec3 &pos,
+                  const glm::vec2 &size, const Color &color);
+void DrawPlaneTexRot(const Texture2D *tex, const glm::vec3 &pos,
+                     const glm::vec3 &rot, const glm::vec2 &size,
+                     const Color &color);
 void DrawCubeMap(const CubeMap *map);
+void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot);
 
 void ClearBackground(const Color &color);
 void EndDraw();

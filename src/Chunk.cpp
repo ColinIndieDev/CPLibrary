@@ -39,7 +39,7 @@ Block Chunk::GetBlock(const glm::ivec3 &pos) const {
 glm::ivec3 Chunk::GetPos() { return m_Pos; }
 
 int Chunk::m_GetIndex(const glm::ivec3 &pos) {
-    return pos.x + (pos.z * s_Size) + (( pos.y * s_Size) * s_Size);
+    return pos.x + (pos.z * s_Size) + ((pos.y * s_Size) * s_Size);
 }
 
 bool Chunk::m_RenderFace(const glm::ivec3 &pos, const FaceDirection &face,
@@ -66,8 +66,8 @@ bool Chunk::m_RenderFace(const glm::ivec3 &pos, const FaceDirection &face,
         neighborGridPos.z >= 0 && neighborGridPos.z < s_Size) {
         neighbor = GetBlock(neighborGridPos);
     } else {
-        if (localOnly)             
-            return false;          
+        if (localOnly)
+            return false;
 
         glm::ivec3 worldPos =
             m_Pos * glm::ivec3(s_Size, s_Height, s_Size) + neighborGridPos;
@@ -114,10 +114,15 @@ void Chunk::GenMesh(ChunkManager &manager, const bool localOnly) {
                 if (!block.IsSolid())
                     continue;
 
-                glm::vec3 worldPos(
-                    (static_cast<float>((m_Pos.x * s_Size)) + static_cast<float>(x)) * blockSize,
-                    (static_cast<float>((m_Pos.y * s_Height)) + static_cast<float>(y)) * blockSize,
-                    (static_cast<float>((m_Pos.z * s_Size)) + static_cast<float>(z)) * blockSize);
+                glm::vec3 worldPos((static_cast<float>((m_Pos.x * s_Size)) +
+                                    static_cast<float>(x)) *
+                                       blockSize,
+                                   (static_cast<float>((m_Pos.y * s_Height)) +
+                                    static_cast<float>(y)) *
+                                       blockSize,
+                                   (static_cast<float>((m_Pos.z * s_Size)) +
+                                    static_cast<float>(z)) *
+                                       blockSize);
 
                 for (int f = 0; f < 6; f++) {
                     auto face = static_cast<FaceDirection>(f);
@@ -195,5 +200,60 @@ void Chunk::Draw(const Shader &shader,
         glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
     }
 
+    glBindVertexArray(0);
+}
+
+void Chunk::DrawDepth(const Shader &shader,
+                      const std::map<BlockType, Texture2D *> &atlases) {
+    auto transform = glm::mat4(1.0f);
+
+    glm::mat4 view = GetCam3D().GetViewMatrix();
+    glm::mat4 projection =
+        GetCam3D().GetProjectionMatrix(GetScreenWidth() / GetScreenHeight());
+    shader.SetMatrix4fv("projection", projection * view);
+
+    shader.SetMatrix4fv("transform", transform);
+    shader.SetVector3f("offset", glm::vec3(0));
+    shader.SetInt("ourTexture", 0);
+
+    for (auto &[type, mesh] : m_Meshes) {
+        if (mesh.vertexCount == 0)
+            continue;
+
+        auto it = atlases.find(type);
+        if (it == atlases.end())
+            continue;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, it->second->tex);
+
+        glBindVertexArray(mesh.VAO);
+        glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
+    }
+
+    glBindVertexArray(0);
+}
+
+void Chunk::DrawDepthShadow(const Shader &shader,
+                            const std::map<BlockType, Texture2D *> &atlases) {
+    auto model = glm::mat4(1.0f);
+
+    shader.Use();
+    shader.SetMatrix4fv("model", model);
+
+    for (auto &[type, mesh] : m_Meshes) {
+        if (mesh.vertexCount == 0)
+            continue;
+
+        auto it = atlases.find(type);
+        if (it == atlases.end())
+            continue;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, it->second->tex);
+
+        glBindVertexArray(mesh.VAO);
+        glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
+    }
     glBindVertexArray(0);
 }

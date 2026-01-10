@@ -19,7 +19,11 @@ class Game {
   private:
     std::unique_ptr<WorldGen> m_WorldGen;
     std::unique_ptr<CubeMap> m_Skybox;
+    std::unique_ptr<ShadowMap> m_ShadowMap;
     std::map<BlockType, Texture2D *> m_TexAtlases;
+    int viewDist = 16; // Default: 16 (chunks)
+
+    Shader depthShader;
     
     void m_Update();
     void m_Draw();
