@@ -1,5 +1,6 @@
 #include "ChunkManager.h"
 #include "WorldGen.h"
+#include <mutex>
 #include <string>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -175,26 +176,46 @@ void ChunkManager::UploadChunkMeshes() {
 }
 
 bool ChunkManager::OutOfRenderDist(const glm::ivec3 &chunkPos,
-                                     const int viewDist) {
+                                   const int viewDist) {
     return glm::distance2(glm::vec3(GetPlayerChunkPos(GetCam3D().position)),
                           glm::vec3(chunkPos)) >
            static_cast<float>(viewDist * viewDist);
 }
 
-uint32_t
-ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
-                         const std::map<BlockType, Texture2D *> &atlases,
-                         const int viewDist) {
+void ChunkManager::UpdateVisibleChunksDepth(const int viewDist) {
     std::lock_guard<std::mutex> lock(m_ChunksMutex);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
+    if (!visibleChunks.empty())
+        visibleChunks.clear();
 
-    glColorMask(0, 0, 0, 0);
+    visibleChunks.reserve(chunks.size());
 
-    std::vector<Chunk *> sortedChunks;
-    sortedChunks.reserve(chunks.size());
+    for (auto &[pos, chunk] : chunks) {
+        if (OutOfRenderDist(pos, viewDist))
+            continue;
+
+        visibleChunks.emplace_back(&chunk);
+    }
+
+    std::sort(visibleChunks.begin(), visibleChunks.end(),
+              [&](Chunk *a, Chunk *b) {
+                  glm::vec3 aPos = a->GetPos();
+                  glm::vec3 bPos = b->GetPos();
+
+                  float da = glm::length2(aPos - GetCam3D().position);
+                  float db = glm::length2(bPos - GetCam3D().position);
+
+                  return da < db;
+              });
+}
+
+void ChunkManager::UpdateVisibleChunks(const int viewDist) {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    if (!visibleChunks.empty())
+        visibleChunks.clear();
+
+    visibleChunks.reserve(chunks.size());
 
     for (auto &[pos, chunk] : chunks) {
         const float blockSize = 0.2f;
@@ -208,10 +229,10 @@ ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
             OutOfRenderDist(pos, viewDist))
             continue;
 
-        sortedChunks.push_back(&chunk);
+        visibleChunks.emplace_back(&chunk);
     }
 
-    std::sort(sortedChunks.begin(), sortedChunks.end(),
+    std::sort(visibleChunks.begin(), visibleChunks.end(),
               [&](Chunk *a, Chunk *b) {
                   glm::vec3 aPos = a->GetPos();
                   glm::vec3 bPos = b->GetPos();
@@ -221,9 +242,43 @@ ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
 
                   return da < db;
               });
+}
+
+uint32_t ChunkManager::DrawShadowMapChunks(
+    ShadowMap *shadowMap, const glm::mat4 &lightSpaceMatrix,
+    const std::map<BlockType, Texture2D *> &atlases, const bool useShadows) {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    Shader &shadowDepthShader = Engine::GetDepthShader();
+    shadowDepthShader.Use();
+    shadowDepthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
+
+    shadowMap->BeginDepthPass(lightSpaceMatrix);
+
+    if (useShadows) {
+        for (auto &chunk : visibleChunks) {
+            chunk->DrawDepthShadow(shadowDepthShader, atlases);
+        }
+    }
+
+    ShadowMap::EndDepthPass();
+
+    return visibleChunks.size();
+}
+
+uint32_t
+ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
+                         const std::map<BlockType, Texture2D *> &atlases) {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+
+    glColorMask(0, 0, 0, 0);
 
     depthShader.Use();
-    for (auto &chunk : sortedChunks) {
+    for (auto &chunk : visibleChunks) {
         chunk->DrawDepth(depthShader, atlases);
     }
 
@@ -232,14 +287,14 @@ ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
     glDepthFunc(GL_EQUAL);
 
     shader.Use();
-    for (auto &chunk : sortedChunks) {
+    for (auto &chunk : visibleChunks) {
         chunk->Draw(shader, atlases);
     }
 
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 
-    return sortedChunks.size();
+    return visibleChunks.size();
 }
 
 void ChunkManager::m_WorkerThread() {

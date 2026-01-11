@@ -55,6 +55,7 @@ struct ChunkPriorCompare {
 class ChunkManager {
   public:
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash, IVec3Equal> chunks;
+    std::vector<Chunk *> visibleChunks;
     glm::ivec3 lastPlayerChunkPos;
 
     ChunkManager(uint32_t threadCount = std::thread::hardware_concurrency() /
@@ -77,8 +78,13 @@ class ChunkManager {
     void ProcessDirtyChunks(int maxPerFrame = 10);
     void UploadChunkMeshes();
     bool IsGenComplete() const;
+    void UpdateVisibleChunks(int viewDist);
+    void UpdateVisibleChunksDepth(int viewDist);
+    uint32_t
+    DrawShadowMapChunks(ShadowMap *shadowMap, const glm::mat4 &lightSpaceMatrix,
+                        const std::map<BlockType, Texture2D *> &atlases, bool useShadows);
     uint32_t DrawChunks(const Shader &shader, const Shader &depthShader,
-                    const std::map<BlockType, Texture2D *> &atlases, int viewDist);
+                        const std::map<BlockType, Texture2D *> &atlases);
     void Stop();
 
     std::mutex m_ChunksMutex; // Temporary for debugging

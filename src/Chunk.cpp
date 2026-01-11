@@ -240,6 +240,7 @@ void Chunk::DrawDepthShadow(const Shader &shader,
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
+    shader.SetInt("ourTexture", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
         if (mesh.vertexCount == 0)

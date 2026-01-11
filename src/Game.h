@@ -21,10 +21,14 @@ class Game {
     std::unique_ptr<CubeMap> m_Skybox;
     std::unique_ptr<ShadowMap> m_ShadowMap;
     std::map<BlockType, Texture2D *> m_TexAtlases;
-    int viewDist = 16; // Default: 16 (chunks)
+    int m_ViewDist = 16; // Default: 16 (chunks)
+
+    uint32_t m_ShadowRes = 4096;
+    bool m_UseShadows = true;
 
     Shader depthShader;
-    
+   
+    void m_UpdateControls();
     void m_Update();
     void m_Draw();
     void m_SetSpawnPoint();

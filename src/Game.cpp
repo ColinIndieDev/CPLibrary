@@ -4,30 +4,29 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
 
+#include "../CPLibrary/include/util/StackProfiler.h"
+
 void Game::Init() {
     const std::vector<std::string> skyPaths = {
-        "assets/images/sky/nx.png",
-        "assets/images/sky/px.png",
-        "assets/images/sky/py.png",
-        "assets/images/sky/ny.png",
-        "assets/images/sky/nz.png",
-        "assets/images/sky/pz.png",
+        "assets/images/sky/nx.png", "assets/images/sky/px.png",
+        "assets/images/sky/py.png", "assets/images/sky/ny.png",
+        "assets/images/sky/nz.png", "assets/images/sky/pz.png",
     };
     const std::string skyPath = "assets/images/day.png";
     m_Skybox = std::make_unique<CubeMap>(skyPaths);
 
-    m_ShadowMap = std::make_unique<ShadowMap>(2048);
+    m_ShadowMap = std::make_unique<ShadowMap>(m_ShadowRes);
 
     Audio music = AudioManager::LoadAudio("assets/sounds/aria_math_music.mp3");
     AudioManager::PlayMusic(music);
 
     TextureLoader::Init();
-    
+
     m_InitAtlases();
 
     depthShader = Shader("assets/shaders/default/vert/cubeTexShader.vert",
                          "assets/shaders/default/frag/zPrepass.frag");
-    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), viewDist,
+    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), m_ViewDist,
                                             30, Chunk::s_Height, 60);
     m_WorldGen->Init();
     m_WorldGen->GenMap();
@@ -55,7 +54,7 @@ void Game::m_SetSpawnPoint() {
     GetCam3D().position.y = static_cast<float>(height) * 0.2f;
 }
 
-void UpdateControls() {
+void Game::m_UpdateControls() {
     float aspect = GetScreenWidth() / GetScreenHeight();
     Camera3D &cam = GetCam3D();
     cam.UpdateFrustum(aspect);
@@ -63,6 +62,17 @@ void UpdateControls() {
     float speed = 3.0f * GetDeltaTime();
     if (IsKeyDown(KEY_LEFT_CONTROL))
         speed *= 6;
+
+    if (IsKeyPressedOnce(KEY_U))
+        m_UseShadows = !m_UseShadows;
+    if (IsKeyPressedOnce(KEY_H)) {
+        m_ShadowRes *= 2;
+        m_ShadowMap = std::make_unique<ShadowMap>(m_ShadowRes);
+    }
+    if (IsKeyPressedOnce(KEY_N)) {
+        m_ShadowRes /= 2;
+        m_ShadowMap = std::make_unique<ShadowMap>(m_ShadowRes);
+    }
 
     if (IsKeyDown(KEY_W))
         cam.position += speed * cam.front;
@@ -82,11 +92,12 @@ void UpdateControls() {
 }
 
 void Game::m_Update() {
-    UpdateControls();
+    m_UpdateControls();
     m_WorldGen->manager.ProcessFinishedChunks();
     m_WorldGen->manager.ProcessDirtyChunks(1);
     m_WorldGen->manager.UploadChunkMeshes();
     m_WorldGen->UpdateMap();
+    m_WorldGen->manager.UpdateVisibleChunksDepth(m_ViewDist);
 }
 
 float NormalizeYaw(float yaw) {
@@ -126,52 +137,33 @@ std::string GetCardinalDir(float yaw) {
 }
 
 void Game::m_Draw() {
-    glm::vec3 lightPos(5.0f, 5.0f, 5.0f);
-    glm::mat4 lightProjection =
-        glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 25.0f);
-    glm::mat4 lightView =
-        glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+    glm::mat4 lightSpaceMatrix(1);
+    if (m_UseShadows) {
+        constexpr float shadowRange = 40.0f;
 
-    Shader &depthShader = Engine::GetDepthShader();
-    depthShader.Use();
-    depthShader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
-    
-    m_ShadowMap->BeginDepthPass(lightSpaceMatrix); 
-    
-    std::vector<Chunk *> sortedChunks;
-    sortedChunks.reserve(m_WorldGen->manager.chunks.size());
-
-    for (auto &[pos, chunk] : m_WorldGen->manager.chunks) {
-        const float blockSize = 0.2f;
-        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
-        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
-        const glm::vec3 center(glm::vec3(pos) * halfSizeXZ * 2.0f +
-                               glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
-        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
-
-        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) ||
-            ChunkManager::OutOfRenderDist(pos, viewDist))
-            continue;
-
-        sortedChunks.push_back(&chunk);
+        glm::vec3 lightDir =
+            glm::normalize(glm::vec3(std::sin(GetTime() * 0.1f) * 0.3f, -1.0f,
+                                     std::cos(GetTime() * 0.1f) * 0.3f));
+        glm::vec3 center =
+            GetCam3D().position + GetCam3D().front * (shadowRange * 0.5f);
+        glm::vec3 lightPos = center - lightDir * shadowRange;
+        glm::mat4 lightProjection =
+            glm::ortho(-shadowRange, shadowRange, -shadowRange, shadowRange,
+                       -shadowRange * 2.0f, shadowRange * 2.0f);
+        glm::mat4 lightView =
+            glm::lookAt(lightPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+        float texelSize =
+            (shadowRange * 2.0f) / static_cast<float>(m_ShadowRes);
+        glm::vec4 centerLS = lightView * glm::vec4(center, 1.0f);
+        centerLS.x = std::floor(centerLS.x / texelSize) * texelSize;
+        centerLS.y = std::floor(centerLS.y / texelSize) * texelSize;
+        glm::vec3 snappedCenter = glm::vec3(glm::inverse(lightView) * centerLS);
+        lightView =
+            glm::lookAt(lightPos, snappedCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+        lightSpaceMatrix = lightProjection * lightView;
     }
-
-    std::sort(sortedChunks.begin(), sortedChunks.end(),
-              [&](Chunk *a, Chunk *b) {
-                  glm::vec3 aPos = a->GetPos();
-                  glm::vec3 bPos = b->GetPos();
-
-                  float da = glm::length2(aPos - GetCam3D().position);
-                  float db = glm::length2(bPos - GetCam3D().position);
-
-                  return da < db;
-              });
-
-    for (auto& chunk : sortedChunks) {
-        chunk->DrawDepthShadow(depthShader, m_TexAtlases);
-    }
-    ShadowMap::EndDepthPass();
+    m_WorldGen->manager.DrawShadowMapChunks(m_ShadowMap.get(), lightSpaceMatrix,
+                                            m_TexAtlases, m_UseShadows);
 
     ClearBackground(SKY_BLUE);
 
@@ -194,9 +186,17 @@ void Game::m_Draw() {
 
     SetDirLight3D(day);
 
-    //m_ShadowMap->BindForReading(1);
+    if (m_UseShadows) {
+        Shader &shader = GetShader(DrawModes::CUBE_TEX_LIGHT);
+        shader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
+        shader.SetInt("shadowMap", 1);
+        m_ShadowMap->BindForReading(1);
+    }
+
+    m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
+
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
-        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases, viewDist);
+        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases);
 
     EnableFaceCulling(false);
 
@@ -234,16 +234,33 @@ void Game::m_Draw() {
         }
     }
 
-    DrawTextShadow({0, 60}, {3, -3}, 0.5f,
+    DrawTextShadow({0, 90}, {3, -3}, 0.5f, "--- Chunks ---", WHITE, DARK_GRAY);
+
+    DrawTextShadow({0, 120}, {3, -3}, 0.5f,
                    "Chunks - Ready: " + std::to_string(ready) +
                        " | Local: " + std::to_string(meshLocal) +
                        " | Dirty: " + std::to_string(dirty) +
                        " | None: " + std::to_string(none),
                    WHITE, DARK_GRAY);
 
-    DrawTextShadow({0, 90}, {3, -3}, 0.5f,
+    DrawTextShadow({0, 150}, {3, -3}, 0.5f,
                    "Chunks drawn: " + std::to_string(chunksDrawn) + " / " +
                        std::to_string(m_WorldGen->manager.chunks.size()),
+                   WHITE, DARK_GRAY);
+
+    DrawTextShadow({0, 210}, {3, -3}, 0.5f, "--- Graphics ---", WHITE,
+                   DARK_GRAY);
+    DrawTextShadow({0, 240}, {3, -3}, 0.5f,
+                   "Shadows: " + std::string(m_UseShadows ? "ON" : "OFF"),
+                   WHITE, DARK_GRAY);
+    DrawTextShadow({0, 270}, {3, -3}, 0.5f,
+                   "Shadow resolution: " + std::to_string(m_ShadowRes), WHITE,
+                   DARK_GRAY);
+
+    DrawTextShadow({0, 330}, {3, -3}, 0.5f,
+                   "Stack used: " +
+                       std::to_string(static_cast<float>(StackProfiler::GetStackUsed()) /
+                                      static_cast<float>(StackProfiler::GetStackSize())) + "%",
                    WHITE, DARK_GRAY);
 
     DrawTextShadow(

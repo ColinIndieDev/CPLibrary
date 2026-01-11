@@ -11,8 +11,6 @@ int main() {
     LockMouse(true);
     EnableVSync(false);
 
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     Game game;
     game.Init();
     game.Run();
