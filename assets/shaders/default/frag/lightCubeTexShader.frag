@@ -114,13 +114,13 @@ void main() {
     vec3 baseColor = inputColor.rgb / 255 * textureColor.rgb;
     vec3 result = baseColor * lighting;
 
-    vec3 fogColor = vec3(0.4, 0.8, 1.0);
+    vec3 fogColor = vec3(0.4, 0.6, 0.7);
     float dist = length(FragPos.xz - viewPos.xz);
     float fogFactor = clamp((45.0 - dist) / (45.0 - 39.0), 0.0, 1.0);
     float fogFactorAlpha = clamp((45.0 - dist) / (45.0 - 44.0), 0.0, 1.0);
 
     vec3 finalColor = mix(fogColor, result, fogFactor);
-    float finalAlpha = mix(0, 255, fogFactorAlpha);
+    float finalAlpha = fogFactorAlpha;
     
     FragColor = vec4(finalColor, inputColor.a / 255 * textureColor.a * finalAlpha);
 }

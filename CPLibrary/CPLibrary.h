@@ -1,5 +1,7 @@
 #pragma once
 
+#include "include/util/Profiler.h"
+
 #include <glad/glad.h>
 
 #include "include/Audio.h"

@@ -12,6 +12,8 @@ enum class BlockType : uint8_t {
     OAK_LOG,
     OAK_LEAVES,
     SNOW,
+    SAND,
+    WATER,
 };
 
 enum class FaceDirection : uint8_t { BACK, FRONT, LEFT, RIGHT, BOTTOM, TOP };
@@ -37,6 +39,6 @@ struct Block {
     [[nodiscard]] bool IsSolid() const { return type != BlockType::AIR; }
 
     [[nodiscard]] bool IsOpaque() const {
-        return type != BlockType::AIR && type != BlockType::OAK_LEAVES;
+        return type != BlockType::AIR && type != BlockType::OAK_LEAVES && type != BlockType::WATER;
     }
 };

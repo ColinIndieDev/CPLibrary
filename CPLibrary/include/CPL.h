@@ -129,6 +129,7 @@ void DrawCubeMap(const CubeMap *map);
 void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot);
 
 void ClearBackground(const Color &color);
+void EndFrame();
 void EndDraw();
 
 int GetFPS();
@@ -139,6 +140,7 @@ void SetTimeScale(float scale);
 void LockMouse(bool enabled);
 void EnableVSync(bool enabled);
 void EnableFaceCulling(bool enabled);
+void EnableMSAA(bool enabled);
 bool WindowShouldClose();
 
 float GetScreenWidth();

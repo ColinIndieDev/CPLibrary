@@ -15,7 +15,9 @@ int PositiveMod(const int x, const int y) {
     return result < 0 ? result + y : result;
 }
 
-ChunkManager::ChunkManager(const uint32_t threadCount) : lastPlayerChunkPos(0) {
+ChunkManager::ChunkManager(const bool isTransparentChunk,
+                           const uint32_t threadCount)
+    : lastPlayerChunkPos(0), isTransparentChunk(isTransparentChunk) {
     for (int i = 0; i < threadCount; i++) {
         m_Workers.emplace_back(&ChunkManager::m_WorkerThread, this);
     }
@@ -339,23 +341,40 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
             int height = worldGen->GetTerrainHeight(worldX, worldZ);
 
             for (int y = 0; y <= height; y++) {
-                if (y == 0)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::BEDROCK);
-                else if (y == height && height < 100)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::GRASS_BLOCK);
-                else if (y < height && y > height - 4)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
-                else if (y <= height - 4 || (y <= height && y >= 100 &&
-                                             height >= 100 && height < 170))
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::STONE);
-                else if (y <= height && y >= 170 && height >= 170)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SNOW);
+                if (!isTransparentChunk) {
+                    if (y == 0)
+                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::BEDROCK);
+                    else if (y == height && height < 100)
+                        chunk.SetBlock(glm::ivec3(x, y, z),
+                                       BlockType::GRASS_BLOCK);
+                    else if (y < height && y > height - 4)
+                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
+                    else if (y <= height - 4 || (y <= height && y >= 100 &&
+                                                 height >= 100 && height < 170))
+                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::STONE);
+                    else if (y <= height && y >= 170 && height >= 170)
+                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SNOW);
 
-                worldGen->GenCaves(x, z, glm::ivec3(worldX, y, worldZ), height,
-                                   chunk);
+                    worldGen->GenCaves(x, z, glm::ivec3(worldX, y, worldZ),
+                                       height, chunk);
+                }
+
+                if (y == height && height < 65) {
+                    if (!isTransparentChunk) {
+                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SAND);
+                    } else {
+                        int waterHeight = height + 1;
+                        while (waterHeight < 65) {
+                            chunk.SetBlock(glm::ivec3(x, waterHeight, z),
+                                           BlockType::WATER);
+                            waterHeight++;
+                        }
+                    }
+                }
             }
 
-            worldGen->GenTrees(x, z, worldX, worldZ, height, chunk);
+            if (!isTransparentChunk)
+                worldGen->GenTrees(x, z, worldX, worldZ, height, chunk);
         }
     }
     return chunk;

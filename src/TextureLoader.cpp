@@ -1,6 +1,6 @@
 #include "TextureLoader.h"
 
-std::vector<std::unique_ptr<Texture2D>> TextureLoader::s_BlockTexs(9);
+std::vector<std::unique_ptr<Texture2D>> TextureLoader::s_BlockTexs(11);
 
 std::unique_ptr<Texture2D> TextureLoader::s_CPLLogo;
 
@@ -30,6 +30,14 @@ void TextureLoader::Init() {
                                     TextureFiltering::NEAREST);
     s_BlockTexs[static_cast<int>(BlockType::SNOW)] =
         std::make_unique<Texture2D>("assets/images/snow.png",
+                                    glm::vec2(48, 32),
+                                    TextureFiltering::NEAREST);
+    s_BlockTexs[static_cast<int>(BlockType::SAND)] =
+        std::make_unique<Texture2D>("assets/images/sand.png",
+                                    glm::vec2(48, 32),
+                                    TextureFiltering::NEAREST);
+    s_BlockTexs[static_cast<int>(BlockType::WATER)] =
+        std::make_unique<Texture2D>("assets/images/water.png",
                                     glm::vec2(48, 32),
                                     TextureFiltering::NEAREST);
 

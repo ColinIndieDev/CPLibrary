@@ -1,10 +1,9 @@
 #include "Game.h"
+#include "Block.h"
 #include <string>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
-
-#include "../CPLibrary/include/util/StackProfiler.h"
 
 void Game::Init() {
     const std::vector<std::string> skyPaths = {
@@ -41,8 +40,7 @@ void Game::Run() {
         m_Update();
         m_Draw();
 
-        glfwSwapBuffers(GetWindow());
-        glfwPollEvents();
+        EndFrame();
     }
 }
 
@@ -74,6 +72,11 @@ void Game::m_UpdateControls() {
         m_ShadowMap = std::make_unique<ShadowMap>(m_ShadowRes);
     }
 
+    if (IsKeyPressedOnce(KEY_V))
+        m_UseMSAA = !m_UseMSAA;
+
+    EnableMSAA(m_UseMSAA);
+
     if (IsKeyDown(KEY_W))
         cam.position += speed * cam.front;
     if (IsKeyDown(KEY_S))
@@ -96,8 +99,15 @@ void Game::m_Update() {
     m_WorldGen->manager.ProcessFinishedChunks();
     m_WorldGen->manager.ProcessDirtyChunks(1);
     m_WorldGen->manager.UploadChunkMeshes();
+
+    m_WorldGen->transparentManager.ProcessFinishedChunks();
+    m_WorldGen->transparentManager.ProcessDirtyChunks(1);
+    m_WorldGen->transparentManager.UploadChunkMeshes();
+
     m_WorldGen->UpdateMap();
+
     m_WorldGen->manager.UpdateVisibleChunksDepth(m_ViewDist);
+    m_WorldGen->transparentManager.UpdateVisibleChunksDepth(m_ViewDist);
 }
 
 float NormalizeYaw(float yaw) {
@@ -194,9 +204,16 @@ void Game::m_Draw() {
     }
 
     m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
+    m_WorldGen->transparentManager.UpdateVisibleChunks(m_ViewDist);
 
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
         GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases);
+
+    glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
+    m_WorldGen->transparentManager.DrawChunks(
+        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases);
+    glDepthMask(GL_TRUE);
 
     EnableFaceCulling(false);
 
@@ -256,12 +273,25 @@ void Game::m_Draw() {
     DrawTextShadow({0, 270}, {3, -3}, 0.5f,
                    "Shadow resolution: " + std::to_string(m_ShadowRes), WHITE,
                    DARK_GRAY);
-
-    DrawTextShadow({0, 330}, {3, -3}, 0.5f,
-                   "Stack used: " +
-                       std::to_string(static_cast<float>(StackProfiler::GetStackUsed()) /
-                                      static_cast<float>(StackProfiler::GetStackSize())) + "%",
+    DrawTextShadow({0, 300}, {3, -3}, 0.5f,
+                   "Anti Aliasing: " + std::string(m_UseMSAA ? "MSAA" : "NONE"),
                    WHITE, DARK_GRAY);
+
+    DrawTextShadow(
+        {0, 360}, {3, -3}, 0.5f,
+        "Stack used: " +
+            std::to_string(static_cast<float>(Profiler::GetStackUsed()) /
+                           static_cast<float>(Profiler::GetStackSize())) +
+            "% (" + std::to_string(Profiler::GetStackUsed() / 1000000.0f) +
+            " / " + std::to_string(Profiler::GetStackSize() / 1000000.0f) +
+            " MB)",
+        WHITE, DARK_GRAY);
+
+    DrawTextShadow(
+        {0, 390}, {3, -3}, 0.5f,
+        "Heap used: " + std::to_string(Profiler::GetHeapUsed() / 1000000.0f) +
+            " MB",
+        WHITE, DARK_GRAY);
 
     DrawTextShadow(
         {0, 0}, {3, -3}, 0.5f,
@@ -298,4 +328,8 @@ void Game::m_InitAtlases() {
         TextureLoader::GetBlockTex(TextureLoader::BlockType::OAK_LEAVES);
     m_TexAtlases[BlockType::SNOW] =
         TextureLoader::GetBlockTex(TextureLoader::BlockType::SNOW);
+    m_TexAtlases[BlockType::SAND] =
+        TextureLoader::GetBlockTex(TextureLoader::BlockType::SAND);
+    m_TexAtlases[BlockType::WATER] =
+        TextureLoader::GetBlockTex(TextureLoader::BlockType::WATER);
 }

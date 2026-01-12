@@ -11,51 +11,51 @@ uint32_t DeriveSeed(const uint32_t base, const uint32_t salt) {
 }
 
 void WorldGen::m_InitNoises() {
-    peakNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 76767676)));
-    peakNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    peakNoise.SetFrequency(0.0008f);
+    terrainNoise.peak.SetSeed(static_cast<int>(DeriveSeed(seed, 76767676)));
+    terrainNoise.peak.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.peak.SetFrequency(0.0008f);
 
-    mountainMask.SetSeed(static_cast<int>(DeriveSeed(seed, 69696969)));
-    mountainMask.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    mountainMask.SetFrequency(0.0015f);
+    terrainNoise.mountain.SetSeed(static_cast<int>(DeriveSeed(seed, 69696969)));
+    terrainNoise.mountain.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.mountain.SetFrequency(0.0015f);
 
-    terrainNoise.SetSeed(static_cast<int>(seed));
-    terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    terrainNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
-    terrainNoise.SetFractalOctaves(4);
-    terrainNoise.SetFractalLacunarity(2.0f);
-    terrainNoise.SetFractalGain(0.5f);
-    terrainNoise.SetFrequency(0.008f);
+    terrainNoise.noise.SetSeed(static_cast<int>(seed));
+    terrainNoise.noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.noise.SetFractalType(FastNoiseLite::FractalType_FBm);
+    terrainNoise.noise.SetFractalOctaves(4);
+    terrainNoise.noise.SetFractalLacunarity(2.0f);
+    terrainNoise.noise.SetFractalGain(0.5f);
+    terrainNoise.noise.SetFrequency(0.008f);
 
-    treeNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 67676767)));
-    treeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    treeNoise.SetFrequency(0.007f);
+    treeNoise.noise.SetSeed(static_cast<int>(DeriveSeed(seed, 67676767)));
+    treeNoise.noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    treeNoise.noise.SetFrequency(0.007f);
 
-    caveNoise.SetSeed(static_cast<int>(seed + 1337));
-    caveNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    caveNoise.SetFrequency(0.03f);
+    caveNoise.noise.SetSeed(static_cast<int>(seed + 1337));
+    caveNoise.noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveNoise.noise.SetFrequency(0.03f);
 
-    caveRegionNoise.SetSeed(static_cast<int>(DeriveSeed(seed, 12345678)));
-    caveRegionNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    caveRegionNoise.SetFrequency(0.3f);
+    caveNoise.region.SetSeed(static_cast<int>(DeriveSeed(seed, 12345678)));
+    caveNoise.region.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveNoise.region.SetFrequency(0.3f);
 
-    caveEntranceNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    caveEntranceNoise.SetFrequency(0.02f);
+    caveNoise.entrance.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    caveNoise.entrance.SetFrequency(0.02f);
 }
 
-int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) {
-    float m = mountainMask.GetNoise(static_cast<float>(worldX),
-                                    static_cast<float>(worldZ));
+int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) const {
+    float m = terrainNoise.mountain.GetNoise(static_cast<float>(worldX),
+                                             static_cast<float>(worldZ));
     m = (m + 1.0f) * 0.5f;
 
-    float p = peakNoise.GetNoise(static_cast<float>(worldX),
-                                 static_cast<float>(worldZ));
+    float p = terrainNoise.peak.GetNoise(static_cast<float>(worldX),
+                                         static_cast<float>(worldZ));
     p = (p + 1.0f) * 0.5f;
     p = std::pow(p, 6.0f);
     float peakFactor = m * p;
 
-    float n = terrainNoise.GetNoise(static_cast<float>(worldX),
-                                    static_cast<float>(worldZ));
+    float n = terrainNoise.noise.GetNoise(static_cast<float>(worldX),
+                                          static_cast<float>(worldZ));
 
     constexpr float amplitude = 12;
     constexpr float mountainAmplitude = 50;
@@ -93,11 +93,11 @@ void GenTree(const glm::ivec3 &treePos, Chunk &chunk) {
 }
 
 void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
-                        const int height, Chunk &chunk) {
+                        const int height, Chunk &chunk) const {
     if (world.y > height - 4) {
         float entrance =
-            caveEntranceNoise.GetNoise(static_cast<float>(world.x) * 0.02f,
-                                       static_cast<float>(world.z) * 0.02f);
+            caveNoise.entrance.GetNoise(static_cast<float>(world.x) * 0.02f,
+                                        static_cast<float>(world.z) * 0.02f);
         if (entrance < 0.6f)
             return;
     }
@@ -105,15 +105,16 @@ void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
     if (world.y > 0) {
 
         float region =
-            caveRegionNoise.GetNoise(static_cast<float>(world.x) * 0.05f,
-                                     static_cast<float>(world.z) * 0.05f);
+            caveNoise.region.GetNoise(static_cast<float>(world.x) * 0.05f,
+                                      static_cast<float>(world.z) * 0.05f);
 
         if (region < 0.5f)
             return;
 
         constexpr float caveScale = 0.5f;
 
-        float n = caveNoise.GetNoise(static_cast<float>(world.x) * caveScale,
+        float n =
+            caveNoise.noise.GetNoise(static_cast<float>(world.x) * caveScale,
                                      static_cast<float>(world.y) * caveScale,
                                      static_cast<float>(world.z) * caveScale);
         float tunnel = 1.0f - std::abs(n);
@@ -129,14 +130,16 @@ void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
 }
 
 void WorldGen::GenTrees(const int x, const int z, const int worldX,
-                        const int worldZ, const int height, Chunk &chunk) {
-    float t = treeNoise.GetNoise(static_cast<float>(worldX),
-                                 static_cast<float>(worldZ));
+                        const int worldZ, const int height,
+                        Chunk &chunk) const {
+    float t = treeNoise.noise.GetNoise(static_cast<float>(worldX),
+                                       static_cast<float>(worldZ));
 
     Block block = chunk.GetBlock(glm::ivec3(x, height, z));
 
     if (RandPercentFloat(4.0f * t) && block.IsSolid() &&
-        block.type != BlockType::SNOW)
+        block.type != BlockType::SNOW && block.type != BlockType::SAND &&
+        height >= 65)
         GenTree(glm::ivec3(x, height + 1, z), chunk);
 }
 
@@ -144,18 +147,23 @@ void WorldGen::GenMap() {
     for (int x = -viewDist; x < viewDist; x++) {
         for (int z = -viewDist; z < viewDist; z++) {
             manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
+            transparentManager.RequestChunkGen(glm::ivec3(x, 0, z), this);
         }
     }
 }
 
 void WorldGen::UpdateMap() {
-    const glm::ivec3 playerChunkPos = ChunkManager::GetPlayerChunkPos(GetCam3D().position);
+    const glm::ivec3 playerChunkPos =
+        ChunkManager::GetPlayerChunkPos(GetCam3D().position);
     if (manager.lastPlayerChunkPos == playerChunkPos)
         return;
 
-    for (int x = playerChunkPos.x - viewDist; x < playerChunkPos.x + viewDist; x++) {
-        for (int z = playerChunkPos.z - viewDist; z < playerChunkPos.z + viewDist; z++) {
+    for (int x = playerChunkPos.x - viewDist; x < playerChunkPos.x + viewDist;
+         x++) {
+        for (int z = playerChunkPos.z - viewDist;
+             z < playerChunkPos.z + viewDist; z++) {
             manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
+            transparentManager.RequestChunkGen(glm::ivec3(x, 0, z), this);
         }
     }
 }

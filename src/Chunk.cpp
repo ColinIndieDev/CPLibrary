@@ -1,5 +1,7 @@
 #include "Chunk.h"
+#include "Block.h"
 #include "ChunkManager.h"
+#include <iterator>
 
 Chunk::Chunk(const glm::ivec3 &chunkPos)
     : state(MeshState::NONE), needUpload(false), m_Pos(chunkPos) {
@@ -186,6 +188,9 @@ void Chunk::Draw(const Shader &shader,
     shader.SetInt("ourTexture", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
+        if (type == BlockType::WATER)
+            shader.SetColor("inputColor", Color(255, 255, 255, 200));
+
         if (mesh.vertexCount == 0)
             continue;
 

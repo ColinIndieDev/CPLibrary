@@ -14,6 +14,8 @@ class TextureLoader {
         OAK_LOG,
         OAK_LEAVES,
         SNOW,
+        SAND,
+        WATER,
         GRASS,
         RED_TULP,
     };

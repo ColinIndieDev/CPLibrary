@@ -8,6 +8,7 @@ class WorldGen {
   public:
     uint32_t seed;
     ChunkManager manager;
+    ChunkManager transparentManager;
     int viewDist;
 
     int minMapHeight;
@@ -17,27 +18,38 @@ class WorldGen {
     explicit WorldGen(const uint32_t seed, const int viewDist,
                       const int minMapHeight, const int maxMapHeight,
                       const int baseMapHeight)
-        : seed(seed), viewDist(viewDist), minMapHeight(minMapHeight),
+        : seed(seed), manager(false), transparentManager(true),
+          viewDist(viewDist), minMapHeight(minMapHeight),
           maxMapHeight(maxMapHeight), baseMapHeight(baseMapHeight) {}
 
     void Init();
     void GenMap();
     void UpdateMap();
 
-    int GetTerrainHeight(int worldX, int worldZ);
+    int GetTerrainHeight(int worldX, int worldZ) const;
     void GenTrees(int x, int z, int worldX, int worldZ, int height,
-                  Chunk &chunk);
+                  Chunk &chunk) const;
     void GenCaves(int x, int z, const glm::ivec3 &world, int height,
-                  Chunk &chunk);
+                  Chunk &chunk) const;
 
   private:
-    FastNoiseLite terrainNoise;
-    FastNoiseLite treeNoise;
-    FastNoiseLite mountainMask;
-    FastNoiseLite peakNoise;
-    FastNoiseLite caveNoise;
-    FastNoiseLite caveRegionNoise;
-    FastNoiseLite caveEntranceNoise;
+    struct TerrainNoise {
+        FastNoiseLite noise;
+        FastNoiseLite mountain;
+        FastNoiseLite peak;
+    };
+    struct CaveNoise {
+        FastNoiseLite noise;
+        FastNoiseLite region;
+        FastNoiseLite entrance;
+    };
+    struct TreeNoise {
+        FastNoiseLite noise;
+    };
+
+    TerrainNoise terrainNoise;
+    CaveNoise caveNoise;
+    TreeNoise treeNoise;
 
     void m_InitNoises();
 };

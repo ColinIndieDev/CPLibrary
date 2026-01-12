@@ -57,8 +57,9 @@ class ChunkManager {
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash, IVec3Equal> chunks;
     std::vector<Chunk *> visibleChunks;
     glm::ivec3 lastPlayerChunkPos;
+    bool isTransparentChunk;
 
-    ChunkManager(uint32_t threadCount = std::thread::hardware_concurrency() /
+    ChunkManager(bool isTransparentChunk, uint32_t threadCount = std::thread::hardware_concurrency() /
                                         2);
     ~ChunkManager();
 
@@ -90,7 +91,7 @@ class ChunkManager {
     std::mutex m_ChunksMutex; // Temporary for debugging
   private:
     void m_WorkerThread();
-    static Chunk m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen);
+    Chunk m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen);
 
     std::priority_queue<ChunkGenRequest, std::vector<ChunkGenRequest>,
                         RequestCompare>

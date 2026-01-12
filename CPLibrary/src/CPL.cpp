@@ -155,6 +155,10 @@ void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot) {
 }
 
 void ClearBackground(const Color &color) { Engine::ClearBackground(color); }
+void EndFrame() {
+    glfwSwapBuffers(Engine::GetWindow());
+    glfwPollEvents();
+}
 void EndDraw() { Engine::EndDraw(); }
 
 int GetFPS() { return Engine::GetFPS(); }
@@ -166,6 +170,12 @@ void LockMouse(const bool enabled) { Engine::LockMouse(enabled); }
 void EnableVSync(const bool enabled) { Engine::EnableVSync(enabled); }
 void EnableFaceCulling(const bool enabled) {
     Engine::EnableFaceCulling(enabled);
+}
+void EnableMSAA(const bool enabled) {
+    if (enabled)
+        glEnable(GL_MULTISAMPLE);
+    else
+        glDisable(GL_MULTISAMPLE);
 }
 bool WindowShouldClose() { return Engine::WindowShouldClose(); }
 

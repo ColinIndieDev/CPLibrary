@@ -2,11 +2,11 @@
 #include "../../include/Engine.h"
 
 namespace CPL {
-ShadowMap::ShadowMap(const uint32_t res) : shadowWidth(res), shadowHeight(res) {
-    glGenFramebuffers(1, &depthMapFBO);
+ShadowMap::ShadowMap(const uint32_t res) : m_ShadowWidth(res), m_ShadowHeight(res) {
+    glGenFramebuffers(1, &m_DepthMapFBO);
 
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glGenTextures(1, &m_DepthMap);
+    glBindTexture(GL_TEXTURE_2D, m_DepthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, static_cast<int>(res),
                  static_cast<int>(res), 0, GL_DEPTH_COMPONENT, GL_FLOAT,
                  nullptr);
@@ -20,9 +20,9 @@ ShadowMap::ShadowMap(const uint32_t res) : shadowWidth(res), shadowHeight(res) {
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
                      borderColor.data());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                           depthMap, 0);
+                           m_DepthMap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
@@ -30,18 +30,18 @@ ShadowMap::ShadowMap(const uint32_t res) : shadowWidth(res), shadowHeight(res) {
 }
 
 ShadowMap::~ShadowMap() {
-    if (depthMapFBO != 0 && glIsFramebuffer(depthMapFBO)) {
-        glDeleteFramebuffers(1, &depthMapFBO);
+    if (m_DepthMapFBO != 0 && glIsFramebuffer(m_DepthMapFBO)) {
+        glDeleteFramebuffers(1, &m_DepthMapFBO);
     }
-    if (depthMap != 0 && glIsTexture(depthMap)) {
-        glDeleteTextures(1, &depthMap);
+    if (m_DepthMap != 0 && glIsTexture(m_DepthMap)) {
+        glDeleteTextures(1, &m_DepthMap);
     }
 }
 
 void ShadowMap::BeginDepthPass(const glm::mat4 &lightSpaceMatrix) const {
-    glViewport(0, 0, static_cast<int>(shadowWidth),
-               static_cast<int>(shadowHeight));
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glViewport(0, 0, static_cast<int>(m_ShadowWidth),
+               static_cast<int>(m_ShadowHeight));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glCullFace(GL_FRONT);
@@ -56,6 +56,6 @@ void ShadowMap::EndDepthPass() {
 
 void ShadowMap::BindForReading(const uint32_t textureUnit) const {
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glBindTexture(GL_TEXTURE_2D, m_DepthMap);
 }
 } // namespace CPL
