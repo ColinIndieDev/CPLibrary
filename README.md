@@ -119,6 +119,7 @@ Others:
   - OpenGL debugger
   - Logging
   - Scoped timer
+  - Profiler (get heap and stack related info)
 
 It is recommended to take a look at the example projects / demonstrations which will show core functionalities and how to use them correctly. Alternatively you may look up the functions inside the documentation but note that it may contains minor mistakes or is outdated. I will keep my best to refresh and update it regularily!
 

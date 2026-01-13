@@ -38,6 +38,7 @@
 469 - 2D Lighting
 490 - 3D Lighting
 511 - Directional Shadow
+535 - Tools
    ______                           __
   / ____/__  ____  ___  _________ _/ /
  / / __/ _ \/ __ \/ _ \/ ___/ __ `/ / 
@@ -525,3 +526,39 @@ void EndDepthPass();
 
 // Parameter can or should be left empty
 void BindForReading(uint32_t textureUnit = 1);
+
+  ______            __    
+ /_  __/___  ____  / /____
+  / / / __ \/ __ \/ / ___/
+ / / / /_/ / /_/ / (__  ) 
+/_/  \____/\____/_/____/  
+
+==========================
+
+// Create scoped timer which gets destroyed when out of scope
+// The amount of time passed since the creation of the timer
+// will be returned alongside with the text parameter
+ScopedTimer(std::string text);
+
+enum class Logging::MessageStates {
+    INFO,
+    WARNING,
+    ERROR
+};
+
+void Logging::Log(Logging::MessageStates warnLevel, std::string text);
+
+// Check for errors (f.e. call it after binding objects)
+// Outdated debugging, if using OpenGL 4.3+ which you need to specify
+// at InitWindow(...), just enable OpenGL debugging in InitWindow(...) as well
+// It is also more detailed!
+void OpenGLDebug::CheckOpenGLError();
+
+// In bytes
+size_t Profiler::GetStackUsed();
+
+// In bytes
+size_t Profiler::GetStackSize();
+
+// In bytes
+size_t Profiler::GetHeapUsed();
