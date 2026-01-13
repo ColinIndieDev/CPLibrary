@@ -1,4 +1,5 @@
 ![CPLlogo](assets/images/logo.png)
+![CPLlogo](assets/images/logo2.png)
 
 # CPLibrary (CPL)
 
