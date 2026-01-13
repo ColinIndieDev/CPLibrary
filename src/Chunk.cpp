@@ -189,7 +189,7 @@ void Chunk::Draw(const Shader &shader,
 
     for (auto &[type, mesh] : m_Meshes) {
         if (type == BlockType::WATER)
-            shader.SetColor("inputColor", Color(255, 255, 255, 200));
+            continue;
 
         if (mesh.vertexCount == 0)
             continue;
@@ -208,6 +208,42 @@ void Chunk::Draw(const Shader &shader,
     glBindVertexArray(0);
 }
 
+void Chunk::DrawTransparent(const Shader &shader,
+                            const std::map<BlockType, Texture2D *> &atlases) {
+    auto transform = glm::mat4(1.0f);
+
+    glm::mat4 view = GetCam3D().GetViewMatrix();
+    glm::mat4 projection =
+        GetCam3D().GetProjectionMatrix(GetScreenWidth() / GetScreenHeight());
+    shader.SetMatrix4fv("projection", projection * view);
+
+    shader.SetMatrix4fv("transform", transform);
+    shader.SetVector3f("offset", glm::vec3(0));
+    shader.SetColor("inputColor", WHITE);
+    shader.SetInt("ourTexture", 0);
+
+    if (m_Meshes[BlockType::WATER].vertexCount == 0) {
+        glBindVertexArray(0);
+        return;
+    }
+
+    auto it = atlases.find(BlockType::WATER);
+    if (it == atlases.end()) {
+        glBindVertexArray(0);
+        return;
+    }
+
+    shader.SetColor("inputColor", Color(155, 155, 255, 150));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, it->second->tex);
+
+    glBindVertexArray(m_Meshes[BlockType::WATER].VAO);
+    glDrawArrays(GL_TRIANGLES, 0, m_Meshes[BlockType::WATER].vertexCount);
+
+    glBindVertexArray(0);
+}
+
 void Chunk::DrawDepth(const Shader &shader,
                       const std::map<BlockType, Texture2D *> &atlases) {
     auto transform = glm::mat4(1.0f);
@@ -222,6 +258,9 @@ void Chunk::DrawDepth(const Shader &shader,
     shader.SetInt("ourTexture", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
+        if (type == BlockType::WATER)
+            continue;
+
         if (mesh.vertexCount == 0)
             continue;
 
@@ -235,7 +274,6 @@ void Chunk::DrawDepth(const Shader &shader,
         glBindVertexArray(mesh.VAO);
         glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
     }
-
     glBindVertexArray(0);
 }
 

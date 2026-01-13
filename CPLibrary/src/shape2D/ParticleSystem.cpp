@@ -21,7 +21,7 @@ void ParticleSystem::Draw() {
 
 void ParticleSystem::AddParticle(Texture2D *const tex, const Color &color,
                                  const float lifeTime, const glm::vec2 &dir,
-                                 const glm::vec2 &offset) {
-    particles.emplace_back(pos + offset, tex, color, lifeTime, dir);
+                                 const glm::vec2 &off) {
+    particles.emplace_back(pos + off, tex, color, lifeTime, dir);
 }
 } // namespace CPL

@@ -97,17 +97,12 @@ void Game::m_UpdateControls() {
 void Game::m_Update() {
     m_UpdateControls();
     m_WorldGen->manager.ProcessFinishedChunks();
-    m_WorldGen->manager.ProcessDirtyChunks(1);
+    m_WorldGen->manager.ProcessDirtyChunks(m_ViewDist, 1);
     m_WorldGen->manager.UploadChunkMeshes();
-
-    m_WorldGen->transparentManager.ProcessFinishedChunks();
-    m_WorldGen->transparentManager.ProcessDirtyChunks(1);
-    m_WorldGen->transparentManager.UploadChunkMeshes();
 
     m_WorldGen->UpdateMap();
 
     m_WorldGen->manager.UpdateVisibleChunksDepth(m_ViewDist);
-    m_WorldGen->transparentManager.UpdateVisibleChunksDepth(m_ViewDist);
 }
 
 float NormalizeYaw(float yaw) {
@@ -148,12 +143,13 @@ std::string GetCardinalDir(float yaw) {
 
 void Game::m_Draw() {
     glm::mat4 lightSpaceMatrix(1);
+    glm::vec3 lightDir;
     if (m_UseShadows) {
         constexpr float shadowRange = 40.0f;
 
-        glm::vec3 lightDir =
-            glm::normalize(glm::vec3(std::sin(GetTime() * 0.1f) * 0.3f, -1.0f,
-                                     std::cos(GetTime() * 0.1f) * 0.3f));
+        lightDir =
+            glm::normalize(glm::vec3(std::sin(GetTime() * 0.1f) * 3.3f, -2.0f,
+                                     std::cos(GetTime() * 0.1f) * 3.3f));
         glm::vec3 center =
             GetCam3D().position + GetCam3D().front * (shadowRange * 0.5f);
         glm::vec3 lightPos = center - lightDir * shadowRange;
@@ -182,37 +178,45 @@ void Game::m_Draw() {
 
     EnableFaceCulling(true);
 
-    BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+    bool light = true;
 
-    SetShininess3D(6);
+    BeginDraw(DrawModes::SHAPE_3D);
+
+    DrawCube(GetCam3D().position - lightDir * 500.0f,
+                glm::vec3(25), WHITE);
+
+    if (light)
+        BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+
+    SetShininess3D(1);
 
     DirectionalLight day(glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f)),
                          Color(76.5, 76.5, 76.5, 255), glm::vec3(1.0f),
                          glm::vec3(1.0f));
 
-    DirectionalLight night(glm::normalize(glm::vec3(0.0f)),
-                           Color(0, 26, 103, 255), glm::vec3(1.0f),
+    DirectionalLight night(glm::normalize(glm::vec3(-0.2f, 1.0f, -0.3f)),
+                           Color(0, 6, 83, 255), glm::vec3(0.5f),
                            glm::vec3(0.0f));
 
     SetDirLight3D(day);
 
     if (m_UseShadows) {
-        Shader &shader = GetShader(DrawModes::CUBE_TEX_LIGHT);
+        Shader &shader = GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX);
         shader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
         shader.SetInt("shadowMap", 1);
         m_ShadowMap->BindForReading(1);
     }
 
     m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
-    m_WorldGen->transparentManager.UpdateVisibleChunks(m_ViewDist);
 
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
-        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases);
+        GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX), depthShader, m_TexAtlases);
 
+    SetShininess3D(128);
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
-    m_WorldGen->transparentManager.DrawChunks(
-        GetShader(DrawModes::CUBE_TEX_LIGHT), depthShader, m_TexAtlases);
+    m_WorldGen->manager.DrawTransparentChunks(
+        GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX), m_TexAtlases);
     glDepthMask(GL_TRUE);
 
     EnableFaceCulling(false);

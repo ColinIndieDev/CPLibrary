@@ -15,9 +15,7 @@ int PositiveMod(const int x, const int y) {
     return result < 0 ? result + y : result;
 }
 
-ChunkManager::ChunkManager(const bool isTransparentChunk,
-                           const uint32_t threadCount)
-    : lastPlayerChunkPos(0), isTransparentChunk(isTransparentChunk) {
+ChunkManager::ChunkManager(const uint32_t threadCount) : lastPlayerChunkPos(0) {
     for (int i = 0; i < threadCount; i++) {
         m_Workers.emplace_back(&ChunkManager::m_WorkerThread, this);
     }
@@ -117,48 +115,69 @@ void ChunkManager::ProcessFinishedChunks() {
     }
 }
 
-void ChunkManager::ProcessDirtyChunks(const int maxPerFrame) {
+void ChunkManager::ProcessDirtyChunks(const int viewDist, const int maxPerFrame) {
     if (m_DirtyQueue.empty())
         return;
-
+    
     int processed = 0;
-    while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
-        Chunk *chunk = m_DirtyQueue.top().chunk;
-        m_DirtyQueue.pop();
-        m_DirtyList.erase(chunk->GetPos());
+    std::vector<DirtyGenRequest> postponed;  
 
+    while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
+        DirtyGenRequest entry = m_DirtyQueue.top();
+        m_DirtyQueue.pop();
+        
+        Chunk *chunk = entry.chunk;
+        
+        const float blockSize = 0.2f;
+        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
+        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
+        const glm::vec3 center(glm::vec3(chunk->GetPos()) * halfSizeXZ * 2.0f +
+                               glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
+        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
+        
+        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) || OutOfRenderDist(chunk->GetPos(), viewDist)) {
+            postponed.push_back(entry);
+            continue;
+        }
+        
+        m_DirtyList.erase(chunk->GetPos());
+        
         chunk->GenMesh(*this, false);
         chunk->state = Chunk::MeshState::READY;
         chunk->needUpload = true;
-
         m_UnfinishedList.erase(chunk->GetPos());
-
-        const std::array<glm::ivec3, 4> neighbors = {
-            {{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}}};
-
+        
+        const std::array<glm::ivec3, 4> neighbors = {{
+            {0, 0, -1}, 
+            {0, 0, 1}, 
+            {-1, 0, 0}, 
+            {1, 0, 0}
+        }};
+        
         for (const auto &n : neighbors) {
             glm::ivec3 npos = chunk->GetPos() + n;
-
             auto it = chunks.find(npos);
             if (it != chunks.end()) {
                 Chunk *neighbor = &it->second;
-
                 if (neighbor->state == Chunk::MeshState::MESHED_LOCAL) {
-                    if (auto it = m_DirtyList.find(npos);
-                        it == m_DirtyList.end()) {
+                    if (auto it = m_DirtyList.find(npos); it == m_DirtyList.end()) {
                         neighbor->MarkDirty();
-                        glm::vec3 playerChunkPos =
-                            GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
-                        int priority = static_cast<int>(
-                            glm::distance2(glm::vec3(npos), playerChunkPos));
+                        glm::vec3 playerChunkPos = GetPlayerChunkPos(
+                            glm::ivec3(GetCam3D().position));
+                        int priority = static_cast<int>(glm::distance2(
+                            glm::vec3(npos), playerChunkPos));
                         m_DirtyQueue.emplace(neighbor, priority);
                         m_DirtyList.emplace(npos);
                     }
                 }
             }
         }
-
+        
         processed++;
+    }
+    
+    for (const auto& entry : postponed) {
+        m_DirtyQueue.push(entry);
     }
 }
 
@@ -299,6 +318,18 @@ ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
     return visibleChunks.size();
 }
 
+uint32_t ChunkManager::DrawTransparentChunks(
+    const Shader &shader, const std::map<BlockType, Texture2D *> &atlases) {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    shader.Use();
+    for (auto &chunk : visibleChunks) {
+        chunk->DrawTransparent(shader, atlases);
+    }
+
+    return visibleChunks.size();
+}
+
 void ChunkManager::m_WorkerThread() {
     while (m_Running) {
         ChunkGenRequest request{};
@@ -341,40 +372,33 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
             int height = worldGen->GetTerrainHeight(worldX, worldZ);
 
             for (int y = 0; y <= height; y++) {
-                if (!isTransparentChunk) {
-                    if (y == 0)
-                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::BEDROCK);
-                    else if (y == height && height < 100)
-                        chunk.SetBlock(glm::ivec3(x, y, z),
-                                       BlockType::GRASS_BLOCK);
-                    else if (y < height && y > height - 4)
-                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
-                    else if (y <= height - 4 || (y <= height && y >= 100 &&
-                                                 height >= 100 && height < 170))
-                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::STONE);
-                    else if (y <= height && y >= 170 && height >= 170)
-                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SNOW);
+                if (y == 0)
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::BEDROCK);
+                else if (y == height && height < 100)
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::GRASS_BLOCK);
+                else if (y < height && y > height - 4)
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
+                else if (y <= height - 4 || (y <= height && y >= 100 &&
+                                             height >= 100 && height < 170))
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::STONE);
+                else if (y <= height && y >= 170 && height >= 170)
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SNOW);
 
-                    worldGen->GenCaves(x, z, glm::ivec3(worldX, y, worldZ),
-                                       height, chunk);
-                }
+                worldGen->GenCaves(x, z, glm::ivec3(worldX, y, worldZ), height,
+                                   chunk);
 
                 if (y == height && height < 65) {
-                    if (!isTransparentChunk) {
-                        chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SAND);
-                    } else {
-                        int waterHeight = height + 1;
-                        while (waterHeight < 65) {
-                            chunk.SetBlock(glm::ivec3(x, waterHeight, z),
-                                           BlockType::WATER);
-                            waterHeight++;
-                        }
+                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SAND);
+                    int waterHeight = height + 1;
+                    while (waterHeight < 65) {
+                        chunk.SetBlock(glm::ivec3(x, waterHeight, z),
+                                       BlockType::WATER);
+                        waterHeight++;
                     }
                 }
             }
 
-            if (!isTransparentChunk)
-                worldGen->GenTrees(x, z, worldX, worldZ, height, chunk);
+            worldGen->GenTrees(x, z, worldX, worldZ, height, chunk);
         }
     }
     return chunk;

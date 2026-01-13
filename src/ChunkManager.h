@@ -57,9 +57,8 @@ class ChunkManager {
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash, IVec3Equal> chunks;
     std::vector<Chunk *> visibleChunks;
     glm::ivec3 lastPlayerChunkPos;
-    bool isTransparentChunk;
 
-    ChunkManager(bool isTransparentChunk, uint32_t threadCount = std::thread::hardware_concurrency() /
+    ChunkManager(uint32_t threadCount = std::thread::hardware_concurrency() /
                                         2);
     ~ChunkManager();
 
@@ -76,16 +75,20 @@ class ChunkManager {
 
     void RequestChunkGen(const glm::ivec3 &chunkPos, WorldGen *worldGen);
     void ProcessFinishedChunks();
-    void ProcessDirtyChunks(int maxPerFrame = 10);
+    void ProcessDirtyChunks(int viewDist, int maxPerFrame = 10);
     void UploadChunkMeshes();
     bool IsGenComplete() const;
     void UpdateVisibleChunks(int viewDist);
     void UpdateVisibleChunksDepth(int viewDist);
     uint32_t
     DrawShadowMapChunks(ShadowMap *shadowMap, const glm::mat4 &lightSpaceMatrix,
-                        const std::map<BlockType, Texture2D *> &atlases, bool useShadows);
+                        const std::map<BlockType, Texture2D *> &atlases,
+                        bool useShadows);
     uint32_t DrawChunks(const Shader &shader, const Shader &depthShader,
                         const std::map<BlockType, Texture2D *> &atlases);
+    uint32_t
+    DrawTransparentChunks(const Shader &shader,
+                          const std::map<BlockType, Texture2D *> &atlases);
     void Stop();
 
     std::mutex m_ChunksMutex; // Temporary for debugging

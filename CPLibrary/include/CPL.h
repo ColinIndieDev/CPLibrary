@@ -69,8 +69,6 @@ bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two);
 void InitWindow(const glm::ivec2 &size, const std::string &title,
                 bool openGLDebug = false,
                 const std::string &openGLVersion = "3.3");
-void InitWindow(const glm::ivec2 &size, const std::string &title,
-                const std::string &openGLVersion = "3.3");
 void SetWindowIcon(const std::string &filePath);
 void DestroyWindow();
 void CloseWindow();

@@ -1,0 +1,527 @@
+##############################################################################################
+##############################################################################################
+####      __________  __    _ __                             _    __   ___        ____    ####
+####     / ____/ __ \/ /   (_) /_  _________ ________  __   | |  / /  <  /       / __ \   ####
+####    / /   / /_/ / /   / / __ \/ ___/ __ `/ ___/ / / /   | | / /   / /       / / / /   ####
+####   / /___/ ____/ /___/ / /_/ / /  / /_/ / /  / /_/ /    | |/ /   / /  _    / /_/ /    ####
+####   \____/_/   /_____/_/_.___/_/   \__,_/_/   \__, /     |___/   /_/  (_)   \____/     ####
+####                                            /____/                                    ####
+##############################################################################################
+##############################################################################################
+
+   ____                        _             
+  / __ \_   _____  ______   __(_)__ _      __
+ / / / / | / / _ \/ ___/ | / / / _ \ | /| / /
+/ /_/ /| |/ /  __/ /   | |/ / /  __/ |/ |/ / 
+\____/ |___/\___/_/    |___/_/\___/|__/|__/  
+
+=============================================
+
+47  - General 
+85  - Random 
+107 - Timer 
+126 - Audio
+151 - Window
+171 - Camera
+183 - Input
+211 - Collision
+229 - Drawing
+258 - Post Processing
+286 - 2D Shapes
+326 - 2D Textures
+349 - Text
+375 - Tilemap 2D
+404 - Particle System
+426 - 3D Shapes
+438 - 3D Textures
+453 - Cube Map
+469 - 2D Lighting
+490 - 3D Lighting
+511 - Directional Shadow
+   ______                           __
+  / ____/__  ____  ___  _________ _/ /
+ / / __/ _ \/ __ \/ _ \/ ___/ __ `/ / 
+/ /_/ /  __/ / / /  __/ /  / /_/ / /  
+\____/\___/_/ /_/\___/_/   \__,_/_/   
+
+======================================                                        
+
+// Use these GPUs (NVIDIA or AMD) instead of integrated ones (Intel) when on Windows
+// else nothing happens if on Linux or MacOS
+#define PRIORITIZE_GPU_BY_VENDOR
+
+// Update framework (f.e. deltaTime, FPS, timer etc.)
+void UpdateCPL(); 
+
+int GetFPS();
+
+float GetDeltaTime(); 
+
+float GetTime();
+
+void SetTimeScale(float scale);
+
+void EnableVSync(bool enabled);
+
+void EnableFaceCulling(bool enabled);
+
+void EnableMSAA(bool enabled);
+
+void LockMouse(bool enabled);
+
+Shader& GetShader(DrawModes mode);
+
+DrawModes& GetCurMode();
+
+// Convert position to world coordinates in 2D space
+glm::vec2 GetScreenToWorld2D(glm::vec2 position);
+
+    ____                  __              
+   / __ \____ _____  ____/ /___  ____ ___ 
+  / /_/ / __ `/ __ \/ __  / __ \/ __ `__ \
+ / _, _/ /_/ / / / / /_/ / /_/ / / / / / /
+/_/ |_|\__,_/_/ /_/\__,_/\____/_/ /_/ /_/ 
+
+==========================================
+
+// Use value in percent 
+// -> 100% = 100.0f 
+//    1% = 1.0f
+//
+// min & max are included inside random gen
+
+int RandInt(int min, int max); 
+
+float RandFloat(float min, float max);
+
+bool RandPercentInt(int percent);
+
+bool RandPercentFloat(float percent);
+
+  _______                    
+ /_  __(_)___ ___  ___  _____
+  / / / / __ `__ \/ _ \/ ___/
+ / / / / / / / / /  __/ /    
+/_/ /_/_/ /_/ /_/\___/_/     
+                             
+=============================
+
+// Duration are given in seconds
+// If loop is set to true it will keep repeating 
+// without being in the game loop
+
+// Add an event (lambda)
+Timer* TimerManager::AddTimer(float duration, bool loop, std::function<void()> event);
+
+void TimerManager::StopTimers();
+
+void TimerManager::ClearTimers();
+
+    ___             ___     
+   /   | __  ______/ (_)___ 
+  / /| |/ / / / __  / / __ \
+ / ___ / /_/ / /_/ / / /_/ /
+/_/  |_\__,_/\__,_/_/\____/ 
+                    
+============================
+
+Audio AudioManager::LoadAudio(std::string audioPath); 
+
+void AudioManager::PlaySFX(Audio audio);
+
+void AudioManager::PlaySFXPitch(Audio audio, float pitch);
+
+// Only call once
+void AudioManager::PlayMusic(Audio audio);
+
+void AudioManager::PlayMusicPitch(Audio audio, float pitch); 
+
+void AudioManager::PauseMusic();
+
+void AudioManager::ResumeMusic();
+
+void AudioManager::StopMusic();
+
+ _       ___           __             
+| |     / (_)___  ____/ /___ _      __
+| | /| / / / __ \/ __  / __ \ | /| / /
+| |/ |/ / / / / / /_/ / /_/ / |/ |/ / 
+|__/|__/_/_/ /_/\__,_/\____/|__/|__/  
+                                      
+======================================
+
+void InitWindow(glm::ivec2 size, char* title, bool openGLDebug = false, std::string openGLVersion = "3.3"); 
+
+// For Windows (OS) only 
+void SetWindowIcon(std::string imagePath);
+
+// Kill window inside the game loop
+void DestroyWindow();
+
+void CloseWindow();
+
+GLFWwindow* GetWindow();
+
+   ______                               
+  / ____/___ _____ ___  ___  _________ _
+ / /   / __ `/ __ `__ \/ _ \/ ___/ __ `/
+/ /___/ /_/ / / / / / /  __/ /  / /_/ / 
+\____/\__,_/_/ /_/ /_/\___/_/   \__,_/  
+
+========================================
+
+Camera2D& GetCam2D();
+
+Camera3D& GetCam3D();
+
+    ____                  __ 
+   /  _/___  ____  __  __/ /_
+   / // __ \/ __ \/ / / / __/
+ _/ // / / / /_/ / /_/ / /_  
+/___/_/ /_/ .___/\__,_/\__/  
+         /_/                 
+=============================
+
+bool IsKeyDown(int key);
+
+bool IsKeyUp(int key);
+
+bool IsKeyPressedOnce(int key);
+
+bool IsKeyReleased(int key);
+
+uint32_t GetCharPressed();
+
+bool IsMouseDown(int button);
+
+bool IsMousePressedOnce(int button);
+
+bool IsMouseReleased(int button);
+
+// Proportional to window size 
+// (not affected by projection or camera's position)
+glm::vec2 GetMousePos();
+
+   ______      _____      _           
+  / ____/___  / / (_)____(_)___  ____ 
+ / /   / __ \/ / / / ___/ / __ \/ __ \
+/ /___/ /_/ / / / (__  ) / /_/ / / / /
+\____/\____/_/_/_/____/_/\____/_/ /_/ 
+                                    
+======================================
+
+bool CheckCollisionRects(Rectangle one, Rectangle two);
+
+bool CheckCollisionCircleRect(Circle one, Rectangle two);
+
+bool CheckCollisionVec2Rect(glm::vec2 one, Rectangle two);
+
+bool CheckCollisionCircles(Circle one, Circle two);
+
+bool CheckCollisionVec2Circle(glm::vec2 one, Circle two);
+
+    ____                      _            
+   / __ \_________ __      __(_)___  ____ _
+  / / / / ___/ __ `/ | /| / / / __ \/ __ `/
+ / /_/ / /  / /_/ /| |/ |/ / / / / / /_/ / 
+/_____/_/   \__,_/ |__/|__/_/_/ /_/\__, /  
+                                  /____/   
+===========================================
+
+enum class DrawModes {
+    SHAPE_2D,
+    SHAPE_2D_LIGHT,
+    TEX,
+    TEX_LIGHT,
+    TEXT,
+    SHAPE_3D,
+    SHAPE_3D_LIGHT,
+    CUBE_TEX,
+    CUBE_TEX_LIGHT 
+};
+
+void ClearBackground(Color color);
+
+// No need to set mode2D if using 3D draw modes
+void BeginDraw(DrawModes mode, bool mode2D = false);
+
+void EndDraw();
+
+void EndFrame();
+
+    ____             __     ____                                 _            
+   / __ \____  _____/ /_   / __ \_________  ________  __________(_)___  ____ _
+  / /_/ / __ \/ ___/ __/  / /_/ / ___/ __ \/ ___/ _ \/ ___/ ___/ / __ \/ __ `/
+ / ____/ /_/ (__  ) /_   / ____/ /  / /_/ / /__/  __(__  |__  ) / / / / /_/ / 
+/_/    \____/____/\__/  /_/   /_/   \____/\___/\___/____/____/_/_/ /_/\__, /  
+                                                                     /____/
+==============================================================================
+
+enum class PostProcessingModes {
+    DEFAULT,
+    INVERSE,
+    GRAYSCALE,
+    BLUR,
+    SHARP,
+    EDGE_DETECTION
+};
+
+// Everything after this call will be affected
+void BeginPostProcessing();
+
+// Everything after this call will not be affected
+void EndPostProcessing();
+
+void ApplyPostProcessing(PostProcessingModes mode);
+
+// Choose own custom shader program
+void ApplyPostProcessingCustom(Shader shader);
+                       
+   ___   ____     _____ __                         
+  |__ \ / __ \   / ___// /_  ____ _____  ___  _____
+  __/ // / / /   \__ \/ __ \/ __ `/ __ \/ _ \/ ___/
+ / __// /_/ /   ___/ / / / / /_/ / /_/ /  __(__  ) 
+/____/_____/   /____/_/ /_/\__,_/ .___/\___/____/  
+                               /_/                                               
+===================================================
+
+// RGBA values are between 0 and 255
+// Angles in degrees
+
+void DrawRect(glm::vec2 pos, glm::vec2 size, Color color);
+
+// Draw with rotation
+void DrawRectRot(glm::vec2 pos, glm::vec2 size, float angle, Color color);
+
+// Draw only outline of shape
+void DrawRectOut(glm::vec2 pos, glm::vec2 size, Color color);
+
+// Draw only outline with rotation
+void DrawRectRotOut(glm::vec2 pos, glm::vec2 size, float angle, Color color);
+
+void DrawTriangle(glm::vec2 pos, glm::vec2 size, Color color);
+
+// Draw with rotation
+void DrawTriangleRot(glm::vec2 pos, glm::vec2 size, float angle, Color color);
+
+// Draw only outline of shape
+void DrawTriangleOut(glm::vec2 pos, glm::vec2 size, Color color);
+
+// Draw only outline with rotation
+void DrawTriangleRotOut(glm::vec2 pos, glm::vec2 size, float angle, Color color);
+
+void DrawCircle(glm::vec2 pos, float radius, Color color);
+
+// Draw only outline of shape
+void DrawCircleOut(glm::vec2 pos, float radius, Color color);
+
+void DrawLine(glm::vec2 startPos, glm::vec2 endPos, Color color);
+ 
+   ___   ____     ______          __                      
+  |__ \ / __ \   /_  __/__  _  __/ /___  __________  _____
+  __/ // / / /    / / / _ \| |/_/ __/ / / / ___/ _ \/ ___/
+ / __// /_/ /    / / /  __/>  </ /_/ /_/ / /  /  __(__  ) 
+/____/_____/    /_/  \___/_/|_|\__/\__,_/_/   \___/____/  
+                                                          
+==========================================================
+   
+enum class TextureFiltering {
+    NEAREST,
+    LINEAR
+};
+
+// Create texture
+Texture2D(std::string imagePath, glm::vec2 size, TextureFiltering mode);
+
+// No color manipulation -> WHITE
+void DrawTex2D(Texture2D* tex, glm::vec2 pos, Color color);
+
+// Draw with rotation
+// No color manipulation -> WHITE
+void DrawTex2DRot(Texture2D* tex, glm::vec2 pos, float angle, Color color);
+
+  ______          __ 
+ /_  __/__  _  __/ /_
+  / / / _ \| |/_/ __/
+ / / /  __/>  </ /_  
+/_/  \___/_/|_|\__/  
+
+=====================
+
+void DrawText(glm::vec2 pos, float scale, std::string text, Color color);
+
+void DrawTextShadow(glm::vec2 pos, glm::vec2 shadowOff, float scale, std::string text, Color color, Color shadowColor);
+
+// Display stats (f.e. GPU Info, FPS etc.)
+void ShowDetails();
+
+// Get name of default font
+std::string GetDefaultFont();
+
+glm::vec2 Text::GetTextSize(std::string fontName, std::string text, float scale);
+
+// Add new font type
+void Text::Init(std::string fontPath, std::string fontName, TextureFiltering filteringMode);
+
+// The default font will be used if not called
+void Text::Use(std::string fontName);
+
+  _______ __                              ___   ____ 
+ /_  __(_) /__  ____ ___  ____ _____     |__ \ / __ \
+  / / / / / _ \/ __ `__ \/ __ `/ __ \    __/ // / / /
+ / / / / /  __/ / / / / / /_/ / /_/ /   / __// /_/ / 
+/_/ /_/_/\___/_/ /_/ /_/\__,_/ .___/   /____/_____/  
+                            /_/
+=====================================================
+
+// Need instance of class
+// Only allowed to use textures
+
+// Create tilemap
+Tilemap();
+
+// Clears all tiles from before
+void BeginEditing();
+
+void AddTile(glm::vec2 position, glm::vec2 size, Texture2D* tex);
+
+void DeleteTile(glm::vec2 position, glm::vec2 size, Texture2D* tex);
+
+bool TileExist(glm::vec2 position, glm::vec2 size);
+
+// Tagged as collidable if having no neighbour tiles around
+void CheckCollidableTiles(float size);
+
+// Use GetShader(DrawModes::TEX) or GetShader(DrawModes::TEX_LIGHT) as parameter
+void Draw(Shader shader);
+
+    ____             __  _      __        _____            __               
+   / __ \____ ______/ /_(_)____/ /__     / ___/__  _______/ /____  ____ ___ 
+  / /_/ / __ `/ ___/ __/ / ___/ / _ \    \__ \/ / / / ___/ __/ _ \/ __ `__ \
+ / ____/ /_/ / /  / /_/ / /__/ /  __/   ___/ / /_/ (__  ) /_/  __/ / / / / /
+/_/    \__,_/_/   \__/_/\___/_/\___/   /____/\__, /____/\__/\___/_/ /_/ /_/ 
+                                            /____/
+============================================================================
+
+// Need instance of class
+// Only allowed to use textures
+
+// Create a particle system
+ParticleSystem(glm::vec2 pos);
+
+// With offset is (0, 0), particle will be spawned to position of particle system
+void AddParticle(Texture* tex, Color color, float lifeTime, glm::vec2 dir, glm::vec2 off);
+
+// Update lifetime
+void Update();
+
+void Draw();
+
+   _____ ____     _____ __                         
+  |__  // __ \   / ___// /_  ____ _____  ___  _____
+   /_ </ / / /   \__ \/ __ \/ __ `/ __ \/ _ \/ ___/
+ ___/ / /_/ /   ___/ / / / / /_/ / /_/ /  __(__  ) 
+/____/_____/   /____/_/ /_/\__,_/ .___/\___/____/  
+                               /_/                 
+==================================================
+
+void DrawCube(glm::vec3 pos, glm::vec3 size, Color color);
+
+void DrawSphere(glm::vec3 pos, float radius, Color color);
+
+   _____ ____     ______          __                      
+  |__  // __ \   /_  __/__  _  __/ /___  __________  _____
+   /_ </ / / /    / / / _ \| |/_/ __/ / / / ___/ _ \/ ___/
+ ___/ / /_/ /    / / /  __/>  </ /_/ /_/ / /  /  __(__  ) 
+/____/_____/    /_/  \___/_/|_|\__/\__,_/_/   \___/____/  
+
+========================================================
+
+void DrawCubeTex(Texture2D* tex, glm::vec3 pos, glm::vec3 size, Color color);
+
+void DrawPlaneTex(Texture2D* tex, glm::vec3 pos, glm::vec2 size, Color color);
+
+// Draw with rotation along x, y and z axis
+void DrawPlaneTexRot(Texture2D* tex, glm::vec3 pos, glm::vec3 rot, glm::vec2 size, Color color);
+
+   ______      __            __  ___          
+  / ____/_  __/ /_  ___     /  |/  /___ _____ 
+ / /   / / / / __ \/ _ \   / /|_/ / __ `/ __ \
+/ /___/ /_/ / /_/ /  __/  / /  / / /_/ / /_/ /
+\____/\__,_/_.___/\___/  /_/  /_/\__,_/ .___/ 
+                                     /_/
+==============================================
+
+// Create a cube map
+CubeMap(std::string filePath);
+
+void DrawCubeMap(CubeMap* map);
+
+// Draw with rotation along x, y and z axis
+void DrawCubeMapRot(CubeMap* map, glm::vec3 rot);
+
+   ___   ____     __    _       __    __  _            
+  |__ \ / __ \   / /   (_)___ _/ /_  / /_(_)___  ____ _
+  __/ // / / /  / /   / / __ `/ __ \/ __/ / __ \/ __ `/
+ / __// /_/ /  / /___/ / /_/ / / / / /_/ / / / / /_/ / 
+/____/_____/  /_____/_/\__, /_/ /_/\__/_/_/ /_/\__, /  
+                      /____/                  /____/
+=======================================================
+
+// Create a point light
+PointLight(glm::vec2 pos, float radius, float intensity, Color color);
+
+// Create a global light
+GlobalLight(float intensity, Color color);
+
+void SetGlobalLight2D(GlobalLight light);
+
+void SetAmbientLight(float ambientStrength);
+
+// Draw all point lights
+void AddPointLights2D(std::vector<PointLight> pointLights);
+
+   _____ ____     __    _       __    __  _            
+  |__  // __ \   / /   (_)___ _/ /_  / /_(_)___  ____ _
+   /_ </ / / /  / /   / / __ `/ __ \/ __/ / __ \/ __ `/
+ ___/ / /_/ /  / /___/ / /_/ / / / / /_/ / / / / /_/ / 
+/____/_____/  /_____/_/\__, /_/ /_/\__/_/_/ /_/\__, /  
+                      /____/                  /____/   
+=======================================================
+
+// Create a point light
+PointLight3D(glm::vec3 pos, float intensity, float constant, float linear, float quadratic, Color color);
+
+// Create a global light
+DirectionalLight(glm::vec3 dir, Color ambient, glm::vec3 diffuse, glm::vec3 specular);
+
+void SetShininess3D(float shininess);
+
+void SetDirLight3D(DirectionalLight light);
+
+// Draw all point lights
+void AddPointLights3D(std::vector<PointLight3D> lights);
+
+    ____  _                __  _                   __   _____ __              __             
+   / __ \(_)_______  _____/ /_(_)___  ____  ____ _/ /  / ___// /_  ____ _____/ /___ _      __
+  / / / / / ___/ _ \/ ___/ __/ / __ \/ __ \/ __ `/ /   \__ \/ __ \/ __ `/ __  / __ \ | /| / /
+ / /_/ / / /  /  __/ /__/ /_/ / /_/ / / / / /_/ / /   ___/ / / / / /_/ / /_/ / /_/ / |/ |/ / 
+/_____/_/_/   \___/\___/\__/_/\____/_/ /_/\__,_/_/   /____/_/ /_/\__,_/\__,_/\____/|__/|__/  
+                                                                                    
+=============================================================================================
+
+// Need instance of class
+// Only works for 3D shapes (obviously)
+
+// Example of resolutions: 2048, 4096, 8192, 16384
+ShadowMap(uint32_t resolution);
+
+// Everything after this call will emmit shadows
+// Light space matrix as parameter
+void BeginDepthPass(glm::mat4 matrix);
+
+// Everything after this call will not emmit shadows
+void EndDepthPass();
+
+// Parameter can or should be left empty
+void BindForReading(uint32_t textureUnit = 1);

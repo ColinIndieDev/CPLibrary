@@ -13,7 +13,7 @@ class ParticleSystem {
     void Update();
     void Draw();
     void AddParticle(Texture2D *tex, const Color &color, float lifeTime,
-                     const glm::vec2 &dir, const glm::vec2 &offset);
+                     const glm::vec2 &dir, const glm::vec2 &off);
 
     struct Particle {
         glm::vec2 pos;

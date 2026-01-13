@@ -79,10 +79,12 @@ class Chunk {
 
     void Draw(const Shader &shader,
               const std::map<BlockType, Texture2D *> &atlases);
+    void DrawTransparent(const Shader &shader,
+                         const std::map<BlockType, Texture2D *> &atlases);
     void DrawDepth(const Shader &shader,
                    const std::map<BlockType, Texture2D *> &atlases);
     void DrawDepthShadow(const Shader &shader,
-                   const std::map<BlockType, Texture2D *> &atlases);
+                         const std::map<BlockType, Texture2D *> &atlases);
 
   private:
     struct MeshBatch {

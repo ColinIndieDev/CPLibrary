@@ -28,10 +28,7 @@ void InitWindow(const glm::ivec2 &size, const std::string &title,
     Engine::InitWindow(size.x, size.y, title.c_str(), openGLDebug,
                        openGLVersion);
 }
-void InitWindow(const glm::ivec2 &size, const std::string &title,
-                const std::string &openGLVersion) {
-    Engine::InitWindow(size.x, size.y, title.c_str(), false, openGLVersion);
-}
+
 void SetWindowIcon(const std::string &filePath) {
     Engine::SetWindowIcon(filePath);
 }

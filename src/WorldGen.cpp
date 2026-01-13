@@ -147,7 +147,6 @@ void WorldGen::GenMap() {
     for (int x = -viewDist; x < viewDist; x++) {
         for (int z = -viewDist; z < viewDist; z++) {
             manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
-            transparentManager.RequestChunkGen(glm::ivec3(x, 0, z), this);
         }
     }
 }
@@ -163,7 +162,6 @@ void WorldGen::UpdateMap() {
         for (int z = playerChunkPos.z - viewDist;
              z < playerChunkPos.z + viewDist; z++) {
             manager.RequestChunkGen(glm::ivec3(x, 0, z), this);
-            transparentManager.RequestChunkGen(glm::ivec3(x, 0, z), this);
         }
     }
 }

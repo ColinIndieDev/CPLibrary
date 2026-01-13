@@ -8,7 +8,6 @@ class WorldGen {
   public:
     uint32_t seed;
     ChunkManager manager;
-    ChunkManager transparentManager;
     int viewDist;
 
     int minMapHeight;
@@ -18,7 +17,7 @@ class WorldGen {
     explicit WorldGen(const uint32_t seed, const int viewDist,
                       const int minMapHeight, const int maxMapHeight,
                       const int baseMapHeight)
-        : seed(seed), manager(false), transparentManager(true),
+        : seed(seed),
           viewDist(viewDist), minMapHeight(minMapHeight),
           maxMapHeight(maxMapHeight), baseMapHeight(baseMapHeight) {}
 
