@@ -1,4 +1,4 @@
-![CPLlogo](assets/images/logo.png)
+![CPLlogo](assets/images/logo2.png)
 
 # CPLibrary (CPL)
 
@@ -165,6 +165,9 @@ It is recommended to take a look at the example projects / demonstrations which 
 
 `void EnableFaceCulling(bool enabled);`
 > Toggle face culling (important for 3D)
+
+`void EnableMSAA(bool enabled);`
+> Toggle multi sampling anti aliasing
 
 `void LockMouse(bool enabled);`
 > Toggle locked and hidden mouse cursor
@@ -342,6 +345,9 @@ and if 2D or 3D
 `void EndDraw();`
 > End drawing (unbind the current active shader)
 
+`void EndFrame();`
+> Use at end of the game loop to poll events and swap buffers
+
 ### Input
 `bool IsKeyDown(int key);`
 > Return if corresponding key from the keyboard is held down
@@ -463,7 +469,7 @@ and if 2D or 3D
 `void DrawPlaneTexRot(Texture2D* tex, glm::vec3 pos, glm::vec3 rot, glm::vec2 size, Color color);`
 > Draw a texture 2D plane with rotation along x, y and z axis
 
-### 3D Shadows (Shadow Map)
+### 3D Shadows (directional shadows)
 > [!IMPORTANT]
 > If using the provided functions for the shadow map you need to access them from a shadow map instance too. For example:
 > ShadowMap sm(4096);
@@ -510,6 +516,9 @@ and if 2D or 3D
 
 `void DrawCubeMap(CubeMap* map);`
 > Draw cubemap onto the screen
+
+`void DrawCubeMapROt(CubeMap* map, glm::vec3 rot);`
+> Draw cubemap with rotation
 
 ### Drawing simple 3D shapes
 `void DrawCube(glm::vec3 pos, glm::vec3 size, Color color);`
