@@ -30,12 +30,17 @@ class WorldGen {
                   Chunk &chunk) const;
     void GenCaves(int x, int z, const glm::ivec3 &world, int height,
                   Chunk &chunk) const;
+    std::pair<bool, float> GenHoles(int worldX, int worldZ) const;
+    std::pair<bool, float> GenRivers(int worldX, int worldZ) const;
+    std::pair<bool, float> GenOceans(int worldX, int worldZ) const;
 
   private:
     struct TerrainNoise {
         FastNoiseLite noise;
         FastNoiseLite mountain;
         FastNoiseLite peak;
+
+        FastNoiseLite holes;
     };
     struct CaveNoise {
         FastNoiseLite noise;
@@ -45,10 +50,15 @@ class WorldGen {
     struct TreeNoise {
         FastNoiseLite noise;
     };
+    struct WaterNoise {
+        FastNoiseLite river;
+        FastNoiseLite ocean;
+    };
 
     TerrainNoise terrainNoise;
     CaveNoise caveNoise;
     TreeNoise treeNoise;
+    WaterNoise waterNoise;
 
     void m_InitNoises();
 };

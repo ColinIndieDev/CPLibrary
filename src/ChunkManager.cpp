@@ -115,68 +115,67 @@ void ChunkManager::ProcessFinishedChunks() {
     }
 }
 
-void ChunkManager::ProcessDirtyChunks(const int viewDist, const int maxPerFrame) {
+void ChunkManager::ProcessDirtyChunks(const int viewDist,
+                                      const int maxPerFrame) {
     if (m_DirtyQueue.empty())
         return;
-    
+
     int processed = 0;
-    std::vector<DirtyGenRequest> postponed;  
+    std::vector<DirtyGenRequest> postponed;
 
     while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
         DirtyGenRequest entry = m_DirtyQueue.top();
         m_DirtyQueue.pop();
-        
+
         Chunk *chunk = entry.chunk;
-        
+
         const float blockSize = 0.2f;
         const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
         const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
         const glm::vec3 center(glm::vec3(chunk->GetPos()) * halfSizeXZ * 2.0f +
                                glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
         const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
-        
-        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) || OutOfRenderDist(chunk->GetPos(), viewDist)) {
+
+        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) ||
+            OutOfRenderDist(chunk->GetPos(), viewDist)) {
             postponed.push_back(entry);
             continue;
         }
-        
+
         m_DirtyList.erase(chunk->GetPos());
-        
+
         chunk->GenMesh(*this, false);
         chunk->state = Chunk::MeshState::READY;
         chunk->needUpload = true;
         m_UnfinishedList.erase(chunk->GetPos());
-        
-        const std::array<glm::ivec3, 4> neighbors = {{
-            {0, 0, -1}, 
-            {0, 0, 1}, 
-            {-1, 0, 0}, 
-            {1, 0, 0}
-        }};
-        
+
+        const std::array<glm::ivec3, 4> neighbors = {
+            {{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}}};
+
         for (const auto &n : neighbors) {
             glm::ivec3 npos = chunk->GetPos() + n;
             auto it = chunks.find(npos);
             if (it != chunks.end()) {
                 Chunk *neighbor = &it->second;
                 if (neighbor->state == Chunk::MeshState::MESHED_LOCAL) {
-                    if (auto it = m_DirtyList.find(npos); it == m_DirtyList.end()) {
+                    if (auto it = m_DirtyList.find(npos);
+                        it == m_DirtyList.end()) {
                         neighbor->MarkDirty();
-                        glm::vec3 playerChunkPos = GetPlayerChunkPos(
-                            glm::ivec3(GetCam3D().position));
-                        int priority = static_cast<int>(glm::distance2(
-                            glm::vec3(npos), playerChunkPos));
+                        glm::vec3 playerChunkPos =
+                            GetPlayerChunkPos(glm::ivec3(GetCam3D().position));
+                        int priority = static_cast<int>(
+                            glm::distance2(glm::vec3(npos), playerChunkPos));
                         m_DirtyQueue.emplace(neighbor, priority);
                         m_DirtyList.emplace(npos);
                     }
                 }
             }
         }
-        
+
         processed++;
     }
-    
-    for (const auto& entry : postponed) {
+
+    for (const auto &entry : postponed) {
         m_DirtyQueue.push(entry);
     }
 }
@@ -369,7 +368,32 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
             int worldX = (pos.x * 16) + x;
             int worldZ = (pos.z * 16) + z;
 
-            int height = worldGen->GetTerrainHeight(worldX, worldZ);
+            int baseHeight = worldGen->GetTerrainHeight(worldX, worldZ);
+            std::pair<bool, float> riverData =
+                worldGen->GenRivers(worldX, worldZ);
+            bool isRiver = riverData.first;
+            float riverMask = riverData.second;
+            float riverDepth = isRiver && baseHeight < 100
+                                   ? glm::smoothstep(0.92f, 1.0f, riverMask)
+                                   : 0.0f;
+
+            std::pair<bool, float> holeData =
+                worldGen->GenHoles(worldX, worldZ);
+            bool isHole = holeData.first;
+            float holeMask = holeData.second;
+            float holeDepth =
+                isHole ? glm::smoothstep(0.92f, 1.0f, holeMask) : 0.0f;
+
+            std::pair<bool, float> oceanData =
+                worldGen->GenOceans(worldX, worldZ);
+            bool isOcean = oceanData.first;
+            float oceanMask = oceanData.second;
+            float oceanDepth =
+                isOcean && baseHeight < 100 ? glm::smoothstep(0.92f, 1.0f, oceanMask) : 0.0f;
+
+            int carvedHeight = baseHeight - static_cast<int>(riverDepth * 16) -
+                               static_cast<int>(holeDepth * 40) - static_cast<int>(oceanMask * 50);
+            int height = carvedHeight;
 
             for (int y = 0; y <= height; y++) {
                 if (y == 0)

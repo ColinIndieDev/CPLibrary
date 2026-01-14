@@ -1,5 +1,6 @@
 #include "Game.h"
 #include "Block.h"
+#include "glm/fwd.hpp"
 #include <string>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -11,7 +12,6 @@ void Game::Init() {
         "assets/images/sky/py.png", "assets/images/sky/ny.png",
         "assets/images/sky/nz.png", "assets/images/sky/pz.png",
     };
-    const std::string skyPath = "assets/images/day.png";
     m_Skybox = std::make_unique<CubeMap>(skyPaths);
 
     m_ShadowMap = std::make_unique<ShadowMap>(m_ShadowRes);
@@ -25,8 +25,11 @@ void Game::Init() {
 
     depthShader = Shader("assets/shaders/default/vert/cubeTexShader.vert",
                          "assets/shaders/default/frag/zPrepass.frag");
-    m_WorldGen = std::make_unique<WorldGen>(RandInt(0, 999999999), m_ViewDist,
-                                            30, Chunk::s_Height, 60);
+
+    uint32_t seed = RandInt(0, 999999999);
+
+    m_WorldGen =
+        std::make_unique<WorldGen>(seed, m_ViewDist, 30, Chunk::s_Height, 60);
     m_WorldGen->Init();
     m_WorldGen->GenMap();
 
@@ -45,11 +48,46 @@ void Game::Run() {
 }
 
 void Game::m_SetSpawnPoint() {
-    const glm::ivec2 spawnPoint(0);
+    int height = 0;
+    int worldX = 0;
+    int worldZ = 0;
+    while (height < 65) {
+        worldX = RandInt(-1000, 1000);
+        worldZ = RandInt(-1000, 1000);
 
-    const int height =
-        m_WorldGen->GetTerrainHeight(spawnPoint.x, spawnPoint.y) + 3;
-    GetCam3D().position.y = static_cast<float>(height) * 0.2f;
+        int baseHeight = m_WorldGen->GetTerrainHeight(worldX, worldZ);
+        std::pair<bool, float> riverData =
+            m_WorldGen->GenRivers(worldX, worldZ);
+        bool isRiver = riverData.first;
+        float riverMask = riverData.second;
+        float riverDepth = isRiver && baseHeight < 100
+                               ? glm::smoothstep(0.92f, 1.0f, riverMask)
+                               : 0.0f;
+
+        std::pair<bool, float> holeData = m_WorldGen->GenHoles(worldX, worldZ);
+        bool isHole = holeData.first;
+        float holeMask = holeData.second;
+        float holeDepth =
+            isHole ? glm::smoothstep(0.92f, 1.0f, holeMask) : 0.0f;
+
+        std::pair<bool, float> oceanData =
+            m_WorldGen->GenOceans(worldX, worldZ);
+        bool isOcean = oceanData.first;
+        float oceanMask = oceanData.second;
+        float oceanDepth = isOcean && baseHeight < 100
+                               ? glm::smoothstep(0.92f, 1.0f, oceanMask)
+                               : 0.0f;
+
+        int carvedHeight = baseHeight - static_cast<int>(riverDepth * 16) -
+                           static_cast<int>(holeDepth * 40) -
+                           static_cast<int>(oceanMask * 50);
+        
+        height = carvedHeight;
+    }
+    
+    GetCam3D().position.x = static_cast<float>(worldX) * 0.2f;
+    GetCam3D().position.z = static_cast<float>(worldZ) * 0.2f;
+    GetCam3D().position.y = (static_cast<float>(height) + 3) * 0.2f;
 }
 
 void Game::m_UpdateControls() {
@@ -74,6 +112,13 @@ void Game::m_UpdateControls() {
 
     if (IsKeyPressedOnce(KEY_V))
         m_UseMSAA = !m_UseMSAA;
+
+    if (IsKeyPressedOnce(KEY_L))
+        m_UseLighting = !m_UseLighting;
+
+    if (IsKeyPressedOnce(KEY_F2))
+        Screenshot::TakeScreenshot(
+            "build/", glm::ivec2(GetScreenWidth(), GetScreenHeight()));
 
     EnableMSAA(m_UseMSAA);
 
@@ -178,14 +223,11 @@ void Game::m_Draw() {
 
     EnableFaceCulling(true);
 
-    bool light = true;
-
     BeginDraw(DrawModes::SHAPE_3D);
 
-    DrawCube(GetCam3D().position - lightDir * 500.0f,
-                glm::vec3(25), WHITE);
+    DrawCube(GetCam3D().position - lightDir * 500.0f, glm::vec3(25), WHITE);
 
-    if (light)
+    if (m_UseLighting)
         BeginDraw(DrawModes::CUBE_TEX_LIGHT);
 
     SetShininess3D(1);
@@ -201,7 +243,8 @@ void Game::m_Draw() {
     SetDirLight3D(day);
 
     if (m_UseShadows) {
-        Shader &shader = GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX);
+        Shader &shader = GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
+                                                 : DrawModes::CUBE_TEX);
         shader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
         shader.SetInt("shadowMap", 1);
         m_ShadowMap->BindForReading(1);
@@ -210,13 +253,17 @@ void Game::m_Draw() {
     m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
 
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
-        GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX), depthShader, m_TexAtlases);
+        GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
+                                : DrawModes::CUBE_TEX),
+        depthShader, m_TexAtlases);
 
     SetShininess3D(128);
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_FALSE);
     m_WorldGen->manager.DrawTransparentChunks(
-        GetShader(light ? DrawModes::CUBE_TEX_LIGHT : DrawModes::CUBE_TEX), m_TexAtlases);
+        GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
+                                : DrawModes::CUBE_TEX),
+        m_TexAtlases);
     glDepthMask(GL_TRUE);
 
     EnableFaceCulling(false);
@@ -286,14 +333,20 @@ void Game::m_Draw() {
         "Stack used: " +
             std::to_string(static_cast<float>(Profiler::GetStackUsed()) /
                            static_cast<float>(Profiler::GetStackSize())) +
-            "% (" + std::to_string(Profiler::GetStackUsed() / 1000000.0f) +
-            " / " + std::to_string(Profiler::GetStackSize() / 1000000.0f) +
+            "% (" +
+            std::to_string(static_cast<float>(Profiler::GetStackUsed()) /
+                           1000000.0f) +
+            " / " +
+            std::to_string(static_cast<float>(Profiler::GetStackSize()) /
+                           1000000.0f) +
             " MB)",
         WHITE, DARK_GRAY);
 
     DrawTextShadow(
         {0, 390}, {3, -3}, 0.5f,
-        "Heap used: " + std::to_string(Profiler::GetHeapUsed() / 1000000.0f) +
+        "Heap used: " +
+            std::to_string(static_cast<float>(Profiler::GetHeapUsed()) /
+                           1000000.0f) +
             " MB",
         WHITE, DARK_GRAY);
 

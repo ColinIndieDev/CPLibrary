@@ -25,6 +25,7 @@ class Game {
 
     uint32_t m_ShadowRes = 4096;
     bool m_UseShadows = true;
+    bool m_UseLighting = true;
 
     bool m_UseMSAA = true;
 

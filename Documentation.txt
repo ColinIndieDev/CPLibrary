@@ -77,6 +77,9 @@ DrawModes& GetCurMode();
 // Convert position to world coordinates in 2D space
 glm::vec2 GetScreenToWorld2D(glm::vec2 position);
 
+// Creates a .png file inside given folder
+void Screenshot::TakeScreenshot(std::string folderPath, glm::ivec2 screenSize);
+
     ____                  __              
    / __ \____ _____  ____/ /___  ____ ___ 
   / /_/ / __ `/ __ \/ __  / __ \/ __ `__ \

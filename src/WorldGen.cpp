@@ -39,8 +39,23 @@ void WorldGen::m_InitNoises() {
     caveNoise.region.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     caveNoise.region.SetFrequency(0.3f);
 
+    caveNoise.entrance.SetSeed(static_cast<int>(DeriveSeed(seed, 43210)));
     caveNoise.entrance.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     caveNoise.entrance.SetFrequency(0.02f);
+
+    waterNoise.river.SetSeed(static_cast<int>(seed + 1337));
+    waterNoise.river.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    waterNoise.river.SetFractalType(FastNoiseLite::FractalType_FBm);
+    waterNoise.river.SetFrequency(0.0008f);
+    waterNoise.river.SetFractalOctaves(3);
+
+    terrainNoise.holes.SetSeed(static_cast<int>(DeriveSeed(seed, 6789)));
+    terrainNoise.holes.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.holes.SetFrequency(0.002f);
+
+    waterNoise.ocean.SetSeed(static_cast<int>(DeriveSeed(seed, 10101010)));
+    waterNoise.ocean.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    waterNoise.ocean.SetFrequency(0.00002f);
 }
 
 int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) const {
@@ -102,7 +117,7 @@ void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
             return;
     }
 
-    if (world.y > 0) {
+    if (world.y > 5) {
 
         float region =
             caveNoise.region.GetNoise(static_cast<float>(world.x) * 0.05f,
@@ -141,6 +156,30 @@ void WorldGen::GenTrees(const int x, const int z, const int worldX,
         block.type != BlockType::SNOW && block.type != BlockType::SAND &&
         height >= 65)
         GenTree(glm::ivec3(x, height + 1, z), chunk);
+}
+
+std::pair<bool, float> WorldGen::GenHoles(const int worldX,
+                                           const int worldZ) const {
+    float h = waterNoise.ocean.GetNoise(static_cast<float>(worldX),
+                                        static_cast<float>(worldZ));
+    float holeMask = (h + 1.0f) * 0.5f;
+    return std::make_pair(holeMask > 0.05f, holeMask);
+}
+
+std::pair<bool, float> WorldGen::GenRivers(const int worldX,
+                                           const int worldZ) const {
+    float r = waterNoise.river.GetNoise(static_cast<float>(worldX),
+                                        static_cast<float>(worldZ));
+    float riverMask = 1.0f - std::abs(r);
+    return std::make_pair(riverMask > 0.92f, riverMask);
+}
+
+std::pair<bool, float> WorldGen::GenOceans(const int worldX,
+                                           const int worldZ) const {
+    float o = waterNoise.ocean.GetNoise(static_cast<float>(worldX),
+                                        static_cast<float>(worldZ));
+    float oceanMask = (o + 1.0f) * 0.5f;
+    return std::make_pair(oceanMask > 0.05f, oceanMask); // 0.2f
 }
 
 void WorldGen::GenMap() {
