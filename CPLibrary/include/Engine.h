@@ -6,6 +6,7 @@
 #include <queue>
 #include <random>
 #include <vector>
+#include <memory>
 
 #include "Colors.h"
 #include "KeyInputs.h"
@@ -115,7 +116,7 @@ struct Camera3D {
         return glm::lookAt(position, position + front, up);
     }
     [[nodiscard]] glm::mat4 GetProjectionMatrix(const float aspect) const {
-        return glm::perspective(glm::radians(fov), aspect, 0.1f, 1000.0f);
+        return glm::perspective(glm::radians(fov), aspect, 0.01f, 1000.0f);
     }
 
     void UpdateFrustum(const float aspect) {
@@ -145,6 +146,8 @@ class Engine {
                                       const CPL::Circle &two);
     static bool CheckCollisionVec2Circle(const glm::vec2 &one,
                                          const CPL::Circle &two);
+
+    static bool CheckCollisionCubes(const CPL::Cube &one, const CPL::Cube &two);
 
     static void InitShaders();
     static CPL::DrawModes &GetCurMode();
@@ -273,11 +276,15 @@ class Engine {
     static CPL::Shader &GetCubeMapShader();
     static CPL::Shader &GetDepthShader();
 
+    static CPL::Texture2D *GetWhiteTex();
+
   private:
     static uint32_t s_ScreenWidth;
     static uint32_t s_ScreenHeight;
     static glm::mat4 s_Projection2D;
     static glm::mat4 s_Projection3D;
+
+    static std::unique_ptr<CPL::Texture2D> s_WhiteTex;
 
     static CPL::Shader s_Shape2DShader;
     static CPL::Shader s_TextShader;

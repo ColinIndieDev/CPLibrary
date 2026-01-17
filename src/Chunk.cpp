@@ -194,6 +194,12 @@ void Chunk::Draw(const Shader &shader,
         if (mesh.vertexCount == 0)
             continue;
 
+        if (type == BlockType::OAK_LEAVES) {
+            shader.SetColor("inputColor", Color(102, 200, 45, 255));
+        } else {
+            shader.SetColor("inputColor", WHITE);
+        }
+
         auto it = atlases.find(type);
         if (it == atlases.end())
             continue;
@@ -233,7 +239,7 @@ void Chunk::DrawTransparent(const Shader &shader,
         return;
     }
 
-    shader.SetColor("inputColor", Color(155, 155, 255, 150));
+    shader.SetColor("inputColor", Color(0, 100, 255, 150));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, it->second->tex);

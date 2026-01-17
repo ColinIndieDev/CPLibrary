@@ -1,4 +1,5 @@
 #include "../../include/CPL.h"
+#include "../../include/shape2D/Texture2D.h"
 #include "../../include/shape3D/Cube.h"
 #include "../../include/Shader.h"
 
@@ -98,9 +99,14 @@ void Cube::Draw(const Shader &shader) const {
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", pos);
     shader.SetColor("inputColor", color);
+
+    shader.SetInt("ourTexture", 0);
     glBindVertexArray(m_VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Engine::GetWhiteTex()->tex);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 void Cube::DrawDepth(const Shader &shader) const {
     auto model = glm::mat4(1.0f);

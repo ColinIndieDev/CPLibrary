@@ -121,26 +121,12 @@ void ChunkManager::ProcessDirtyChunks(const int viewDist,
         return;
 
     int processed = 0;
-    std::vector<DirtyGenRequest> postponed;
 
     while (!m_DirtyQueue.empty() && processed < maxPerFrame) {
         DirtyGenRequest entry = m_DirtyQueue.top();
         m_DirtyQueue.pop();
 
         Chunk *chunk = entry.chunk;
-
-        const float blockSize = 0.2f;
-        const float halfSizeXZ = Chunk::s_Size * blockSize * 0.5f;
-        const float halfSizeY = Chunk::s_Height * blockSize * 0.5f;
-        const glm::vec3 center(glm::vec3(chunk->GetPos()) * halfSizeXZ * 2.0f +
-                               glm::vec3(halfSizeXZ, halfSizeY, halfSizeXZ));
-        const glm::vec3 halfSize(halfSizeXZ, halfSizeY, halfSizeXZ);
-
-        if (!GetCam3D().frustum.IsCubeVisible(center, halfSize) ||
-            OutOfRenderDist(chunk->GetPos(), viewDist)) {
-            postponed.push_back(entry);
-            continue;
-        }
 
         m_DirtyList.erase(chunk->GetPos());
 
@@ -173,10 +159,6 @@ void ChunkManager::ProcessDirtyChunks(const int viewDist,
         }
 
         processed++;
-    }
-
-    for (const auto &entry : postponed) {
-        m_DirtyQueue.push(entry);
     }
 }
 

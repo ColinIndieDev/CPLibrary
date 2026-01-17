@@ -23,6 +23,10 @@ bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two) {
     return Engine::CheckCollisionVec2Circle(one, two);
 }
 
+bool CheckCollisionCubes(const Cube &one, const Cube &two) {
+    return Engine::CheckCollisionCubes(one, two);
+}
+
 void InitWindow(const glm::ivec2 &size, const std::string &title,
                 const bool openGLDebug, const std::string &openGLVersion) {
     Engine::InitWindow(size.x, size.y, title.c_str(), openGLDebug,
@@ -55,6 +59,13 @@ void AddPointLights3D(const std::vector<PointLight3D> &lights) {
 }
 void SetDirLight3D(const DirectionalLight &light) {
     Engine::SetDirLight3D(light);
+}
+void EnableTransparency() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+void EnableDepth(const bool enabled) {
+    glDepthMask(static_cast<GLboolean>(enabled));
 }
 void BeginPostProcessing() { Engine::BeginPostProcessing(); }
 void EndPostProcessing() { Engine::EndPostProcessing(); }

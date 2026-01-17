@@ -87,14 +87,14 @@ void MainLoop() {
 
 int main() {
     // Create 800x600 window with title
-    InitWindow(800, 600, "Welcome to CPL 2D");
+    InitWindow({800, 600}, "Welcome to CPL 2D");
 
     // Lock and hide mouse cursor
     LockMouse(true);
 
 // Set the window icon
 #ifndef __EMSCRIPTEN
-    SetWindowIcon("assets/images/logo.png");
+    SetWindowIcon("assets/images/default/logo.png");
 #endif
 
     // Add point lights to vector
@@ -110,11 +110,11 @@ int main() {
 
     // Init texture
     g_LogoTex = std::make_unique<Texture2D>(Texture2D(
-        "assets/images/logo.png", {200, 200}, TextureFiltering::LINEAR));
+        "assets/images/default/logo.png", {200, 200}, TextureFiltering::LINEAR));
     g_BlockTex = std::make_unique<Texture2D>(Texture2D(
-        "assets/images/stone.jpg", {100, 100}, TextureFiltering::NEAREST));
+        "assets/images/example2D/grass.png", {100, 100}, TextureFiltering::NEAREST));
     g_SmokeTex = std::make_unique<Texture2D>(Texture2D(
-        "assets/images/smoke.png", {300, 300}, TextureFiltering::LINEAR));
+        "assets/images/example2D/smoke.png", {300, 300}, TextureFiltering::LINEAR));
 
     // Edit tilemap
     g_Tilemap = std::make_unique<Tilemap>(Tilemap());
@@ -133,13 +133,13 @@ int main() {
     SetAmbientLight2D(0);
 
     // Set position of particle system
-    g_ParticleSystem.position = {GetScreenWidth() / 2, GetScreenHeight() / 2};
+    g_ParticleSystem.pos = {GetScreenWidth() / 2, GetScreenHeight() / 2};
 
     // Set timer to spawn particles every 0.1 seconds
     Timer *particleSpawnTimer =
         TimerManager::AddTimer(0.2f, true, [](Timer *t) {
-            glm::vec2 direction = {cos(RandFloat(0, 2 * 3.14)) * 50,
-                                   sin(RandFloat(0, 2 * 3.14)) * 50};
+            glm::vec2 direction = {glm::cos(RandFloat(0, 2 * 3.14)) * 50,
+                                   glm::sin(RandFloat(0, 2 * 3.14)) * 50};
             g_ParticleSystem.AddParticle(g_SmokeTex.get(), WHITE, RandFloat(0, 10), direction,
                            {0, 0});
         });

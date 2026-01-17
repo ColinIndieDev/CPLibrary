@@ -11,6 +11,12 @@
 
 using namespace CPL;
 
+struct Cloud {
+    glm::vec3 pos;
+    glm::vec3 size;
+    Cloud(const glm::vec3 &pos, const glm::vec3 &size) : pos(pos), size(size) {}
+};
+
 class Game {
   public:
     void Init();
@@ -29,10 +35,28 @@ class Game {
 
     bool m_UseMSAA = true;
 
-    Shader depthShader;
-   
+    // Temporarily
+    std::vector<Cloud> m_Clouds;
+
+    glm::vec3 m_PlayerVel = glm::vec3(0);
+    bool m_PlayerGround = false;
+    bool m_PressedKey = false;
+    bool m_F3Mode = false;
+
+    Shader m_DepthShader;
+
     void m_UpdateControls();
+    void m_UpdatePhysics();
+    void m_MoveAndCollide();
+    void m_ResolveAxis(int axis);
+    void m_ResolveX(const glm::vec3 &min, const glm::vec3 &max);
+    void m_ResolveY(const glm::vec3 &min, const glm::vec3 &max);
+    void m_ResolveZ(const glm::vec3 &min, const glm::vec3 &max);
     void m_Update();
+    void m_ComputeShadows(glm::vec3 &lightDir, glm::mat4 &lightSpaceMatrix) const;
+    uint32_t m_DrawOpaque(const glm::vec3 &lightDir, const glm::mat4 &lightSpaceMatrix);
+    void m_DrawTransparent();
+    void m_DrawUI(uint32_t chunksDrawn);
     void m_Draw();
     void m_SetSpawnPoint();
     void m_InitAtlases();

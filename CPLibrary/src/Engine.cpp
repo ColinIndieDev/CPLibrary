@@ -22,6 +22,7 @@
 #include "../include/util/OpenGLDebug.h"
 #include "GLFW/glfw3.h"
 #include "stb_image.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -44,6 +45,8 @@ CPL::Shader Engine::s_LightShape3DShader;
 CPL::Shader Engine::s_LightCubeTexShader;
 CPL::Shader Engine::s_CubeMapShader;
 CPL::Shader Engine::s_DepthShader;
+
+std::unique_ptr<CPL::Texture2D> Engine::s_WhiteTex;
 
 CPL::DrawModes Engine::s_CurrentDrawMode;
 
@@ -142,6 +145,20 @@ bool Engine::CheckCollisionVec2Circle(const glm::vec2 &one,
     return distanceSquared <= two.radius * two.radius;
 }
 
+bool Engine::CheckCollisionCubes(const CPL::Cube &one, const CPL::Cube &two) {
+    const bool collisionX =
+        one.pos.x + (one.size.x / 2) >= two.pos.x - (two.size.x / 2) &&
+        two.pos.x + (two.size.x / 2) >= one.pos.x - (one.size.x / 2);
+    const bool collisionY =
+        one.pos.y + (one.size.y / 2) >= two.pos.y - (two.size.y / 2) &&
+        two.pos.y + (two.size.y / 2) >= one.pos.y - (one.pos.y / 2);
+    const bool collisionZ =
+        one.pos.z + (one.size.z / 2) >= two.pos.z - (two.size.z / 2) &&
+        two.pos.z + (two.size.z / 2) >= one.pos.z - (one.size.z / 2);
+
+    return collisionX && collisionY && collisionZ;
+}
+
 std::pair<int, int> Engine::GetOpenGLVersion(std::string version) {
     version.erase(std::remove(version.begin(), version.end(), '.'),
                   version.end());
@@ -225,6 +242,15 @@ void Engine::InitWindow(const int width, const int height, const char *title,
     InitCharPressed(s_Window);
 
     // ----- For the font & 2D textures ----- //
+#ifdef __EMSCRIPTEN__
+    s_WhiteTex = std::make_unique<CPL::Texture2D>(
+        "/assets/images/default/whiteTex.png", glm::vec2(100),
+        CPL::TextureFiltering::NEAREST);
+#else
+    s_WhiteTex = std::make_unique<CPL::Texture2D>(
+        "assets/images/default/whiteTex.png", glm::vec2(100),
+        CPL::TextureFiltering::NEAREST);
+#endif
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
@@ -680,8 +706,8 @@ void Engine::DrawCube(const glm::vec3 &pos, const glm::vec3 &size,
                       const CPL::Color &color) {
     const auto cube = CPL::Cube(pos, size, color);
     cube.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
-                  ? s_LightShape3DShader
-                  : s_Shape3DShader);
+                  ? s_LightCubeTexShader
+                  : s_CubeTexShader);
 }
 
 void Engine::DrawSphere(const glm::vec3 &pos, const float radius,
@@ -831,7 +857,6 @@ void Engine::EnableFaceCulling(const bool enabled) {
         glFrontFace(GL_CCW);
         glCullFace(GL_BACK);
     } else {
-        glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
     }
 }
@@ -963,3 +988,5 @@ CPL::DrawModes &Engine::GetCurMode() { return s_CurrentDrawMode; }
 CPL::Shader &Engine::GetScreenQuadShader() { return s_ScreenShader; }
 CPL::Shader &Engine::GetCubeMapShader() { return s_CubeMapShader; }
 CPL::Shader &Engine::GetDepthShader() { return s_DepthShader; }
+
+CPL::Texture2D *Engine::GetWhiteTex() { return s_WhiteTex.get(); }

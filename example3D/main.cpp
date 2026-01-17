@@ -175,7 +175,7 @@ void MainLoop() {
 
 int main() {
     // Create 1200x800 window with title
-    InitWindow(1200, 800, "Welcome to CPL 3D");
+    InitWindow({1200, 800}, "Welcome to CPL 3D");
     // Lock and hide mouse
     LockMouse(true);
     // Disable VSync
@@ -190,16 +190,16 @@ int main() {
     g_ShadowMap = std::make_unique<ShadowMap>(4096);
     // Load textures
     g_GroundTex = std::make_unique<Texture2D>(
-        "assets/images/stone.jpg", glm::vec2(100), TextureFiltering::NEAREST);
+        "assets/images/stone.png", glm::vec2(48, 32), TextureFiltering::NEAREST);
     g_LogoTex = std::make_unique<Texture2D>(
-        "assets/images/logo.png", glm::vec2(200), TextureFiltering::LINEAR);
+        "assets/images/default/logo.png", glm::vec2(200), TextureFiltering::LINEAR);
     // Create cubemap
-    g_CubeMap = std::make_unique<CubeMap>("assets/images/sky.png");
+    g_CubeMap = std::make_unique<CubeMap>("assets/images/example3D/sky.png");
 
     // Init random block positions
     for (int i = 0; i < 50; i++) {
-        g_BlockPos.emplace_back(glm::vec3(
-            RandFloat(-5, 5), RandFloat(0.1f, 0.1f), RandFloat(-5, 5)));
+        g_BlockPos.emplace_back(
+            RandFloat(-5, 5), RandFloat(0.1f, 0.1f), RandFloat(-5, 5));
     }
 
     // Loop

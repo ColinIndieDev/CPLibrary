@@ -7,7 +7,7 @@ PRIORITIZE_GPU_BY_VENDOR
 int main() {
     std::string openGLVersion = "4.3";
     bool useOpenGLDebug = true;
-    InitWindow(glm::ivec2(1200, 800), "Welcome to CPL 3D", useOpenGLDebug,
+    InitWindow(glm::ivec2(1200, 800), "Low Budget Minecraft ($0)", useOpenGLDebug,
                openGLVersion);
     LockMouse(true);
     EnableVSync(false);

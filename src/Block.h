@@ -38,7 +38,10 @@ struct Block {
 
     [[nodiscard]] bool IsSolid() const { return type != BlockType::AIR; }
 
+    [[nodiscard]] bool IsFluid() const { return type == BlockType::WATER; }
+
     [[nodiscard]] bool IsOpaque() const {
-        return type != BlockType::AIR && type != BlockType::OAK_LEAVES && type != BlockType::WATER;
+        return type != BlockType::AIR && type != BlockType::OAK_LEAVES &&
+               type != BlockType::WATER;
     }
 };

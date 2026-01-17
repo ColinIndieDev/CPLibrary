@@ -65,6 +65,7 @@ bool CheckCollisionCircleRect(const Circle &one, const Rectangle &two);
 bool CheckCollisionVec2Rect(const glm::vec2 &one, const Rectangle &two);
 bool CheckCollisionCircles(const Circle &one, const Circle &two);
 bool CheckCollisionVec2Circle(const glm::vec2 &one, const Circle &two);
+bool CheckCollisionCubes(const Cube &one, const Cube &two);
 
 void InitWindow(const glm::ivec2 &size, const std::string &title,
                 bool openGLDebug = false,
@@ -80,6 +81,8 @@ void AddPointLights2D(const std::vector<PointLight> &lights);
 void SetShininess3D(float shininess);
 void AddPointLights3D(const std::vector<PointLight3D> &lights);
 void SetDirLight3D(const DirectionalLight &light);
+void EnableTransparency();
+void EnableDepth(bool enabled);
 void BeginPostProcessing();
 void EndPostProcessing();
 void ApplyPostProcessing(const PostProcessingModes &mode);
