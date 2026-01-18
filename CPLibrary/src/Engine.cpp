@@ -40,9 +40,7 @@ CPL::Shader Engine::s_LightTextureShader;
 CPL::Shader Engine::s_ScreenShader;
 
 CPL::Shader Engine::s_Shape3DShader;
-CPL::Shader Engine::s_CubeTexShader;
 CPL::Shader Engine::s_LightShape3DShader;
-CPL::Shader Engine::s_LightCubeTexShader;
 CPL::Shader Engine::s_CubeMapShader;
 CPL::Shader Engine::s_DepthShader;
 
@@ -242,6 +240,7 @@ void Engine::InitWindow(const int width, const int height, const char *title,
     InitCharPressed(s_Window);
 
     // ----- For the font & 2D textures ----- //
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 #ifdef __EMSCRIPTEN__
     s_WhiteTex = std::make_unique<CPL::Texture2D>(
         "/assets/images/default/whiteTex.png", glm::vec2(100),
@@ -251,7 +250,6 @@ void Engine::InitWindow(const int width, const int height, const char *title,
         "assets/images/default/whiteTex.png", glm::vec2(100),
         CPL::TextureFiltering::NEAREST);
 #endif
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
 void Engine::SetWindowIcon(const std::string &filePath) {
@@ -311,38 +309,33 @@ void Engine::InitShaders() {
     s_ScreenShader = CPL::Shader("/assets/shaders/web/vert/screen_web.vert",
                                  "/assets/shaders/web/frag/screen_web.frag");
 #else
-    s_Shape2DShader = CPL::Shader("assets/shaders/default/vert/shader.vert",
-                                  "assets/shaders/default/frag/shader.frag");
-    s_TextShader = CPL::Shader("assets/shaders/default/vert/text.vert",
-                               "assets/shaders/default/frag/text.frag");
-    s_TextureShader = CPL::Shader("assets/shaders/default/vert/texture.vert",
-                                  "assets/shaders/default/frag/texture.frag");
+    s_Shape2DShader = CPL::Shader("assets/shaders/default/vert/2D/shader.vert",
+                                  "assets/shaders/default/frag/2D/shader.frag");
+    s_TextShader = CPL::Shader("assets/shaders/default/vert/2D/text.vert",
+                               "assets/shaders/default/frag/2D/text.frag");
+    s_TextureShader =
+        CPL::Shader("assets/shaders/default/vert/2D/texture.vert",
+                    "assets/shaders/default/frag/2D/texture.frag");
     s_LightShape2DShader =
-        CPL::Shader("assets/shaders/default/vert/lightShader.vert",
-                    "assets/shaders/default/frag/lightShader.frag");
+        CPL::Shader("assets/shaders/default/vert/2D/lightShader.vert",
+                    "assets/shaders/default/frag/2D/lightShader.frag");
     s_LightTextureShader =
-        CPL::Shader("assets/shaders/default/vert/lightTexture.vert",
-                    "assets/shaders/default/frag/lightTexture.frag");
-    s_ScreenShader = CPL::Shader("assets/shaders/default/vert/screen.vert",
-                                 "assets/shaders/default/frag/screen.frag");
+        CPL::Shader("assets/shaders/default/vert/2D/lightTexture.vert",
+                    "assets/shaders/default/frag/2D/lightTexture.frag");
+    s_ScreenShader = CPL::Shader("assets/shaders/default/vert/2D/screen.vert",
+                                 "assets/shaders/default/frag/2D/screen.frag");
 
-    s_Shape3DShader =
-        CPL::Shader("assets/shaders/default/vert/cubeShader.vert",
-                    "assets/shaders/default/frag/cubeShader.frag");
-    s_CubeTexShader =
-        CPL::Shader("assets/shaders/default/vert/cubeTexShader.vert",
-                    "assets/shaders/default/frag/cubeTexShader.frag");
-    s_LightShape3DShader =
-        CPL::Shader("assets/shaders/default/vert/lightCubeShader.vert",
-                    "assets/shaders/default/frag/lightCubeShader.frag");
+    s_Shape3DShader = CPL::Shader("assets/shaders/default/vert/3D/shape.vert",
+                                  "assets/shaders/default/frag/3D/shape.frag");
     s_CubeMapShader =
-        CPL::Shader("assets/shaders/default/vert/cubeMapShader.vert",
-                    "assets/shaders/default/frag/cubeMapShader.frag");
-    s_LightCubeTexShader =
-        CPL::Shader("assets/shaders/default/vert/lightCubeTexShader.vert",
-                    "assets/shaders/default/frag/lightCubeTexShader.frag");
-    s_DepthShader = CPL::Shader("assets/shaders/default/vert/depthShader.vert",
-                                "assets/shaders/default/frag/depthShader.frag");
+        CPL::Shader("assets/shaders/default/vert/3D/cubeMapShader.vert",
+                    "assets/shaders/default/frag/3D/cubeMapShader.frag");
+    s_LightShape3DShader =
+        CPL::Shader("assets/shaders/default/vert/3D/lightShape.vert",
+                    "assets/shaders/default/frag/3D/lightShape.frag");
+    s_DepthShader =
+        CPL::Shader("assets/shaders/default/vert/3D/depthShader.vert",
+                    "assets/shaders/default/frag/3D/depthShader.frag");
 #endif
 }
 
@@ -372,24 +365,18 @@ void Engine::BeginDraw(const CPL::DrawModes &mode, const bool mode2D) {
     case CPL::DrawModes::SHAPE_3D:
         shader = &s_Shape3DShader;
         break;
-    case CPL::DrawModes::CUBE_TEX:
-        shader = &s_CubeTexShader;
-        break;
     case CPL::DrawModes::SHAPE_3D_LIGHT:
         shader = &s_LightShape3DShader;
-        break;
-    case CPL::DrawModes::CUBE_TEX_LIGHT:
-        shader = &s_LightCubeTexShader;
         break;
     }
     shader->Use();
 
     if (mode == CPL::DrawModes::SHAPE_3D ||
-        mode == CPL::DrawModes::SHAPE_3D_LIGHT ||
-        mode == CPL::DrawModes::CUBE_TEX ||
-        mode == CPL::DrawModes::CUBE_TEX_LIGHT) {
+        mode == CPL::DrawModes::SHAPE_3D_LIGHT) {
+        float aspect = GetScreenWidth() / GetScreenHeight();
         shader->SetMatrix4fv("projection",
-                             s_Projection3D * s_Camera3D.GetViewMatrix());
+                             s_Camera3D.GetProjectionMatrix(aspect) *
+                                 s_Camera3D.GetViewMatrix());
         glEnable(GL_DEPTH_TEST);
     } else {
         const glm::mat4 view = s_Camera2D.GetViewMatrix();
@@ -424,14 +411,8 @@ void Engine::ResetShader() {
     case CPL::DrawModes::SHAPE_3D:
         shader = &s_Shape3DShader;
         break;
-    case CPL::DrawModes::CUBE_TEX:
-        shader = &s_CubeTexShader;
-        break;
     case CPL::DrawModes::SHAPE_3D_LIGHT:
         shader = &s_LightShape3DShader;
-        break;
-    case CPL::DrawModes::CUBE_TEX_LIGHT:
-        shader = &s_LightCubeTexShader;
         break;
     }
     shader->Use();
@@ -494,9 +475,6 @@ void Engine::SetShininess3D(const float shininess) {
     s_LightShape3DShader.Use();
     s_LightShape3DShader.SetFloat("shininess", shininess);
 
-    s_LightCubeTexShader.Use();
-    s_LightCubeTexShader.SetFloat("shininess", shininess);
-
     ResetShader();
 }
 void Engine::AddPointLights3D(const std::vector<CPL::PointLight3D> &lights) {
@@ -521,27 +499,6 @@ void Engine::AddPointLights3D(const std::vector<CPL::PointLight3D> &lights) {
             "pointLights[" + std::to_string(i) + "].color", lights[i].color);
     }
 
-    s_LightCubeTexShader.Use();
-    s_LightCubeTexShader.SetInt("numPointLights",
-                                static_cast<int>(lights.size()));
-    for (int i = 0; i < lights.size(); i++) {
-        s_LightCubeTexShader.SetVector3f(
-            "pointLights[" + std::to_string(i) + "].position", lights[i].pos);
-        s_LightCubeTexShader.SetFloat("pointLights[" + std::to_string(i) +
-                                          "].intensity",
-                                      lights[i].intensity);
-        s_LightCubeTexShader.SetFloat("pointLights[" + std::to_string(i) +
-                                          "].constant",
-                                      lights[i].constant);
-        s_LightCubeTexShader.SetFloat(
-            "pointLights[" + std::to_string(i) + "].linear", lights[i].linear);
-        s_LightCubeTexShader.SetFloat("pointLights[" + std::to_string(i) +
-                                          "].quadratic",
-                                      lights[i].quadratic);
-        s_LightCubeTexShader.SetColor(
-            "pointLights[" + std::to_string(i) + "].color", lights[i].color);
-    }
-
     ResetShader();
 }
 void Engine::SetDirLight3D(const CPL::DirectionalLight &light) {
@@ -555,19 +512,32 @@ void Engine::SetDirLight3D(const CPL::DirectionalLight &light) {
     s_LightShape3DShader.SetVector3f("dirLight.diffuse", light.diffuse);
     s_LightShape3DShader.SetVector3f("dirLight.specular", light.specular);
 
-    s_LightCubeTexShader.Use();
-    s_LightCubeTexShader.SetVector3f("viewPos", s_Camera3D.position);
-    s_LightCubeTexShader.SetVector3f("dirLight.direction", light.dir);
-    s_LightCubeTexShader.SetVector3f("dirLight.ambient",
-                                     glm::vec3(light.ambient.r / 255,
-                                               light.ambient.g / 255,
-                                               light.ambient.b / 255));
-    s_LightCubeTexShader.SetVector3f("dirLight.diffuse", light.diffuse);
-    s_LightCubeTexShader.SetVector3f("dirLight.specular", light.specular);
-
     ResetShader();
 }
 
+void Engine::EnableFog(const bool enabled) {
+    s_Shape3DShader.Use();
+    s_Shape3DShader.SetBool("useFog", enabled);
+
+    s_LightShape3DShader.Use();
+    s_LightShape3DShader.SetBool("useFog", enabled);
+
+    ResetShader();
+}
+void Engine::SetFog(const float fogStart, const float fogEnd,
+                    const CPL::Color &color) {
+    s_Shape3DShader.Use();
+    s_Shape3DShader.SetFloat("fogStart", fogStart);
+    s_Shape3DShader.SetFloat("fogEnd", fogEnd);
+    s_Shape3DShader.SetColor("fogColor", color);
+
+    s_LightShape3DShader.Use();
+    s_LightShape3DShader.SetFloat("fogStart", fogStart);
+    s_LightShape3DShader.SetFloat("fogEnd", fogEnd);
+    s_LightShape3DShader.SetColor("fogColor", color);
+
+    ResetShader();
+}
 void Engine::BeginPostProcessing() { s_ScreenQuad.BeginUseScreen(); }
 void Engine::EndPostProcessing() { CPL::ScreenQuad::EndUseScreen(); }
 void Engine::ApplyPostProcessing(const CPL::PostProcessingModes &mode) {
@@ -706,8 +676,8 @@ void Engine::DrawCube(const glm::vec3 &pos, const glm::vec3 &size,
                       const CPL::Color &color) {
     const auto cube = CPL::Cube(pos, size, color);
     cube.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
-                  ? s_LightCubeTexShader
-                  : s_CubeTexShader);
+                  ? s_LightShape3DShader
+                  : s_Shape3DShader);
 }
 
 void Engine::DrawSphere(const glm::vec3 &pos, const float radius,
@@ -721,9 +691,9 @@ void Engine::DrawSphere(const glm::vec3 &pos, const float radius,
 void Engine::DrawCubeTex(const CPL::Texture2D *const tex, const glm::vec3 &pos,
                          const glm::vec3 &size, const CPL::Color &color) {
     const auto cubeTex = CPL::CubeTex(pos, size, color);
-    cubeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
-                     ? s_LightCubeTexShader
-                     : s_CubeTexShader,
+    cubeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
+                     ? s_LightShape3DShader
+                     : s_Shape3DShader,
                  tex);
 }
 
@@ -731,18 +701,18 @@ void Engine::DrawCubeTexAtlas(const CPL::Texture2D *const tex,
                               const glm::vec3 &pos, const glm::vec3 &size,
                               const CPL::Color &color) {
     const auto cubeTex = CPL::CubeTex(pos, size, color);
-    cubeTex.DrawAtlas(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
-                          ? s_LightCubeTexShader
-                          : s_CubeTexShader,
+    cubeTex.DrawAtlas(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
+                          ? s_LightShape3DShader
+                          : s_Shape3DShader,
                       tex);
 }
 
 void Engine::DrawPlaneTex(const CPL::Texture2D *const tex, const glm::vec3 &pos,
                           const glm::vec2 &size, const CPL::Color &color) {
     const auto planeTex = CPL::PlaneTex(pos, glm::vec3(0), size, color);
-    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
-                      ? s_LightCubeTexShader
-                      : s_CubeTexShader,
+    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
+                      ? s_LightShape3DShader
+                      : s_Shape3DShader,
                   tex);
 }
 
@@ -750,9 +720,9 @@ void Engine::DrawPlaneTexRot(const CPL::Texture2D *const tex,
                              const glm::vec3 &pos, const glm::vec3 &rot,
                              const glm::vec2 &size, const CPL::Color &color) {
     const auto planeTex = CPL::PlaneTex(pos, rot, size, color);
-    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::CUBE_TEX_LIGHT
-                      ? s_LightCubeTexShader
-                      : s_CubeTexShader,
+    planeTex.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
+                      ? s_LightShape3DShader
+                      : s_Shape3DShader,
                   tex);
 }
 
@@ -971,14 +941,8 @@ CPL::Shader &Engine::GetShader(const CPL::DrawModes &mode) {
     case CPL::DrawModes::SHAPE_3D:
         return s_Shape3DShader;
         break;
-    case CPL::DrawModes::CUBE_TEX:
-        return s_CubeTexShader;
-        break;
     case CPL::DrawModes::SHAPE_3D_LIGHT:
         return s_LightShape3DShader;
-        break;
-    case CPL::DrawModes::CUBE_TEX_LIGHT:
-        return s_LightCubeTexShader;
         break;
     }
     return s_Shape2DShader;

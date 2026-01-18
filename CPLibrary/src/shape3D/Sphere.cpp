@@ -1,3 +1,4 @@
+#include "../../include/shape2D/Texture2D.h"
 #include "../../include/shape3D/Sphere.h"
 #include "../../include/Shader.h"
 #include <algorithm>
@@ -94,11 +95,16 @@ void Sphere::Draw(const Shader &shader) const {
 
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", glm::vec3(pos));
-    shader.SetColor("inputColor", color);
+    shader.SetColor("objColor", color);
+
+    shader.SetInt("tex", 0);
     glBindVertexArray(m_VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Engine::GetWhiteTex()->tex);
     glDrawElements(GL_TRIANGLES, static_cast<int>(m_Indices.size()),
                    GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 void Sphere::DrawDepth(const Shader &shader) const {
     auto model = glm::mat4(1.0f);

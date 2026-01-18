@@ -98,9 +98,9 @@ void Cube::Draw(const Shader &shader) const {
 
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", pos);
-    shader.SetColor("inputColor", color);
+    shader.SetColor("objColor", color);
 
-    shader.SetInt("ourTexture", 0);
+    shader.SetInt("tex", 0);
     glBindVertexArray(m_VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Engine::GetWhiteTex()->tex);

@@ -44,4 +44,8 @@ struct Block {
         return type != BlockType::AIR && type != BlockType::OAK_LEAVES &&
                type != BlockType::WATER;
     }
+
+    [[nodiscard]] bool IsUnbreakable() const {
+        return type == BlockType::BEDROCK;
+    }
 };

@@ -65,15 +65,10 @@ void PlaneTex::Draw(const Shader &shader, const Texture2D *const tex) const {
                             glm::vec3(0.0f, 0.0f, 1.0f));
     transform = glm::translate(transform, -center);
 
-    glm::mat4 view = GetCam3D().GetViewMatrix();
-    glm::mat4 projection =
-        GetCam3D().GetProjectionMatrix(GetScreenWidth() / GetScreenHeight());
-    shader.SetMatrix4fv("projection", projection * view);
-
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", pos);
-    shader.SetColor("inputColor", color);
-    shader.SetInt("ourTexture", 0);
+    shader.SetColor("objColor", color);
+    shader.SetInt("tex", 0);
 
     glBindVertexArray(m_VAO);
     glActiveTexture(GL_TEXTURE0);
@@ -96,7 +91,7 @@ void PlaneTex::DrawDepth(const Shader &shader,
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
-    shader.SetInt("ourTexture", 0);
+    shader.SetInt("tex", 0);
 
     glBindVertexArray(m_VAO);
     glActiveTexture(GL_TEXTURE0);

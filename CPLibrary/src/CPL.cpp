@@ -60,6 +60,10 @@ void AddPointLights3D(const std::vector<PointLight3D> &lights) {
 void SetDirLight3D(const DirectionalLight &light) {
     Engine::SetDirLight3D(light);
 }
+void EnableFog(const bool enabled) { Engine::EnableFog(enabled); }
+void SetFog(const float fogStart, const float fogEnd, const Color &color) {
+    Engine::SetFog(fogStart, fogEnd, color);
+}
 void EnableTransparency() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

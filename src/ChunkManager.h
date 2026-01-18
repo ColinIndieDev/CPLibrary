@@ -77,6 +77,9 @@ class ChunkManager {
     void ProcessFinishedChunks();
     void ProcessDirtyChunks(int viewDist, int maxPerFrame = 10);
     void UploadChunkMeshes();
+    void MarkChunkDirty(const glm::ivec3 &chunkPos);
+    void DestroyBlock(const glm::ivec3 &worldPos);
+    void PlaceBlock(const glm::ivec3 &worldPos, const BlockType &type);
     bool IsGenComplete() const;
     void UpdateVisibleChunks(int viewDist);
     void UpdateVisibleChunksDepth(int viewDist);

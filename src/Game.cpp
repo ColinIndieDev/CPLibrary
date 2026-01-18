@@ -1,6 +1,8 @@
 #include "Game.h"
 #include "Block.h"
 #include "Chunk.h"
+#include "ChunkManager.h"
+#include "TextureLoader.h"
 #include "glm/fwd.hpp"
 #include <string>
 
@@ -36,17 +38,16 @@ void Game::Init() {
     Text::Init("assets/fonts/minecraft.ttf", "minecraftFont",
                TextureFiltering::NEAREST);
 
-    m_DepthShader = Shader("assets/shaders/default/vert/cubeTexShader.vert",
-                           "assets/shaders/default/frag/zPrepass.frag");
+    m_DepthShader = Shader("assets/shaders/default/vert/3D/lightShape.vert",
+                           "assets/shaders/default/frag/3D/zPrepass.frag");
 
     uint32_t seed = RandInt(0, 999999999);
 
     m_WorldGen =
         std::make_unique<WorldGen>(seed, m_ViewDist, 30, Chunk::s_Height, 60);
     m_WorldGen->Init();
-    m_WorldGen->GenMap();
-
     m_SetSpawnPoint();
+    m_WorldGen->GenMap();
 
     for (int i = 0; i < 200; i++) {
         glm::vec3 cloudPos(RandFloat(-100, 100), 150 * 0.2f,
@@ -107,16 +108,17 @@ void Game::m_SetSpawnPoint() {
         height = carvedHeight;
     }
 
-    GetCam3D().position.x = static_cast<float>(worldX) * 0.2f;
-    GetCam3D().position.z = static_cast<float>(worldZ) * 0.2f;
-    GetCam3D().position.y = (static_cast<float>(height) + 5) * 0.2f;
+    m_Player.pos.x = static_cast<float>(worldX) * 0.2f;
+    m_Player.pos.z = static_cast<float>(worldZ) * 0.2f;
+    m_Player.pos.y = (static_cast<float>(height) + 2) * 0.2f;
 }
 
-void Game::m_UpdateControls() {
-    float aspect = GetScreenWidth() / GetScreenHeight();
-    Camera3D &cam = GetCam3D();
-    cam.UpdateFrustum(aspect);
+inline int PositiveMod(const int x, const int y) {
+    const int result = x % y;
+    return result < 0 ? result + y : result;
+}
 
+void Game::m_UpdateConfigCtrl() {
     if (m_F3Mode) {
         if (IsKeyPressedOnce(KEY_U) && m_UseLighting)
             m_UseShadows = !m_UseShadows;
@@ -145,14 +147,29 @@ void Game::m_UpdateControls() {
     if (IsKeyPressedOnce(KEY_F3))
         m_F3Mode = !m_F3Mode;
 
-    EnableMSAA(m_UseMSAA);
-
-    if (IsKeyDown(KEY_LEFT_SHIFT)) {
-        m_PlayerVel.y -= 1 * GetDeltaTime();
+    if (IsKeyPressedOnce(KEY_C)) {
+        m_Player.selectedBlock =
+            (m_Player.selectedBlock + 1) %
+            static_cast<int>(m_Player.creativeInventory.size());
+    } else if (IsKeyPressedOnce(KEY_X)) {
+        if (m_Player.selectedBlock - 1 < 0)
+            m_Player.selectedBlock =
+                static_cast<int>(m_Player.creativeInventory.size()) - 1;
+        else
+            m_Player.selectedBlock--;
     }
-    if (IsKeyDown(KEY_SPACE) && m_PlayerGround) {
-        m_PlayerVel.y = 0.12f;
-        m_PlayerGround = false;
+
+    EnableMSAA(m_UseMSAA);
+}
+
+void Game::m_UpdateMovementCtrl() {
+    float aspect = GetScreenWidth() / GetScreenHeight();
+    Camera3D &cam = GetCam3D();
+    cam.UpdateFrustum(aspect);
+
+    if (IsKeyDown(KEY_SPACE) && m_Player.ground) {
+        m_Player.vel.y = 0.09f;
+        m_Player.ground = false;
         m_PressedKey = true;
     }
 
@@ -177,37 +194,134 @@ void Game::m_UpdateControls() {
         maxSpeed *= 3;
     }
 
-    m_PlayerVel.x += wishDir.x * accel * GetDeltaTime();
-    m_PlayerVel.z += wishDir.z * accel * GetDeltaTime();
+    m_Player.vel.x += wishDir.x * accel * GetDeltaTime();
+    m_Player.vel.z += wishDir.z * accel * GetDeltaTime();
 
-    if (m_PlayerGround) {
+    if (m_Player.ground) {
         float friction = 12.0f * GetDeltaTime();
-        m_PlayerVel.x -= m_PlayerVel.x * friction;
-        m_PlayerVel.z -= m_PlayerVel.z * friction;
+        m_Player.vel.x -= m_Player.vel.x * friction;
+        m_Player.vel.z -= m_Player.vel.z * friction;
+    } else {
+        float friction = 6.0f * GetDeltaTime();
+        m_Player.vel.x -= m_Player.vel.x * friction;
+        m_Player.vel.z -= m_Player.vel.z * friction;
     }
 
-    m_PlayerVel.x = glm::clamp(m_PlayerVel.x, -maxSpeed, maxSpeed);
-    m_PlayerVel.z = glm::clamp(m_PlayerVel.z, -maxSpeed, maxSpeed);
+    m_Player.vel.x = glm::clamp(m_Player.vel.x, -maxSpeed, maxSpeed);
+    m_Player.vel.z = glm::clamp(m_Player.vel.z, -maxSpeed, maxSpeed);
+}
+
+void Game::m_UpdateRaycastCtrl() {
+    float aspect = GetScreenWidth() / GetScreenHeight();
+    Camera3D &cam = GetCam3D();
+
+    auto hit = m_RaycastBlock(GetCam3D().position, cam.front, 1.0f);
+    m_Player.hitBlock = hit.hit;
+    if (hit.hit) {
+        m_Player.raycastBlock = glm::vec3(hit.block) * 0.2f;
+        if (IsMousePressedOnce(MOUSE_BUTTON_LEFT)) {
+            if (!m_WorldGen->manager.GetBlockGlobal(hit.block).IsUnbreakable())
+                m_WorldGen->manager.DestroyBlock(hit.block);
+        }
+        if (IsMousePressedOnce(MOUSE_BUTTON_RIGHT)) {
+            glm::ivec3 placedBlockPos(hit.block + hit.normal);
+
+            constexpr float bs = 0.2f;
+            Cube placedBlockCollider(glm::vec3(placedBlockPos) * 0.2f,
+                                     glm::vec3(bs), WHITE);
+            Cube playerCollider(m_Player.pos, m_Player.size, WHITE);
+
+            if (!CheckCollisionCubes(playerCollider, placedBlockCollider)) {
+                BlockType selectedType =
+                    m_Player.creativeInventory[m_Player.selectedBlock];
+                m_WorldGen->manager.PlaceBlock(hit.block + hit.normal,
+                                               selectedType);
+            }
+        }
+    }
+}
+
+void Game::m_UpdateControls() {
+    m_UpdateConfigCtrl();
+    m_UpdateMovementCtrl();
+    m_UpdateRaycastCtrl();
 
     if (IsKeyPressedOnce(KEY_ESCAPE))
         DestroyWindow();
 }
 
+Raycast Game::m_RaycastBlock(glm::vec3 origin, glm::vec3 dir,
+                             const float maxDist) {
+    constexpr float bs = 0.2f;
+
+    origin /= bs;
+    dir = glm::normalize(dir);
+
+    glm::ivec3 block = glm::floor(origin);
+
+    glm::vec3 deltaDist = glm::abs(glm::vec3(1.0f) / dir);
+
+    glm::ivec3 step;
+    glm::vec3 sideDist;
+
+    for (int i = 0; i < 3; i++) {
+        if (dir[i] < 0) {
+            step[i] = -1;
+            sideDist[i] =
+                (origin[i] - static_cast<float>(block[i])) * deltaDist[i];
+        } else {
+            step[i] = 1;
+            sideDist[i] = (static_cast<float>(block[i]) + 1.0f - origin[i]) *
+                          deltaDist[i];
+        }
+    }
+
+    float traveled = 0.0f;
+    glm::ivec3 hitNormal(0);
+
+    while (traveled < maxDist / bs) {
+        if (sideDist.x < sideDist.y && sideDist.x < sideDist.z) {
+            traveled = sideDist.x;
+            sideDist.x += deltaDist.x;
+            block.x += step.x;
+            hitNormal = {-step.x, 0, 0};
+        } else if (sideDist.y < sideDist.z) {
+            traveled = sideDist.y;
+            sideDist.y += deltaDist.y;
+            block.y += step.y;
+            hitNormal = {0, -step.y, 0};
+        } else {
+            traveled = sideDist.z;
+            sideDist.z += deltaDist.z;
+            block.z += step.z;
+            hitNormal = {0, 0, -step.z};
+        }
+
+        Block b = m_WorldGen->manager.GetBlockGlobal(block);
+        if (b.IsSolid() && !b.IsFluid()) {
+            return {true, block, hitNormal};
+        }
+    }
+
+    return {};
+}
+
 void Game::m_ResolveAxis(const int axis) {
     constexpr float bs = 0.2f;
-    constexpr float pw = 0.15f;
-    constexpr float ph = 0.35f;
+    const float pw = m_Player.size.x;
+    const float ph = m_Player.size.y;
 
-    Camera3D &cam = GetCam3D();
+    GetCam3D().position = glm::vec3(
+        m_Player.pos.x, m_Player.pos.y + (ph * 0.45f), m_Player.pos.z);
 
-    glm::vec3 min(cam.position.x - (pw * 0.5f), cam.position.y - (ph * 0.75f),
-                  cam.position.z - (pw * 0.5f));
+    glm::vec3 min(m_Player.pos.x - (pw * 0.5f), m_Player.pos.y - (ph * 0.5f),
+                  m_Player.pos.z - (pw * 0.5f));
 
-    glm::vec3 max(cam.position.x + (pw * 0.5f), cam.position.y + (ph * 0.25f),
-                  cam.position.z + (pw * 0.5f));
+    glm::vec3 max(m_Player.pos.x + (pw * 0.5f), m_Player.pos.y + (ph * 0.5f),
+                  m_Player.pos.z + (pw * 0.5f));
 
-    glm::ivec3 bmin = glm::floor(min / bs);
-    glm::ivec3 bmax = glm::floor(max / bs);
+    glm::ivec3 bmin = glm::floor((min - bs * 0.5f) / bs);
+    glm::ivec3 bmax = glm::floor((max + bs * 0.5f) / bs);
 
     for (int x = bmin.x; x <= bmax.x; x++)
         for (int y = bmin.y; y <= bmax.y; y++)
@@ -217,8 +331,11 @@ void Game::m_ResolveAxis(const int axis) {
                 if (!block.IsSolid() || block.IsFluid())
                     continue;
 
-                glm::vec3 blockMin = glm::vec3(x, y, z) * bs;
-                glm::vec3 blockMax = blockMin + glm::vec3(bs);
+                glm::vec3 center = glm::vec3(x, y, z) * bs;
+                glm::vec3 half(bs * 0.5f);
+
+                glm::vec3 blockMin = center - half;
+                glm::vec3 blockMax = center + half;
 
                 if (min.x >= blockMax.x || max.x <= blockMin.x ||
                     min.y >= blockMax.y || max.y <= blockMin.y ||
@@ -237,63 +354,58 @@ void Game::m_ResolveAxis(const int axis) {
 }
 
 void Game::m_ResolveX(const glm::vec3 &min, const glm::vec3 &max) {
-    constexpr float pw = 0.15f;
-    auto &cam = GetCam3D();
+    const float pw = m_Player.size.x;
 
-    if (m_PlayerVel.x > 0)
-        cam.position.x = min.x - (pw * 0.5f);
+    if (m_Player.vel.x > 0)
+        m_Player.pos.x = min.x - (pw * 0.5f);
     else
-        cam.position.x = max.x + (pw * 0.5f);
+        m_Player.pos.x = max.x + (pw * 0.5f);
 
-    m_PlayerVel.x = 0;
+    m_Player.vel.x = 0;
 }
 
 void Game::m_ResolveY(const glm::vec3 &min, const glm::vec3 &max) {
-    constexpr float ph = 0.35f;
-    auto &cam = GetCam3D();
+    const float ph = m_Player.size.y;
 
-    if (m_PlayerVel.y > 0) {
-        cam.position.y = min.y - (ph * 0.25f);
+    if (m_Player.vel.y > 0) {
+        m_Player.pos.y = min.y - (ph * 0.5f);
     } else {
-        cam.position.y = max.y + (ph * 0.75f);
-        m_PlayerGround = true;
+        m_Player.pos.y = max.y + (ph * 0.5f);
+        m_Player.ground = true;
     }
-    m_PlayerVel.y = 0;
+    m_Player.vel.y = 0;
 }
 
 void Game::m_ResolveZ(const glm::vec3 &min, const glm::vec3 &max) {
-    constexpr float pw = 0.15f;
-    auto &cam = GetCam3D();
+    const float pw = m_Player.size.z;
 
-    if (m_PlayerVel.z > 0)
-        cam.position.z = min.z - (pw * 0.5f);
+    if (m_Player.vel.z > 0)
+        m_Player.pos.z = min.z - (pw * 0.5f);
     else
-        cam.position.z = max.z + (pw * 0.5f);
+        m_Player.pos.z = max.z + (pw * 0.5f);
 
-    m_PlayerVel.z = 0;
+    m_Player.vel.z = 0;
 }
 
 void Game::m_MoveAndCollide() {
-    m_PlayerGround = false;
-
-    Camera3D &cam = GetCam3D();
+    m_Player.ground = false;
 
     int x = 0;
     int y = 1;
     int z = 2;
-    cam.position.x += m_PlayerVel.x;
+    m_Player.pos.x += m_Player.vel.x;
     m_ResolveAxis(x);
 
-    cam.position.y += m_PlayerVel.y;
+    m_Player.pos.y += m_Player.vel.y;
     m_ResolveAxis(y);
 
-    cam.position.z += m_PlayerVel.z;
+    m_Player.pos.z += m_Player.vel.z;
     m_ResolveAxis(z);
 }
 
 void Game::m_UpdatePhysics() {
-    if (m_PlayerVel.y > -1)
-        m_PlayerVel.y -= 1 * GetDeltaTime();
+    if (m_Player.vel.y > -1)
+        m_Player.vel.y -= 1 * GetDeltaTime();
 }
 
 void Game::m_Update() {
@@ -382,12 +494,13 @@ uint32_t Game::m_DrawOpaque(const glm::vec3 &lightDir,
                             const glm::mat4 &lightSpaceMatrix) {
     EnableFaceCulling(true);
 
-    BeginDraw(DrawModes::CUBE_TEX);
+    BeginDraw(DrawModes::SHAPE_3D);
 
-    DrawCube(GetCam3D().position - lightDir * 500.0f, glm::vec3(25), WHITE);
+    EnableFog(false);
+    DrawCube(GetCam3D().position - lightDir * 500.0f, glm::vec3(25), YELLOW);
 
     if (m_UseLighting)
-        BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+        BeginDraw(DrawModes::SHAPE_3D_LIGHT);
 
     SetShininess3D(1);
 
@@ -402,41 +515,70 @@ uint32_t Game::m_DrawOpaque(const glm::vec3 &lightDir,
     SetDirLight3D(day);
 
     if (m_UseShadows) {
-        Shader &shader = GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
-                                                 : DrawModes::CUBE_TEX);
+        Shader &shader = GetShader(m_UseLighting ? DrawModes::SHAPE_3D_LIGHT
+                                                 : DrawModes::SHAPE_3D);
         shader.SetMatrix4fv("lightSpaceMatrix", lightSpaceMatrix);
         shader.SetInt("shadowMap", 1);
         m_ShadowMap->BindForReading(1);
     }
 
+    EnableFog(true);
+    SetFog(45, 39, Color(133, 174, 255, 255));
+
     m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
 
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
-        GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
-                                : DrawModes::CUBE_TEX),
+        GetShader(m_UseLighting ? DrawModes::SHAPE_3D_LIGHT
+                                : DrawModes::SHAPE_3D),
         m_DepthShader, m_TexAtlases);
 
     return chunksDrawn;
 }
 
 void Game::m_DrawTransparent() {
-    BeginDraw(DrawModes::CUBE_TEX);
+    BeginDraw(DrawModes::SHAPE_3D);
+
+    EnableFog(true);
+    SetFog(90, 78, Color(133, 174, 255, 255));
+    GetShader(DrawModes::SHAPE_3D).SetVector3f("viewPos", GetCam3D().position);
 
     EnableTransparency();
-
     EnableDepth(false);
-    EnableFaceCulling(false);
-    glDisable(GL_CULL_FACE);
-    for (auto &cloud : m_Clouds) {
-        DrawCube(cloud.pos, cloud.size, Color(255, 255, 255, 100));
+
+    if (m_Player.hitBlock) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glLineWidth(5.0f);
+
+        DrawCube(m_Player.raycastBlock, glm::vec3(0.201f),
+                 Color(255, 255, 255, 255));
+
+        glLineWidth(1.0f);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    BeginDraw(DrawModes::CUBE_TEX_LIGHT);
+    std::sort(m_Clouds.begin(), m_Clouds.end(), [&](Cloud &a, Cloud &b) {
+        glm::vec3 aPos = a.pos;
+        glm::vec3 bPos = b.pos;
 
+        float da = glm::length2(aPos - GetCam3D().position);
+        float db = glm::length2(bPos - GetCam3D().position);
+
+        return da < db;
+    });
+
+    for (auto &cloud : m_Clouds) {
+        DrawCube(cloud.pos, cloud.size, Color(255, 255, 255, 200));
+    }
+
+    BeginDraw(DrawModes::SHAPE_3D_LIGHT);
+
+    SetFog(45, 39, Color(133, 174, 255, 255));
+
+    EnableFaceCulling(false);
     SetShininess3D(128);
     m_WorldGen->manager.DrawTransparentChunks(
-        GetShader(m_UseLighting ? DrawModes::CUBE_TEX_LIGHT
-                                : DrawModes::CUBE_TEX),
+        GetShader(m_UseLighting ? DrawModes::SHAPE_3D_LIGHT
+                                : DrawModes::SHAPE_3D),
         m_TexAtlases);
     EnableDepth(true);
 }
@@ -594,6 +736,29 @@ void Game::m_Draw() {
     uint32_t chunksDrawn = m_DrawOpaque(lightDir, lightSpaceMatrix);
 
     m_DrawTransparent();
+
+    BeginDraw(DrawModes::SHAPE_2D, false);
+
+    glm::vec2 screenCenter(GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f);
+    glm::vec2 crossHairSize(10.0f);
+    DrawRect(screenCenter - glm::vec2(crossHairSize * 0.5f), crossHairSize,
+             WHITE);
+
+    BeginDraw(DrawModes::TEX, false);
+
+    Texture2D *hotbar = TextureLoader::GetHotbar();
+    float hotbarOff = 5.0f;
+    glm::vec2 hotbarPos((GetScreenWidth() * 0.5f) - (hotbar->size.x * 0.5f),
+                        GetScreenHeight() - hotbar->size.y - hotbarOff);
+    DrawTex2D(hotbar, hotbarPos, WHITE);
+
+    Texture2D *hotbarHighlight = TextureLoader::GetHotbarHighlight();
+    float hotbarHighlightOff = 2.5f;
+    glm::vec2 hotbarHighlightPos(
+        hotbarPos +
+        glm::vec2(static_cast<float>(m_Player.selectedBlock) * (hotbar->size.x / 9.1f), 0) -
+        glm::vec2(hotbarHighlightOff));
+    DrawTex2D(hotbarHighlight, hotbarHighlightPos, WHITE);
 
     if (m_F3Mode)
         m_DrawUI(chunksDrawn);

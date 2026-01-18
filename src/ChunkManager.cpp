@@ -1,4 +1,5 @@
 #include "ChunkManager.h"
+#include "Block.h"
 #include "WorldGen.h"
 #include <mutex>
 #include <string>
@@ -10,7 +11,7 @@ int FloorDiv(const int x, const int y) {
     return (x / y) - (x % y != 0 && (x ^ y) < 0 ? 1 : 0);
 }
 
-int PositiveMod(const int x, const int y) {
+inline int PositiveMod(const int x, const int y) {
     const int result = x % y;
     return result < 0 ? result + y : result;
 }
@@ -173,6 +174,97 @@ void ChunkManager::UploadChunkMeshes() {
         if (chunk.needUpload) {
             chunk.GenMeshGL();
             chunk.needUpload = false;
+        }
+    }
+}
+
+void ChunkManager::MarkChunkDirty(const glm::ivec3 &chunkPos) {
+    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+
+    auto it = chunks.find(chunkPos);
+    if (it == chunks.end())
+        return;
+
+    Chunk *chunk = &it->second;
+    chunk->MarkDirty();
+
+    if (auto it = m_DirtyList.find(chunkPos); it == m_DirtyList.end()) {
+        glm::vec3 playerChunkPos = GetPlayerChunkPos(GetCam3D().position);
+        int priority = static_cast<int>(
+            glm::distance2(glm::vec3(chunkPos), playerChunkPos));
+
+        m_DirtyQueue.emplace(chunk, priority);
+        m_DirtyList.emplace(chunkPos);
+    }
+}
+
+void ChunkManager::DestroyBlock(const glm::ivec3 &worldPos) {
+
+    glm::ivec3 chunkPos(FloorDiv(worldPos.x, Chunk::s_Size),
+                        FloorDiv(worldPos.y, Chunk::s_Height),
+                        FloorDiv(worldPos.z, Chunk::s_Size));
+
+    Chunk *chunk = GetChunk(chunkPos);
+    if (!static_cast<bool>(chunk))
+        return;
+
+    glm::ivec3 localPos(PositiveMod(worldPos.x, Chunk::s_Size),
+                        PositiveMod(worldPos.y, Chunk::s_Height),
+                        PositiveMod(worldPos.z, Chunk::s_Size));
+
+    chunk->SetBlock(localPos, BlockType::AIR);
+
+    MarkChunkDirty(chunkPos);
+
+    if (localPos.x == 0 || localPos.x == Chunk::s_Size - 1 || localPos.y == 0 ||
+        localPos.y == Chunk::s_Height - 1 || localPos.z == 0 ||
+        localPos.z == Chunk::s_Size - 1) {
+
+        const std::array<glm::ivec3, 6> neighbors = {{{0, 0, -1},
+                                                      {0, 0, 1},
+                                                      {-1, 0, 0},
+                                                      {1, 0, 0},
+                                                      {0, -1, 0},
+                                                      {0, 1, 0}}};
+
+        for (const auto &n : neighbors) {
+            MarkChunkDirty(chunkPos + n);
+        }
+    }
+}
+
+void ChunkManager::PlaceBlock(const glm::ivec3 &worldPos,
+                              const BlockType &type) {
+
+    glm::ivec3 chunkPos(FloorDiv(worldPos.x, Chunk::s_Size),
+                        FloorDiv(worldPos.y, Chunk::s_Height),
+                        FloorDiv(worldPos.z, Chunk::s_Size));
+
+    Chunk *chunk = GetChunk(chunkPos);
+    if (!static_cast<bool>(chunk))
+        return;
+
+    glm::ivec3 localPos(PositiveMod(worldPos.x, Chunk::s_Size),
+                        PositiveMod(worldPos.y, Chunk::s_Height),
+                        PositiveMod(worldPos.z, Chunk::s_Size));
+
+    chunk->SetBlock(localPos, type);
+
+    MarkChunkDirty(chunkPos);
+
+    if (localPos.x == 0 || localPos.x == Chunk::s_Size - 1 || localPos.y == 0 ||
+        localPos.y == Chunk::s_Height - 1 || localPos.z == 0 ||
+        localPos.z == Chunk::s_Size - 1) {
+
+        const std::array<glm::ivec3, 6> neighbors = {{{0, 0, -1},
+                                                      {0, 0, 1},
+                                                      {-1, 0, 0},
+                                                      {1, 0, 0},
+                                                      {0, -1, 0},
+                                                      {0, 1, 0}}};
+
+        for (const auto &n : neighbors) {
+            MarkChunkDirty(chunkPos + n);
         }
     }
 }
@@ -370,11 +462,13 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
                 worldGen->GenOceans(worldX, worldZ);
             bool isOcean = oceanData.first;
             float oceanMask = oceanData.second;
-            float oceanDepth =
-                isOcean && baseHeight < 100 ? glm::smoothstep(0.92f, 1.0f, oceanMask) : 0.0f;
+            float oceanDepth = isOcean && baseHeight < 100
+                                   ? glm::smoothstep(0.92f, 1.0f, oceanMask)
+                                   : 0.0f;
 
             int carvedHeight = baseHeight - static_cast<int>(riverDepth * 16) -
-                               static_cast<int>(holeDepth * 40) - static_cast<int>(oceanMask * 50);
+                               static_cast<int>(holeDepth * 40) -
+                               static_cast<int>(oceanMask * 50);
             int height = carvedHeight;
 
             for (int y = 0; y <= height; y++) {

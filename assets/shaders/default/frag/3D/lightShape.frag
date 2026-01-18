@@ -27,9 +27,14 @@ uniform int numPointLights;
 uniform PointLight pointLights[32];
 uniform DirectionalLight dirLight;
 uniform vec3 viewPos;
-uniform vec4 inputColor;
-uniform sampler2D ourTexture;
-uniform sampler2D shadowMap;  
+uniform vec4 objColor;
+uniform sampler2D tex;
+uniform sampler2D shadowMap; 
+
+uniform bool useFog;
+uniform float fogStart;
+uniform float fogEnd;
+uniform vec4 fogColor;
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -93,8 +98,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 }
 
 void main() {
-    vec4 textureColor = texture(ourTexture, TexCoord);
-    if (textureColor.a < 0.1) discard;
+    vec4 texColor = texture(tex, TexCoord);
+    if (texColor.a < 0.1) discard;
     
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -111,16 +116,13 @@ void main() {
     vec3 diffuseSpecular = lighting - ambient;
     lighting = ambient + (1.0 - shadow) * diffuseSpecular;
     
-    vec3 baseColor = inputColor.rgb / 255 * textureColor.rgb;
+    vec3 baseColor = objColor.rgb / 255 * texColor.rgb;
     vec3 result = baseColor * lighting;
 
-    vec3 fogColor = vec3(0.4, 0.6, 0.7);
     float dist = length(FragPos.xz - viewPos.xz);
-    float fogFactor = clamp((45.0 - dist) / (45.0 - 39.0), 0.0, 1.0);
-    float fogFactorAlpha = clamp((45.0 - dist) / (45.0 - 44.0), 0.0, 1.0);
+    float fogFactor = clamp((fogStart - dist) / (fogStart - fogEnd), 0.0, 1.0);
 
-    vec3 finalColor = mix(fogColor, result, fogFactor);
-    float finalAlpha = fogFactorAlpha;
+    vec3 finalColor = useFog ? mix(fogColor.rgb / 255, result, fogFactor) : result;
     
-    FragColor = vec4(finalColor, inputColor.a / 255 * textureColor.a * finalAlpha);
+    FragColor = vec4(finalColor, objColor.a / 255 * texColor.a);
 }

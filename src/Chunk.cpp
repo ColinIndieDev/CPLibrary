@@ -140,8 +140,10 @@ void Chunk::GenMesh(ChunkManager &manager, const bool localOnly) {
 
 void Chunk::GenMeshGL() {
     for (auto &[type, mesh] : m_Meshes) {
-        if (mesh.vertices.empty())
+        if (mesh.vertices.empty()) {
+            mesh.vertexCount = 0;
             continue;
+        }
 
         mesh.vertexCount = static_cast<int>(mesh.vertices.size()) / 8;
 
@@ -184,8 +186,8 @@ void Chunk::Draw(const Shader &shader,
 
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", glm::vec3(0));
-    shader.SetColor("inputColor", WHITE);
-    shader.SetInt("ourTexture", 0);
+    shader.SetColor("objColor", WHITE);
+    shader.SetInt("tex", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
         if (type == BlockType::WATER)
@@ -195,9 +197,9 @@ void Chunk::Draw(const Shader &shader,
             continue;
 
         if (type == BlockType::OAK_LEAVES) {
-            shader.SetColor("inputColor", Color(102, 200, 45, 255));
+            shader.SetColor("objColor", Color(102, 200, 45, 255));
         } else {
-            shader.SetColor("inputColor", WHITE);
+            shader.SetColor("objColor", WHITE);
         }
 
         auto it = atlases.find(type);
@@ -225,8 +227,8 @@ void Chunk::DrawTransparent(const Shader &shader,
 
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", glm::vec3(0));
-    shader.SetColor("inputColor", WHITE);
-    shader.SetInt("ourTexture", 0);
+    shader.SetColor("objColor", WHITE);
+    shader.SetInt("tex", 0);
 
     if (m_Meshes[BlockType::WATER].vertexCount == 0) {
         glBindVertexArray(0);
@@ -239,7 +241,7 @@ void Chunk::DrawTransparent(const Shader &shader,
         return;
     }
 
-    shader.SetColor("inputColor", Color(0, 100, 255, 150));
+    shader.SetColor("objColor", Color(0, 100, 255, 150));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, it->second->tex);
@@ -261,7 +263,7 @@ void Chunk::DrawDepth(const Shader &shader,
 
     shader.SetMatrix4fv("transform", transform);
     shader.SetVector3f("offset", glm::vec3(0));
-    shader.SetInt("ourTexture", 0);
+    shader.SetInt("tex", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
         if (type == BlockType::WATER)
@@ -289,7 +291,7 @@ void Chunk::DrawDepthShadow(const Shader &shader,
 
     shader.Use();
     shader.SetMatrix4fv("model", model);
-    shader.SetInt("ourTexture", 0);
+    shader.SetInt("tex", 0);
 
     for (auto &[type, mesh] : m_Meshes) {
         if (mesh.vertexCount == 0)

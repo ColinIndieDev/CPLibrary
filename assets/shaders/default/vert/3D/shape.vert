@@ -4,12 +4,16 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 
 out vec2 TexCoord;
+out vec3 FragPos;
 
 uniform mat4 transform;
 uniform vec3 offset;
 uniform mat4 projection;
 
 void main() {
-    gl_Position = projection * transform * vec4(aPos + offset, 1.0);
+    vec3 worldPos = aPos + offset;
+    FragPos = vec3(transform * vec4(worldPos, 1.0));
+
+    gl_Position = projection * transform * vec4(worldPos, 1.0);
     TexCoord = aTexCoord;
 }

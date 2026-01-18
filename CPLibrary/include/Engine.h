@@ -3,10 +3,10 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <memory>
 #include <queue>
 #include <random>
 #include <vector>
-#include <memory>
 
 #include "Colors.h"
 #include "KeyInputs.h"
@@ -22,9 +22,7 @@ enum class DrawModes : uint8_t {
     SHAPE_2D_LIGHT,
     TEX_LIGHT,
     SHAPE_3D,
-    CUBE_TEX,
     SHAPE_3D_LIGHT,
-    CUBE_TEX_LIGHT,
 };
 enum class TextureFiltering : uint8_t {
     NEAREST,
@@ -215,6 +213,8 @@ class Engine {
     static void SetShininess3D(float shininess);
     static void AddPointLights3D(const std::vector<CPL::PointLight3D> &lights);
     static void SetDirLight3D(const CPL::DirectionalLight &light);
+    static void EnableFog(bool enabled);
+    static void SetFog(float fogStart, float fogEnd, const CPL::Color &color);
     static void BeginPostProcessing();
     static void EndPostProcessing();
     static void ApplyPostProcessing(const CPL::PostProcessingModes &mode);
@@ -294,9 +294,7 @@ class Engine {
     static CPL::Shader s_ScreenShader;
 
     static CPL::Shader s_Shape3DShader;
-    static CPL::Shader s_CubeTexShader;
     static CPL::Shader s_LightShape3DShader;
-    static CPL::Shader s_LightCubeTexShader;
     static CPL::Shader s_CubeMapShader;
     static CPL::Shader s_DepthShader;
 

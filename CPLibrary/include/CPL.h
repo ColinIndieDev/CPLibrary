@@ -81,6 +81,8 @@ void AddPointLights2D(const std::vector<PointLight> &lights);
 void SetShininess3D(float shininess);
 void AddPointLights3D(const std::vector<PointLight3D> &lights);
 void SetDirLight3D(const DirectionalLight &light);
+void EnableFog(bool enabled);
+void SetFog(float fogStart, float fogEnd, const Color &color);
 void EnableTransparency();
 void EnableDepth(bool enabled);
 void BeginPostProcessing();
