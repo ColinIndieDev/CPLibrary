@@ -15,6 +15,7 @@
 #include "../include/shape3D/CubeTex.h"
 #include "../include/shape3D/DirectionalLight.h"
 #include "../include/shape3D/PlaneTex.h"
+#include "../include/shape3D/Ray.h"
 #include "../include/shape3D/PointLight3D.h"
 #include "../include/shape3D/Sphere.h"
 #include "../include/timer/TimerManager.h"
@@ -724,6 +725,14 @@ void Engine::DrawPlaneTexRot(const CPL::Texture2D *const tex,
                       ? s_LightShape3DShader
                       : s_Shape3DShader,
                   tex);
+}
+
+void Engine::DrawRay(const glm::vec3 &startPos, const glm::vec3 &endPos,
+                      const CPL::Color &color) {
+    const auto ray = CPL::Ray(startPos, endPos, color);
+    ray.Draw(s_CurrentDrawMode == CPL::DrawModes::SHAPE_3D_LIGHT
+                  ? s_LightShape3DShader
+                  : s_Shape3DShader);
 }
 
 void Engine::DrawCubeMap(const CPL::CubeMap *const map) {

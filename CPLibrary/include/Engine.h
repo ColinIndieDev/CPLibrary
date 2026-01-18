@@ -63,6 +63,7 @@ class Sphere;
 class CubeTex;
 class PlaneTex;
 class PointLight3D;
+class Ray;
 class DirectionalLight;
 class CubeMap;
 class ShadowMap;
@@ -199,6 +200,8 @@ class Engine {
     static void DrawPlaneTexRot(const CPL::Texture2D *tex, const glm::vec3 &pos,
                                 const glm::vec3 &rot, const glm::vec2 &size,
                                 const CPL::Color &color);
+    static void DrawRay(const glm::vec3 &startPos, const glm::vec3 &endPos,
+                        const CPL::Color &color);
     static void DrawCubeMap(const CPL::CubeMap *map);
     static void DrawCubeMapRot(CPL::CubeMap *map, const glm::vec3 &rot);
 

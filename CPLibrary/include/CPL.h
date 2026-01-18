@@ -39,6 +39,7 @@ class Cube;
 class Sphere;
 class CubeTex;
 class PlaneTex;
+class Ray;
 class PointLight3D;
 class DirectionalLight;
 class CubeMap;
@@ -128,6 +129,8 @@ void DrawPlaneTex(const Texture2D *tex, const glm::vec3 &pos,
 void DrawPlaneTexRot(const Texture2D *tex, const glm::vec3 &pos,
                      const glm::vec3 &rot, const glm::vec2 &size,
                      const Color &color);
+void DrawRay(const glm::vec3 &startPos, const glm::vec3 &endPos,
+              const Color &color);
 void DrawCubeMap(const CubeMap *map);
 void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot);
 

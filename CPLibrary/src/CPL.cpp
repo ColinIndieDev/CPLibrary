@@ -161,6 +161,10 @@ void DrawPlaneTexRot(const Texture2D *const tex, const glm::vec3 &pos,
                      const Color &color) {
     Engine::DrawPlaneTexRot(tex, pos, rot, size, color);
 }
+void DrawRay(const glm::vec3 &startPos, const glm::vec3 &endPos,
+             const Color &color) {
+    Engine::DrawRay(startPos, endPos, color);
+}
 void DrawCubeMap(const CubeMap *const map) { Engine::DrawCubeMap(map); }
 void DrawCubeMapRot(CubeMap *map, const glm::vec3 &rot) {
     Engine::DrawCubeMapRot(map, rot);

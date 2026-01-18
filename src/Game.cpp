@@ -111,6 +111,9 @@ void Game::m_SetSpawnPoint() {
     m_Player.pos.x = static_cast<float>(worldX) * 0.2f;
     m_Player.pos.z = static_cast<float>(worldZ) * 0.2f;
     m_Player.pos.y = (static_cast<float>(height) + 2) * 0.2f;
+    GetCam3D().position =
+        glm::vec3(m_Player.pos.x, m_Player.pos.y + (m_Player.size.y * 0.45f),
+                  m_Player.pos.z);
 }
 
 inline int PositiveMod(const int x, const int y) {
@@ -166,6 +169,9 @@ void Game::m_UpdateMovementCtrl() {
     float aspect = GetScreenWidth() / GetScreenHeight();
     Camera3D &cam = GetCam3D();
     cam.UpdateFrustum(aspect);
+    cam.position =
+        glm::vec3(m_Player.pos.x, m_Player.pos.y + (m_Player.size.y * 0.45f),
+                  m_Player.pos.z);
 
     if (IsKeyDown(KEY_SPACE) && m_Player.ground) {
         m_Player.vel.y = 0.09f;
@@ -215,7 +221,7 @@ void Game::m_UpdateRaycastCtrl() {
     float aspect = GetScreenWidth() / GetScreenHeight();
     Camera3D &cam = GetCam3D();
 
-    auto hit = m_RaycastBlock(GetCam3D().position, cam.front, 1.0f);
+    auto hit = m_RaycastBlock(cam.position, cam.front, 1.0f);
     m_Player.hitBlock = hit.hit;
     if (hit.hit) {
         m_Player.raycastBlock = glm::vec3(hit.block) * 0.2f;
@@ -254,7 +260,8 @@ Raycast Game::m_RaycastBlock(glm::vec3 origin, glm::vec3 dir,
                              const float maxDist) {
     constexpr float bs = 0.2f;
 
-    origin /= bs;
+    origin = origin / bs + glm::vec3(0.5f);
+
     dir = glm::normalize(dir);
 
     glm::ivec3 block = glm::floor(origin);
@@ -310,9 +317,6 @@ void Game::m_ResolveAxis(const int axis) {
     constexpr float bs = 0.2f;
     const float pw = m_Player.size.x;
     const float ph = m_Player.size.y;
-
-    GetCam3D().position = glm::vec3(
-        m_Player.pos.x, m_Player.pos.y + (ph * 0.45f), m_Player.pos.z);
 
     glm::vec3 min(m_Player.pos.x - (pw * 0.5f), m_Player.pos.y - (ph * 0.5f),
                   m_Player.pos.z - (pw * 0.5f));
@@ -756,7 +760,9 @@ void Game::m_Draw() {
     float hotbarHighlightOff = 2.5f;
     glm::vec2 hotbarHighlightPos(
         hotbarPos +
-        glm::vec2(static_cast<float>(m_Player.selectedBlock) * (hotbar->size.x / 9.1f), 0) -
+        glm::vec2(static_cast<float>(m_Player.selectedBlock) *
+                      (hotbar->size.x / 9.1f),
+                  0) -
         glm::vec2(hotbarHighlightOff));
     DrawTex2D(hotbarHighlight, hotbarHighlightPos, WHITE);
 
