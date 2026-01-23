@@ -1,11 +1,11 @@
-![CPLlogo](assets/images/logo2.png)
+![CPLlogo](assets/images/default/logo.png)
 
 # CPLibrary (CPL)
 
 ## About
 CPL (named by me) is my custom framework made from scratch. This framework is entirely written \
 in C++ and uses OpenGL & other low-level libraries like GLFW, GLAD, STBImage etc. \
-Currently I worked on this just for around 3 months
+Currently I worked on this just for around 3-4 months
 
 ## Example code
 ```
@@ -109,6 +109,7 @@ Both:
 - Camera
 - Lighting
 - Post Processing
+- Anti Aliasing (MSAA)
   
 Others:
 - Random number generator wrapper
@@ -122,6 +123,8 @@ Others:
   - Profiler (get heap and stack related info)
 
 It is recommended to take a look at the example projects / demonstrations which will show core functionalities and how to use them correctly. Alternatively you may look up the functions inside the documentation but note that it may contains minor mistakes or is outdated. I will keep my best to refresh and update it regularily!
+
+There is also a [documentation](Documentation.txt) inside the framework where I try to keep it up to date with functions and features provided in CPL and how to use them correctly.
 
 ## Used libraries
 - GLAD
