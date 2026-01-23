@@ -1,9 +1,39 @@
 cmake_minimum_required(VERSION 3.31)
 project(Example)
 
+# C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+#### Debug ####
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g -O0 -fno-omit-frame-pointer)
+    add_compile_options(
+        -fsanitize=address,undefined
+        -fno-omit-frame-pointer
+        -g
+        -O0
+    )
+    add_link_options(
+        -fsanitize=address,undefined
+    )
+endif()
+
+#### Dev ####
+
+if (CMAKE_BUILD_TYPE STREQUAL "Dev")
+    add_compile_options(-g -O2 -DNDEBUG)
+endif()
+
+#### Release ####
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-g -O3 -DNDEBUG)
+endif()
+
+#### Dependencies ####
 
 include(FetchContent)
 
@@ -74,10 +104,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fastnoiselite)
 
+#### Linking ####
+
+# Is used here but normally never do 
+# it name the files manually
+
 file(GLOB_RECURSE CPL_SOURCE_FILES CONFIGURE_DEPENDS CPLibrary/src/*.cpp)
 file(GLOB_RECURSE CPL_HEADER_FILES CONFIGURE_DEPENDS CPLibrary/include/*.h)
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE DEPENDS src/*.cpp src/*.h)
 
+# CPL
 message(STATUS "============================================")
 message(STATUS "Included files from CPL framework")
 message(STATUS "============================================")
@@ -87,6 +123,7 @@ foreach(f IN LISTS CPL_SOURCE_FILES)
     message(STATUS "  ${rel}")
 endforeach()
 
+# Game
 message(STATUS "")
 message(STATUS "----- CPL header files (.h) -----")
 foreach(f IN LISTS CPL_HEADER_FILES)
@@ -117,7 +154,7 @@ if (NOT EMSCRIPTEN)
 
     target_link_libraries(Example PRIVATE glfw)
     
-    # Linux-specific: Link required system libraries
+    # Linux-specific
     if (UNIX AND NOT APPLE)
         target_link_libraries(Example PRIVATE
             dl          # Dynamic loading
@@ -126,6 +163,8 @@ if (NOT EMSCRIPTEN)
         )
     endif()    
 endif()
+
+#### Web ####
 
 if(EMSCRIPTEN)
     set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/assets")
@@ -138,7 +177,7 @@ if(EMSCRIPTEN)
         "-sFORCE_FILESYSTEM=1"
     )
 
-    # Debugging
+    # Debug
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_options(Example PRIVATE
             "-sSAFE_HEAP=1"

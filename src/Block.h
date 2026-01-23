@@ -14,6 +14,7 @@ enum class BlockType : uint8_t {
     SNOW,
     SAND,
     WATER,
+    GRASS
 };
 
 enum class FaceDirection : uint8_t { BACK, FRONT, LEFT, RIGHT, BOTTOM, TOP };
@@ -31,6 +32,7 @@ struct FaceVertices {
 class FaceData {
   public:
     static const std::array<FaceVertices, 6> s_Faces;
+    static const std::array<FaceVertices, 2> s_FoliageFaces;
 };
 
 struct Block {

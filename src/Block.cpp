@@ -24,8 +24,8 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {0.0f, 0.0f, -1.0f},
     {{
-        {2*w+pu, 2*h-pv}, {3*w-pu, 1*h+pv}, {3*w-pu, 2*h-pv},
-        {3*w-pu, 1*h+pv}, {2*w+pu, 2*h-pv}, {2*w+pu, 1*h+pv}
+        {(2*w)+pu, (2*h)-pv}, {(3*w)-pu, (1*h)+pv}, {(3*w)-pu, (2*h)-pv},
+        {(3*w)-pu, (1*h)+pv}, {(2*w)+pu, (2*h)-pv}, {(2*w)+pu, (1*h)+pv}
     }}},
     
     // Front face (+Z)
@@ -35,8 +35,8 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {0.0f, 0.0f, 1.0f},
     {{
-        {1*w+pu, 1*h+pv}, {2*w-pu, 1*h+pv}, {2*w-pu, 0*h+pv},
-        {2*w-pu, 0*h+pv}, {1*w+pu, 0*h+pv}, {1*w+pu, 1*h+pv}
+        {(1*w)+pu, (1*h)+pv}, {(2*w)-pu, (1*h)+pv}, {(2*w)-pu, (0*h)+pv},
+        {(2*w)-pu, (0*h)+pv}, {(1*w)+pu, (0*h)+pv}, {(1*w)+pu, (1*h)+pv}
     }}},
     
     // Left face (-X)
@@ -46,8 +46,8 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {-1.0f, 0.0f, 0.0f},
     {{
-        {3*w-pu, 0*h+pv}, {2*w+pu, 0*h+pv}, {2*w+pu, 1*h-pv},
-        {2*w+pu, 1*h-pv}, {3*w-pu, 1*h-pv}, {3*w-pu, 0*h+pv}
+        {(3*w)-pu, (0*h)+pv}, {(2*w)+pu, (0*h)+pv}, {(2*w)+pu, (1*h)-pv},
+        {(2*w)+pu, (1*h)-pv}, {(3*w)-pu, (1*h)-pv}, {(3*w)-pu, (0*h)+pv}
     }}},
     
     // Right face (+X)
@@ -57,8 +57,8 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {1.0f, 0.0f, 0.0f},
     {{
-        {1*w+pu, 0*h+pv}, {0*w+pu, 1*h-pv}, {0*w+pu, 0*h+pv},
-        {0*w+pu, 1*h-pv}, {1*w+pu, 0*h+pv}, {1*w+pu, 1*h-pv}
+        {(1*w)+pu, (0*h)+pv}, {(0*w)+pu, (1*h)-pv}, {(0*w)+pu, (0*h)+pv},
+        {(0*w)+pu, (1*h)-pv}, {(1*w)+pu, (0*h)+pv}, {(1*w)+pu, (1*h)-pv}
     }}},
     
     // Bottom face (-Y)
@@ -68,8 +68,8 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {0.0f, -1.0f, 0.0f},
     {{
-        {0*w+pu, 1*h+pv}, {1*w-pu, 1*h+pv}, {1*w-pu, 2*h-pv},
-        {1*w-pu, 2*h-pv}, {0*w+pu, 2*h-pv}, {0*w+pu, 1*h+pv}
+        {(0*w)+pu, (1*h)+pv}, {(1*w)-pu, (1*h)+pv}, {(1*w)-pu, (2*h)-pv},
+        {(1*w)-pu, (2*h)-pv}, {(0*w)+pu, (2*h)-pv}, {(0*w)+pu, (1*h)+pv}
     }}},
     
     // Top face (+Y)
@@ -79,7 +79,10 @@ const std::array<FaceVertices, 6> FaceData::s_Faces = {{
     }},
     {0.0f, 1.0f, 0.0f},
     {{
-        {1*w+pu, 1*h+pv}, {2*w-pu, 2*h-pv}, {2*w-pu, 1*h+pv},
-        {2*w-pu, 2*h-pv}, {1*w+pu, 1*h+pv}, {1*w+pu, 2*h-pv}
+        {(1*w)+pu, (1*h)+pv}, {(2*w)-pu, (2*h)-pv}, {(2*w)-pu, (1*h)+pv},
+        {(2*w)-pu, (2*h)-pv}, {(1*w)+pu, (1*h)+pv}, {(1*w)+pu, (2*h)-pv}
     }}}
 }};
+
+// TODO add foliage face data
+// const std::array<FaceVertices, 2> FaceData::s_FoliageFaces{{}};

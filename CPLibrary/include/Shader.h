@@ -21,6 +21,6 @@ namespace CPL {
         void SetVector3f(const std::string &name, const glm::vec3& vec3) const;
     private:
         uint32_t m_ID;
-        static void m_CheckCompileErrors(uint32_t shader, const std::string& type);
+        static bool m_CheckCompileErrors(uint32_t shader, const std::string& type);
     };
 }

@@ -50,19 +50,22 @@ class Game {
     std::unique_ptr<CubeMap> m_Skybox;
     std::unique_ptr<ShadowMap> m_ShadowMap;
     std::map<BlockType, Texture2D *> m_TexAtlases;
-    int m_ViewDist = 16; // Default: 16 (chunks)
 
+    int m_ViewDist = 16; // Default: 16 (chunks)
     uint32_t m_ShadowRes = 4096;
     bool m_UseShadows = true;
     bool m_UseLighting = true;
-
+    float m_FogStart = 2.81f * static_cast<float>(m_ViewDist);
+    float m_FogEnd = m_FogStart - 6.0f;
     bool m_UseMSAA = true;
+    bool m_UseZPrePass = true;
 
     // Temporarily
     std::vector<Cloud> m_Clouds;
 
-    Player m_Player;
+    std::vector<std::pair<glm::vec3, glm::vec3>> m_Rays;
 
+    Player m_Player;
     bool m_PressedKey = false;
     bool m_F3Mode = false;
 

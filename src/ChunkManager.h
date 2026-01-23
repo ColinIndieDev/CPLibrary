@@ -88,16 +88,19 @@ class ChunkManager {
                         const std::map<BlockType, Texture2D *> &atlases,
                         bool useShadows);
     uint32_t DrawChunks(const Shader &shader, const Shader &depthShader,
-                        const std::map<BlockType, Texture2D *> &atlases);
+                        const std::map<BlockType, Texture2D *> &atlases, bool zPrePass);
     uint32_t
     DrawTransparentChunks(const Shader &shader,
                           const std::map<BlockType, Texture2D *> &atlases);
     void Stop();
 
-    std::mutex m_ChunksMutex; // Temporary for debugging
+    std::mutex chunksMutex;
+
   private:
     void m_WorkerThread();
-    Chunk m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen);
+    static void m_GenChunkTerrain(Chunk *chunk, const glm::ivec3 &pos, int height);
+    static void m_GenChunkWater(Chunk *chunk, const glm::ivec3 &pos, int height);
+    static Chunk m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen);
 
     std::priority_queue<ChunkGenRequest, std::vector<ChunkGenRequest>,
                         RequestCompare>

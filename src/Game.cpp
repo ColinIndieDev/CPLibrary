@@ -3,7 +3,6 @@
 #include "Chunk.h"
 #include "ChunkManager.h"
 #include "TextureLoader.h"
-#include "glm/fwd.hpp"
 #include <string>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -121,6 +120,7 @@ inline int PositiveMod(const int x, const int y) {
     return result < 0 ? result + y : result;
 }
 
+// {{{ Controls
 void Game::m_UpdateConfigCtrl() {
     if (m_F3Mode) {
         if (IsKeyPressedOnce(KEY_U) && m_UseLighting)
@@ -140,6 +140,22 @@ void Game::m_UpdateConfigCtrl() {
         if (IsKeyPressedOnce(KEY_L)) {
             m_UseLighting = !m_UseLighting;
             m_UseShadows = m_UseLighting;
+        }
+
+        if (IsKeyPressedOnce(KEY_F))
+            m_UseZPrePass = !m_UseZPrePass;
+
+        if (IsKeyPressedOnce(KEY_G)) {
+            m_ViewDist *= 2;
+            m_WorldGen->viewDist = m_ViewDist;
+            m_FogStart = 2.81f * static_cast<float>(m_ViewDist);
+            m_FogEnd = m_FogStart - 6.0f;
+        }
+        if (IsKeyPressedOnce(KEY_B)) {
+            m_ViewDist /= 2;
+            m_WorldGen->viewDist = m_ViewDist;
+            m_FogStart = 2.81f * static_cast<float>(m_ViewDist);
+            m_FogEnd = m_FogStart - 6.0f;
         }
     }
 
@@ -226,6 +242,9 @@ void Game::m_UpdateRaycastCtrl() {
     if (hit.hit) {
         m_Player.raycastBlock = glm::vec3(hit.block) * 0.2f;
         if (IsMousePressedOnce(MOUSE_BUTTON_LEFT)) {
+            // Debug
+            m_Rays.emplace_back(cam.position, cam.position + cam.front * 10.0f);
+
             if (!m_WorldGen->manager.GetBlockGlobal(hit.block).IsUnbreakable())
                 m_WorldGen->manager.DestroyBlock(hit.block);
         }
@@ -312,7 +331,9 @@ Raycast Game::m_RaycastBlock(glm::vec3 origin, glm::vec3 dir,
 
     return {};
 }
+// }}}
 
+// {{{ Collisions
 void Game::m_ResolveAxis(const int axis) {
     constexpr float bs = 0.2f;
     const float pw = m_Player.size.x;
@@ -411,6 +432,7 @@ void Game::m_UpdatePhysics() {
     if (m_Player.vel.y > -1)
         m_Player.vel.y -= 1 * GetDeltaTime();
 }
+// }}}
 
 void Game::m_Update() {
     if (m_WorldGen->manager.chunks.find(ChunkManager::GetPlayerChunkPos(
@@ -469,13 +491,14 @@ std::string GetCardinalDir(float yaw) {
     return "NW";
 }
 
+// {{{ Drawing
 void Game::m_ComputeShadows(glm::vec3 &lightDir,
                             glm::mat4 &lightSpaceMatrix) const {
     constexpr float shadowRange = 40.0f;
 
     lightDir =
-        glm::normalize(glm::vec3(std::sin(GetTime() * 0.1f) * 3.3f, -2.0f,
-                                 std::cos(GetTime() * 0.1f) * 3.3f));
+        glm::normalize(glm::vec3(std::sin(GetTime() * 0.1f) * 3.0f, -1.7f,
+                                 std::cos(GetTime() * 0.1f) * 3.0f));
     glm::vec3 center =
         GetCam3D().position + GetCam3D().front * (shadowRange * 0.5f);
     glm::vec3 lightPos = center - lightDir * shadowRange;
@@ -496,6 +519,14 @@ void Game::m_ComputeShadows(glm::vec3 &lightDir,
 
 uint32_t Game::m_DrawOpaque(const glm::vec3 &lightDir,
                             const glm::mat4 &lightSpaceMatrix) {
+    BeginDraw(DrawModes::SHAPE_3D);
+
+    glLineWidth(5.0f);
+    for (auto &ray : m_Rays) {
+        DrawRay(ray.first, ray.second, RED);
+    }
+    glLineWidth(1.0f);
+
     EnableFaceCulling(true);
 
     BeginDraw(DrawModes::SHAPE_3D);
@@ -527,14 +558,14 @@ uint32_t Game::m_DrawOpaque(const glm::vec3 &lightDir,
     }
 
     EnableFog(true);
-    SetFog(45, 39, Color(133, 174, 255, 255));
+    SetFog(m_FogStart, m_FogEnd, Color(133, 174, 255, 255));
 
     m_WorldGen->manager.UpdateVisibleChunks(m_ViewDist);
 
     uint32_t chunksDrawn = m_WorldGen->manager.DrawChunks(
         GetShader(m_UseLighting ? DrawModes::SHAPE_3D_LIGHT
                                 : DrawModes::SHAPE_3D),
-        m_DepthShader, m_TexAtlases);
+        m_DepthShader, m_TexAtlases, m_UseZPrePass);
 
     return chunksDrawn;
 }
@@ -543,7 +574,7 @@ void Game::m_DrawTransparent() {
     BeginDraw(DrawModes::SHAPE_3D);
 
     EnableFog(true);
-    SetFog(90, 78, Color(133, 174, 255, 255));
+    SetFog(m_FogStart * 2, m_FogEnd * 2, Color(133, 174, 255, 255));
     GetShader(DrawModes::SHAPE_3D).SetVector3f("viewPos", GetCam3D().position);
 
     EnableTransparency();
@@ -576,7 +607,7 @@ void Game::m_DrawTransparent() {
 
     BeginDraw(DrawModes::SHAPE_3D_LIGHT);
 
-    SetFog(45, 39, Color(133, 174, 255, 255));
+    SetFog(m_FogStart, m_FogEnd, Color(133, 174, 255, 255));
 
     EnableFaceCulling(false);
     SetShininess3D(128);
@@ -605,7 +636,7 @@ void Game::m_DrawUI(const uint32_t chunksDrawn) {
     int dirty = 0;
     int none = 0;
     {
-        std::lock_guard<std::mutex> lock(m_WorldGen->manager.m_ChunksMutex);
+        std::lock_guard<std::mutex> lock(m_WorldGen->manager.chunksMutex);
         for (auto &[pos, chunk] : m_WorldGen->manager.chunks) {
             switch (chunk.state) {
             case Chunk::MeshState::READY:
@@ -666,6 +697,18 @@ void Game::m_DrawUI(const uint32_t chunksDrawn) {
 
     DrawTextShadow({0, textPos}, {3, -3}, 0.5f, "--- Graphics ---", WHITE,
                    DARK_GRAY);
+
+    textPos += 30;
+
+    DrawTextShadow({0, textPos}, {3, -3}, 0.5f,
+                   "Render distance: " + std::to_string(m_ViewDist) + " chunks",
+                   WHITE, DARK_GRAY);
+
+    textPos += 30;
+
+    DrawTextShadow({0, textPos}, {3, -3}, 0.5f,
+                   "Z Prepass: " + std::string(m_UseZPrePass ? "ON" : "OFF"),
+                   WHITE, DARK_GRAY);
 
     textPos += 30;
 
@@ -771,6 +814,7 @@ void Game::m_Draw() {
 
     EndDraw();
 }
+// }}}
 
 void Game::m_InitAtlases() {
     m_TexAtlases[BlockType::BEDROCK] =

@@ -8,6 +8,7 @@
 
 namespace CPL {
 Shader::Shader(const char *vertexPath, const char *fragmentPath) {
+    
     std::string vertexCode;
     std::string fragmentCode;
     std::ifstream vShaderFile;
@@ -29,6 +30,7 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     } catch (std::ifstream::failure &e) {
         Logging::Log(Logging::MessageStates::ERROR,
                      "File not successfully read: " + std::string(e.what()));
+        return;
     }
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
@@ -88,7 +90,7 @@ void Shader::SetVector3f(const std::string &name, const glm::vec3 &vec3) const {
                 vec3.z);
 }
 
-void Shader::m_CheckCompileErrors(const uint32_t shader,
+bool Shader::m_CheckCompileErrors(const uint32_t shader,
                                   const std::string &type) {
     int success = 0;
     std::array<char, 1024> infoLog{};
@@ -99,6 +101,7 @@ void Shader::m_CheckCompileErrors(const uint32_t shader,
             Logging::Log(Logging::MessageStates::ERROR,
                          "Shader compilation error: " + type + "\n" + "-> " +
                              std::string(infoLog.data()));
+            return false;
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
@@ -107,7 +110,9 @@ void Shader::m_CheckCompileErrors(const uint32_t shader,
             Logging::Log(Logging::MessageStates::ERROR,
                          "Program linking error of type: " + type + "\n" +
                              std::string(infoLog.data()));
+            return false;
         }
     }
+    return true;
 }
 } // namespace CPL

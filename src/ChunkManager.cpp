@@ -1,5 +1,6 @@
 #include "ChunkManager.h"
 #include "Block.h"
+#include "Chunk.h"
 #include "WorldGen.h"
 #include <mutex>
 #include <string>
@@ -57,6 +58,7 @@ void ChunkManager::RequestChunkGen(const glm::ivec3 &pos, WorldGen *worldGen) {
     m_RequestCV.notify_one();
 }
 
+// {{{ Process chunks
 void ChunkManager::ProcessFinishedChunks() {
     std::lock_guard<std::mutex> lock(m_FinishedMutex);
 
@@ -64,7 +66,7 @@ void ChunkManager::ProcessFinishedChunks() {
         auto [pos, chunk] = std::move(m_FinishedQueue.front());
         m_FinishedQueue.pop();
         {
-            std::lock_guard<std::mutex> chunkLock(m_ChunksMutex);
+            std::lock_guard<std::mutex> chunkLock(chunksMutex);
             chunks.emplace(pos, std::move(chunk));
 
             const std::array<glm::ivec3, 4> neighbors = {{
@@ -136,8 +138,12 @@ void ChunkManager::ProcessDirtyChunks(const int viewDist,
         chunk->needUpload = true;
         m_UnfinishedList.erase(chunk->GetPos());
 
-        const std::array<glm::ivec3, 4> neighbors = {
-            {{0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}}};
+        const std::array<glm::ivec3, 4> neighbors = {{
+            {0, 0, -1},
+            {0, 0, 1},
+            {-1, 0, 0},
+            {1, 0, 0},
+        }};
 
         for (const auto &n : neighbors) {
             glm::ivec3 npos = chunk->GetPos() + n;
@@ -162,13 +168,14 @@ void ChunkManager::ProcessDirtyChunks(const int viewDist,
         processed++;
     }
 }
+// }}}
 
 bool ChunkManager::IsGenComplete() const {
     return m_PendingChunks == 0 && m_FinishedQueue.empty();
 }
 
 void ChunkManager::UploadChunkMeshes() {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     for (auto &[pos, chunk] : chunks) {
         if (chunk.needUpload) {
@@ -179,7 +186,7 @@ void ChunkManager::UploadChunkMeshes() {
 }
 
 void ChunkManager::MarkChunkDirty(const glm::ivec3 &chunkPos) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     auto it = chunks.find(chunkPos);
     if (it == chunks.end())
@@ -198,6 +205,7 @@ void ChunkManager::MarkChunkDirty(const glm::ivec3 &chunkPos) {
     }
 }
 
+// {{{ Block mining & placing
 void ChunkManager::DestroyBlock(const glm::ivec3 &worldPos) {
 
     glm::ivec3 chunkPos(FloorDiv(worldPos.x, Chunk::s_Size),
@@ -220,12 +228,14 @@ void ChunkManager::DestroyBlock(const glm::ivec3 &worldPos) {
         localPos.y == Chunk::s_Height - 1 || localPos.z == 0 ||
         localPos.z == Chunk::s_Size - 1) {
 
-        const std::array<glm::ivec3, 6> neighbors = {{{0, 0, -1},
-                                                      {0, 0, 1},
-                                                      {-1, 0, 0},
-                                                      {1, 0, 0},
-                                                      {0, -1, 0},
-                                                      {0, 1, 0}}};
+        const std::array<glm::ivec3, 6> neighbors = {{
+            {0, 0, -1},
+            {0, 0, 1},
+            {-1, 0, 0},
+            {1, 0, 0},
+            {0, -1, 0},
+            {0, 1, 0},
+        }};
 
         for (const auto &n : neighbors) {
             MarkChunkDirty(chunkPos + n);
@@ -256,19 +266,23 @@ void ChunkManager::PlaceBlock(const glm::ivec3 &worldPos,
         localPos.y == Chunk::s_Height - 1 || localPos.z == 0 ||
         localPos.z == Chunk::s_Size - 1) {
 
-        const std::array<glm::ivec3, 6> neighbors = {{{0, 0, -1},
-                                                      {0, 0, 1},
-                                                      {-1, 0, 0},
-                                                      {1, 0, 0},
-                                                      {0, -1, 0},
-                                                      {0, 1, 0}}};
+        const std::array<glm::ivec3, 6> neighbors = {{
+            {0, 0, -1},
+            {0, 0, 1},
+            {-1, 0, 0},
+            {1, 0, 0},
+            {0, -1, 0},
+            {0, 1, 0},
+        }};
 
         for (const auto &n : neighbors) {
             MarkChunkDirty(chunkPos + n);
         }
     }
 }
+// }}}
 
+// {{{ Update visible chunks
 bool ChunkManager::OutOfRenderDist(const glm::ivec3 &chunkPos,
                                    const int viewDist) {
     return glm::distance2(glm::vec3(GetPlayerChunkPos(GetCam3D().position)),
@@ -277,7 +291,7 @@ bool ChunkManager::OutOfRenderDist(const glm::ivec3 &chunkPos,
 }
 
 void ChunkManager::UpdateVisibleChunksDepth(const int viewDist) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     if (!visibleChunks.empty())
         visibleChunks.clear();
@@ -304,7 +318,7 @@ void ChunkManager::UpdateVisibleChunksDepth(const int viewDist) {
 }
 
 void ChunkManager::UpdateVisibleChunks(const int viewDist) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     if (!visibleChunks.empty())
         visibleChunks.clear();
@@ -337,11 +351,13 @@ void ChunkManager::UpdateVisibleChunks(const int viewDist) {
                   return da < db;
               });
 }
+// }}}
 
+// {{{ Draw chunks
 uint32_t ChunkManager::DrawShadowMapChunks(
     ShadowMap *shadowMap, const glm::mat4 &lightSpaceMatrix,
     const std::map<BlockType, Texture2D *> &atlases, const bool useShadows) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     Shader &shadowDepthShader = Engine::GetDepthShader();
     shadowDepthShader.Use();
@@ -362,38 +378,43 @@ uint32_t ChunkManager::DrawShadowMapChunks(
 
 uint32_t
 ChunkManager::DrawChunks(const Shader &shader, const Shader &depthShader,
-                         const std::map<BlockType, Texture2D *> &atlases) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+                         const std::map<BlockType, Texture2D *> &atlases,
+                         const bool zPrePass) {
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
+    if (zPrePass) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(GL_TRUE);
 
-    glColorMask(0, 0, 0, 0);
+        glColorMask(0, 0, 0, 0);
 
-    depthShader.Use();
-    for (auto &chunk : visibleChunks) {
-        chunk->DrawDepth(depthShader, atlases);
+        depthShader.Use();
+        for (auto &chunk : visibleChunks) {
+            chunk->DrawDepth(depthShader, atlases);
+        }
+
+        glColorMask(1, 1, 1, 1);
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_EQUAL);
     }
-
-    glColorMask(1, 1, 1, 1);
-    glDepthMask(GL_FALSE);
-    glDepthFunc(GL_EQUAL);
 
     shader.Use();
     for (auto &chunk : visibleChunks) {
         chunk->Draw(shader, atlases);
     }
 
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LESS);
+    if (zPrePass) {
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
+    }
 
     return visibleChunks.size();
 }
 
 uint32_t ChunkManager::DrawTransparentChunks(
     const Shader &shader, const std::map<BlockType, Texture2D *> &atlases) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     shader.Use();
     for (auto &chunk : visibleChunks) {
@@ -402,6 +423,7 @@ uint32_t ChunkManager::DrawTransparentChunks(
 
     return visibleChunks.size();
 }
+// }}}
 
 void ChunkManager::m_WorkerThread() {
     while (m_Running) {
@@ -430,6 +452,38 @@ void ChunkManager::m_WorkerThread() {
             std::lock_guard<std::mutex> lock(m_FinishedMutex);
             m_FinishedQueue.emplace(request.position, std::move(chunk));
             m_PendingChunks--;
+        }
+    }
+}
+
+// {{{ Generate chunks
+void ChunkManager::m_GenChunkTerrain(Chunk *chunk, const glm::ivec3 &pos,
+                                     const int height) {
+    if (pos.y == 0)
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z), BlockType::BEDROCK);
+    else if (pos.y == height && height < 100)
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z),
+                        BlockType::GRASS_BLOCK);
+    else if (pos.y < height && pos.y > height - 4)
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z), BlockType::DIRT);
+    else if (pos.y <= height - 4 ||
+             (pos.y <= height && pos.y >= 100 && height >= 100 && height < 170))
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z), BlockType::STONE);
+    else if (pos.y <= height && pos.y >= 170 && height >= 170)
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z), BlockType::SNOW);
+}
+
+void ChunkManager::m_GenChunkWater(Chunk *chunk, const glm::ivec3 &pos,
+                                   const int height) {
+    constexpr int seaLevel = 65;
+
+    if (pos.y == height && height < seaLevel) {
+        chunk->SetBlock(glm::ivec3(pos.x, pos.y, pos.z), BlockType::SAND);
+        int waterHeight = height + 1;
+        while (waterHeight < seaLevel) {
+            chunk->SetBlock(glm::ivec3(pos.x, waterHeight, pos.z),
+                            BlockType::WATER);
+            waterHeight++;
         }
     }
 }
@@ -472,30 +526,12 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
             int height = carvedHeight;
 
             for (int y = 0; y <= height; y++) {
-                if (y == 0)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::BEDROCK);
-                else if (y == height && height < 100)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::GRASS_BLOCK);
-                else if (y < height && y > height - 4)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::DIRT);
-                else if (y <= height - 4 || (y <= height && y >= 100 &&
-                                             height >= 100 && height < 170))
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::STONE);
-                else if (y <= height && y >= 170 && height >= 170)
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SNOW);
+                m_GenChunkTerrain(&chunk, glm::ivec3(x, y, z), height);
 
                 worldGen->GenCaves(x, z, glm::ivec3(worldX, y, worldZ), height,
                                    chunk);
 
-                if (y == height && height < 65) {
-                    chunk.SetBlock(glm::ivec3(x, y, z), BlockType::SAND);
-                    int waterHeight = height + 1;
-                    while (waterHeight < 65) {
-                        chunk.SetBlock(glm::ivec3(x, waterHeight, z),
-                                       BlockType::WATER);
-                        waterHeight++;
-                    }
-                }
+                m_GenChunkWater(&chunk, glm::ivec3(x, y, z), height);
             }
 
             worldGen->GenTrees(x, z, worldX, worldZ, height, chunk);
@@ -503,9 +539,10 @@ Chunk ChunkManager::m_GenChunk(const glm::ivec3 &pos, WorldGen *worldGen) {
     }
     return chunk;
 }
+// }}}
 
 Chunk *ChunkManager::GetChunk(const glm::ivec3 &chunkPos) {
-    std::lock_guard<std::mutex> lock(m_ChunksMutex);
+    std::lock_guard<std::mutex> lock(chunksMutex);
 
     auto it = chunks.find(chunkPos);
     if (it != chunks.end()) {
