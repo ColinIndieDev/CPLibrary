@@ -195,25 +195,31 @@ void Game::m_UpdateMovementCtrl() {
         m_PressedKey = true;
     }
 
+    glm::vec3 forward = cam.front;
+    forward.y = 0.0f;
+    if (glm::length(forward) > 0.0f) 
+        forward = glm::normalize(forward);
+    
+    glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
     glm::vec3 wishDir(0.0f);
 
     if (IsKeyDown(KEY_W))
-        wishDir += cam.front;
+        wishDir += forward;
     if (IsKeyDown(KEY_S))
-        wishDir -= cam.front;
+        wishDir -= forward;
     if (IsKeyDown(KEY_D))
-        wishDir += glm::normalize(glm::cross(cam.front, cam.up));
+        wishDir += right;
     if (IsKeyDown(KEY_A))
-        wishDir -= glm::normalize(glm::cross(cam.front, cam.up));
+        wishDir -= right;
 
     if (glm::length(wishDir) > 0.0f)
         wishDir = glm::normalize(wishDir);
 
     float accel = 0.5f;
-    float maxSpeed = 0.03f;
+    float maxSpeed = 0.005f;
     if (IsKeyDown(KEY_LEFT_CONTROL)) {
         accel *= 2.0f;
-        maxSpeed *= 3;
+        maxSpeed *= 2;
     }
 
     m_Player.vel.x += wishDir.x * accel * GetDeltaTime();

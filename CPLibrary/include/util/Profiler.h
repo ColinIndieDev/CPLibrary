@@ -1,16 +1,16 @@
 #pragma once
 
 #include <atomic>
-#include <iostream>
 #include <pthread.h>
 
 class Profiler {
   public:
     static std::atomic<size_t> heapUsed;
 
-    static size_t GetHeapUsed() {
-        return heapUsed;
-    }
+    static size_t GetHeapUsed() { return heapUsed; }
+
+    static void RecordAlloc(void *ptr, size_t size);
+    static void RecordDealloc(void *ptr);
 
     static size_t GetStackSize() {
         pthread_attr_t attr;

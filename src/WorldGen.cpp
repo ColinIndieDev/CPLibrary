@@ -83,17 +83,17 @@ int WorldGen::GetTerrainHeight(const int worldX, const int worldZ) const {
     return std::clamp(height, minMapHeight, maxMapHeight);
 }
 
-void GenTreeStem(const glm::ivec3 &treePos, Chunk &chunk) {
-    for (int y = 0; y < 4; y++) {
+void GenTreeStem(const glm::ivec3 &treePos, Chunk &chunk, const int height) {
+    for (int y = 0; y < height; y++) {
         glm::ivec3 stemPos(treePos.x, treePos.y + y, treePos.z);
         chunk.SetBlock(stemPos, BlockType::OAK_LOG);
     }
 }
-void GenTreeLeaves(const glm::ivec3 &treePos, Chunk &chunk) {
+void GenTreeLeaves(const glm::ivec3 &treePos, Chunk &chunk, const int height) {
     for (int x = -1; x < 2; x++) {
-        for (int y = 2; y < 5; y++) {
+        for (int y = height - 2; y < height + 1; y++) {
             for (int z = -1; z < 2; z++) {
-                if (x == 0 && y < 4 && z == 0)
+                if (x == 0 && y < height && z == 0)
                     continue;
                 glm::ivec3 leavePos(treePos.x + x, treePos.y + y,
                                     treePos.z + z);
@@ -102,9 +102,9 @@ void GenTreeLeaves(const glm::ivec3 &treePos, Chunk &chunk) {
         }
     }
 }
-void GenTree(const glm::ivec3 &treePos, Chunk &chunk) {
-    GenTreeStem(treePos, chunk);
-    GenTreeLeaves(treePos, chunk);
+void GenTree(const glm::ivec3 &treePos, Chunk &chunk, const int height) {
+    GenTreeStem(treePos, chunk, height);
+    GenTreeLeaves(treePos, chunk, height);
 }
 
 void WorldGen::GenCaves(const int x, const int z, const glm::ivec3 &world,
@@ -154,8 +154,10 @@ void WorldGen::GenTrees(const int x, const int z, const int worldX,
 
     if (RandPercentFloat(4.0f * t) && block.IsSolid() &&
         block.type != BlockType::SNOW && block.type != BlockType::SAND &&
-        height >= 65)
-        GenTree(glm::ivec3(x, height + 1, z), chunk);
+        height >= 65) {
+        int treeHeight = RandInt(3, 6);
+        GenTree(glm::ivec3(x, height + 1, z), chunk, treeHeight);
+    }
 }
 
 std::pair<bool, float> WorldGen::GenHoles(const int worldX,
