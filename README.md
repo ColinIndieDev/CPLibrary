@@ -9,7 +9,7 @@ Currently I worked on this just for around 3-4 months
 
 ## Example code
 ```
-#include "../CPLibrary/CPLibrary.h"
+#include <CPLibrary.h>
 
 using namespace CPL;
 PRIORITIZE_GPU_BY_VENDOR // optional
