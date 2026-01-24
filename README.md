@@ -4,7 +4,7 @@
 
 ## About
 CPL (named by me) is my custom framework made from scratch. This framework is entirely written \
-in C++ and uses OpenGL & other low-level libraries like GLFW, GLAD, STBImage etc. \
+in C++ 17 and uses OpenGL & other low-level libraries like GLFW, GLAD, STBImage etc. \
 Currently I worked on this just for around 3-4 months
 
 ## Example code
@@ -55,8 +55,8 @@ It is not much yet but these are the projects and their link to GitHub:
 - [Flappy Bird Clone](https://github.com/ColinIndieDev/Flappy-Bird-Clone)
 - [Digit Recognition AI](https://github.com/ColinIndieDev/Digit-Recognition-AI)
 
-There is also a demo here a Minecraft Clone made using my framework, you can find it inside the `src/` folder! \
-Here are some screenshots:
+There is also a demo here a Minecraft Clone made using my framework, repo will be linked soon! \
+Here are some screenshots from earlier prototypes:
 
 ![Screenshot1](screenshots/screenshot1.png)
 
@@ -73,12 +73,13 @@ Here are some screenshots:
 + + + `web/`
 + + + + `frag/*.frag`
 + + + + `vert/*.vert` 
-+ `external/`
-+ + `glad/`
 + `CPLibrary/`
++ + `cmake/`
++ + `external/`
++ + + `glad/`
 + + `include/`
 + + `src/`
-+ + `CPLibrary.h`
++ + `CMakeLists.txt`
 
 The `assets/` folder is important since it contains the default font of the framework if the user has not chosen one and the shader code. In `external/` is the implementation from `glad/` downloaded from its offical website.
 All code for the shaders like fragment as well as vertex are all stored inside the
@@ -141,3 +142,89 @@ There is also a [documentation](Documentation.txt) inside the framework where I 
 
 - Miniaudio
 > Sounds and Music
+
+## Building / Setup CPL 
+
+> [!IMPORTANT]
+> I use Arch (btw). No but seriously I am doing it on Arch Linux so it may be
+> not correct on other operating systems + on Arch the path to f.e. `Documents/` is "~/Documents"
+
+If you want to compile the source files to CPL manually for some reason, do the following steps. Otherwise
+skip these steps:
+
+1. Clone the repo
+
+2. Go to `CPLibrary/` and create a folder called `build/` and go to it all with:
+```
+cd CPLibrary
+mkdir build
+cd build
+```
+3. Build with these CMake commands (make sure you have CMake on your system)
+```
+cmake ..
+cmake --build . -j$(nproc)
+cmake --install . --prefix ~/Documents/Projects/CPLibrary/libs
+```
+
+> [!IMPORTANT]
+> The path after --prefix may be different in your case here it is the path from
+> root to CPLibrary the project root and create / overwrite a folder called `libs/`
+> Of course you can name it however you want and create the folder directly in your
+> project where you want to use it
+
+If you do not want to compile it there is a folder in the project called `CPL V.x.x/` with
+everything you will need (x.x stands for the version there will be different versions in the future you can decide to use
+obviously I recommend the newest).
+
+Now we want to use the framework inside a project:
+
+1. Paste the folder with all CPL files into your project directly in the project root
+
+2. Use this CMakeList:
+```
+#
+# Some CMake stuff before (options, add_executable etc.)
+#
+
+# If the folder is named "CPLibrary" else replace with actual folder name 
+# or optionally path if not directly in project root
+set(LIBS_DIR ${CMAKE_SOURCE_DIR}/CPLibrary)
+
+target_include_directories(MyGame PRIVATE
+    ${LIBS_DIR}/include
+    ${LIBS_DIR}/include/CPLibrary
+    ${LIBS_DIR}/include/freetype2 # Freetype 
+)
+
+target_link_directories(MyGame PRIVATE
+    ${LIBS_DIR}/lib
+)
+
+target_link_libraries(MyGame PRIVATE
+    CPLibrary
+    glad
+    glfw3
+    freetype
+    # "Freetype dependencies"
+    png
+    z
+    bz2
+
+    # System libs (Linux)
+    GL
+    pthread
+    dl
+    m
+)
+```
+3. Now you only have to include this in your `.cpp` file and you are ready to code :)
+```
+#include <CPLibrary.h>
+
+using namespace CPL; // optional if you dont want to use CPL:: every time
+
+//
+// All your code
+//
+```
