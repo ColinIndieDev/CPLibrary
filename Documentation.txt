@@ -39,6 +39,7 @@
 490 - 3D Lighting
 511 - Directional Shadow
 535 - Tools
+
    ______                           __
   / ____/__  ____  ___  _________ _/ /
  / / __/ _ \/ __ \/ _ \/ ___/ __ `/ / 
@@ -432,6 +433,8 @@ void Draw();
 void DrawCube(glm::vec3 pos, glm::vec3 size, Color color);
 
 void DrawSphere(glm::vec3 pos, float radius, Color color);
+
+void DrawRay(glm::vec3 startPos, glm::vec3 endPos, Color color);
 
    _____ ____     ______          __                      
   |__  // __ \   /_  __/__  _  __/ /___  __________  _____
